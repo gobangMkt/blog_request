@@ -719,10 +719,33 @@
       this.className = ''; setFeedback('url', '', '');
       preview.style.display = 'none';
     } else if (formatValid) {
-      urlValid = true;
-      this.className = 'valid';
-      setFeedback('url', 'ok', '올바른 지점 URL이에요');
+      this.className = '';
+      setFeedback('url', 'checking', '확인 중...');
       loadPlaceInfo(val);
+
+      var self = this;
+      urlCheckDebounce = setTimeout(function() {
+        callAPI('checkPlaceUrl', { url: val })
+          .then(function(result) {
+            if (self.value.trim() !== val) return;
+            if (result.available === false) {
+              urlValid = false;
+              self.className = 'invalid';
+              setFeedback('url', 'error', '이미 신청된 지점이에요. 다른 지점을 선택해 주세요.');
+            } else {
+              urlValid = true;
+              self.className = 'valid';
+              setFeedback('url', 'ok', '신청 가능한 지점이에요');
+            }
+            checkSubmit();
+          })
+          .catch(function() {
+            urlValid = true;
+            self.className = 'valid';
+            setFeedback('url', 'ok', '올바른 지점 URL이에요');
+            checkSubmit();
+          });
+      }, 600);
     } else {
       this.className = 'invalid'; setFeedback('url', 'error', 'https://gobang.kr/place/숫자 형식으로 입력해 주세요');
       preview.style.display = 'none';
