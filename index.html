@@ -677,6 +677,7 @@
   var kwStatus = { kw1: null, kw2: null, kw3: null };
   var debounceTimers = {};
   var urlDebounce = null;
+  var urlCheckDebounce = null;
 
   function setFeedback(id, type, msg) {
     var el = document.getElementById('fb-' + id);
@@ -710,16 +711,39 @@
   document.getElementById('placeUrl').addEventListener('input', function() {
     var val = this.value.trim();
     var preview = document.getElementById('placePreview');
-    var valid = /^https:\/\/gobang\.kr\/place\/\d+$/.test(val);
+    var formatValid = /^https:\/\/gobang\.kr\/place\/\d+$/.test(val);
     urlValid = false;
+    clearTimeout(urlCheckDebounce);
 
     if (val.length === 0) {
       this.className = ''; setFeedback('url', '', '');
       preview.style.display = 'none';
-    } else if (valid) {
-      urlValid = true;
-      this.className = 'valid'; setFeedback('url', 'ok', '올바른 지점 URL이에요');
+    } else if (formatValid) {
+      this.className = '';
+      setFeedback('url', 'checking', '확인 중...');
       loadPlaceInfo(val);
+
+      var self = this;
+      urlCheckDebounce = setTimeout(function() {
+        callAPI('checkPlaceUrl', { url: val })
+          .then(function(result) {
+            if (self.value.trim() !== val) return;
+            if (result.available) {
+              urlValid = true;
+              self.className = 'valid';
+              setFeedback('url', 'ok', '신청 가능한 지점이에요');
+            } else {
+              urlValid = false;
+              self.className = 'invalid';
+              setFeedback('url', 'error', '이미 신청된 지점이에요. 다른 지점을 선택해 주세요.');
+            }
+            checkSubmit();
+          })
+          .catch(function() {
+            setFeedback('url', 'error', '확인 중 오류가 발생했어요');
+            checkSubmit();
+          });
+      }, 600);
     } else {
       this.className = 'invalid'; setFeedback('url', 'error', 'https://gobang.kr/place/숫자 형식으로 입력해 주세요');
       preview.style.display = 'none';
