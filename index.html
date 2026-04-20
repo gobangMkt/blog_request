@@ -728,7 +728,11 @@
         callAPI('checkPlaceUrl', { url: val })
           .then(function(result) {
             if (self.value.trim() !== val) return;
-            if (result.available === false) {
+            if (result.error) {
+              urlValid = false;
+              self.className = 'invalid';
+              setFeedback('url', 'error', '중복 확인 중 오류가 발생했어요. 다시 시도해 주세요.');
+            } else if (result.available === false) {
               urlValid = false;
               self.className = 'invalid';
               setFeedback('url', 'error', '이미 신청된 지점이에요. 다른 지점을 선택해 주세요.');
@@ -740,9 +744,9 @@
             checkSubmit();
           })
           .catch(function() {
-            urlValid = true;
-            self.className = 'valid';
-            setFeedback('url', 'ok', '올바른 지점 URL이에요');
+            urlValid = false;
+            self.className = 'invalid';
+            setFeedback('url', 'error', '서버 연결에 실패했어요. 다시 시도해 주세요.');
             checkSubmit();
           });
       }, 600);
