@@ -352,6 +352,10 @@
     .template-card.selected .template-type-tag { background: #3182F6; color: #fff; }
     .template-card-title { font-size: 16px; font-weight: 700; color: #191F28; margin-bottom: 4px; }
     .template-card-desc { font-size: 12px; color: #8B95A1; line-height: 1.5; }
+    .template-card-help {
+      display: inline-block; font-size: 12px; color: #3182F6;
+      margin-top: 10px; cursor: pointer; text-decoration: underline; font-weight: 500;
+    }
 
     .template-desc-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
     .template-desc-item { border: 1.5px solid #E5E8EB; border-radius: 10px; overflow: hidden; }
@@ -520,20 +524,19 @@
       </div>
 
       <div class="section">
-        <div class="template-header">
-          <div class="section-title" style="margin-bottom:0;">작성 템플릿</div>
-          <span class="template-help-btn" id="templateHelpBtn">항목 설명 보기</span>
-        </div>
+        <div class="section-title">작성 템플릿</div>
         <div class="template-cards">
           <div class="template-card selected" data-type="A" id="card-A">
             <div class="template-type-tag">A타입</div>
             <div class="template-card-title">설명형</div>
             <div class="template-card-desc">지점의 특징과<br>환경을 상세 설명</div>
+            <span class="template-card-help" data-type="A">항목 설명 보기</span>
           </div>
           <div class="template-card" data-type="B" id="card-B">
             <div class="template-type-tag">B타입</div>
             <div class="template-card-title">후기형</div>
             <div class="template-card-desc">실제 경험을<br>바탕으로 한 후기</div>
+            <span class="template-card-help" data-type="B">항목 설명 보기</span>
           </div>
         </div>
       </div>
@@ -572,7 +575,7 @@
     <div class="modal-title">템플릿 유형 안내</div>
     <div class="modal-desc" style="margin-bottom:16px;">블로그 작성 방식을 선택해 주세요</div>
     <div class="template-desc-list">
-      <div class="template-desc-item">
+      <div class="template-desc-item" id="desc-item-A">
         <div class="template-desc-head">
           <span class="template-desc-head-tag">A타입</span>설명형
         </div>
@@ -582,7 +585,7 @@
           👉 <strong>"장점이 딱 보이게" 설명하고 싶다면 A타입</strong>을 추천해요.
         </div>
       </div>
-      <div class="template-desc-item">
+      <div class="template-desc-item" id="desc-item-B">
         <div class="template-desc-head">
           <span class="template-desc-head-tag">B타입</span>후기형
         </div>
@@ -866,8 +869,14 @@
     });
   });
 
-  document.getElementById('templateHelpBtn').addEventListener('click', function() {
-    document.getElementById('templateModal').classList.add('show');
+  document.querySelectorAll('.template-card-help').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var type = this.getAttribute('data-type');
+      document.getElementById('desc-item-A').style.display = type === 'A' ? 'block' : 'none';
+      document.getElementById('desc-item-B').style.display = type === 'B' ? 'block' : 'none';
+      document.getElementById('templateModal').classList.add('show');
+    });
   });
   document.getElementById('templateModalClose').addEventListener('click', function() {
     document.getElementById('templateModal').classList.remove('show');
