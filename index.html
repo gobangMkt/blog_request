@@ -295,28 +295,30 @@
     .modal-desc { font-size: 15px; color: #8B95A1; line-height: 1.6; margin-bottom: 16px; }
 
     .agree-row {
-      display: flex; align-items: flex-start; gap: 14px; cursor: pointer;
+      display: flex; align-items: center; gap: 12px; cursor: pointer;
       background: #F8FAFF; border: 1.5px solid #D0E2FF;
       border-radius: 10px; padding: 14px 16px;
     }
     .agree-text { font-size: 14px; color: #4A5568; line-height: 1.5; flex: 1; letter-spacing: -0.3px; word-break: keep-all; }
     .agree-text strong { color: #191F28; }
-    .toggle-wrap { position: relative; width: 44px; height: 26px; flex-shrink: 0; margin-top: 2px; }
+    .toggle-wrap { position: relative; width: 22px; height: 22px; flex-shrink: 0; margin-top: 1px; }
     .toggle-input { opacity: 0; width: 0; height: 0; position: absolute; }
     .toggle-slider {
       position: absolute; inset: 0;
-      background: #D1D6DB; border-radius: 13px; cursor: pointer;
-      transition: background 0.2s;
+      background: #fff; border: 2px solid #C4CBD4; border-radius: 5px; cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
     }
     .toggle-slider::before {
       content: ''; position: absolute;
-      width: 20px; height: 20px; left: 3px; top: 3px;
-      background: #fff; border-radius: 50%;
-      transition: transform 0.2s;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+      width: 5px; height: 10px;
+      left: 6px; top: 2px;
+      border-right: 2.5px solid transparent;
+      border-bottom: 2.5px solid transparent;
+      transform: rotate(45deg);
+      transition: border-color 0.15s;
     }
-    .toggle-input:checked + .toggle-slider { background: #3182F6; }
-    .toggle-input:checked + .toggle-slider::before { transform: translateX(18px); }
+    .toggle-input:checked + .toggle-slider { background: #3182F6; border-color: #3182F6; }
+    .toggle-input:checked + .toggle-slider::before { border-color: #fff; }
     .modal-summary {
       background: #F8FAFF; border: 1.5px solid #E5E8EB;
       border-radius: 10px; padding: 14px 16px;
