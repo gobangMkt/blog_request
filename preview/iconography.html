@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8" />
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body{margin:0;padding:20px;background:#fff;font-family:var(--font-sans);}
+  .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+  .item{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 6px;background:#F2F4F6;border-radius:10px;}
+  .glyph{font-size:24px;line-height:1;}
+  .glyph.dot{font-size:32px;color:#3182F6;font-weight:700;}
+  .glyph.star{color:#3182F6;font-size:22px;}
+  .glyph.arr{color:#3182F6;font-size:22px;font-weight:600;}
+  .name{font-size:10.5px;color:#191F28;font-weight:600;}
+  .role{font-size:9.5px;color:#8B95A1;text-align:center;line-height:1.3;}
+</style></head>
+<body>
+  <div class="grid">
+    <div class="item"><div class="glyph">⏳</div><div class="name">⏳</div><div class="role">loading</div></div>
+    <div class="item"><div class="glyph">🔒</div><div class="name">🔒</div><div class="role">closed</div></div>
+    <div class="item"><div class="glyph">✅</div><div class="name">✅</div><div class="role">success</div></div>
+    <div class="item"><div class="glyph">📋</div><div class="name">📋</div><div class="role">summary</div></div>
+    <div class="item"><div class="glyph">⚡</div><div class="name">⚡</div><div class="role">urgency</div></div>
+    <div class="item"><div class="glyph">📄</div><div class="name">📄</div><div class="role">example link</div></div>
+    <div class="item"><div class="glyph star">✦</div><div class="name">✦</div><div class="role">section star</div></div>
+    <div class="item"><div class="glyph arr">→</div><div class="name">→</div><div class="role">cta arrow</div></div>
+    <div class="item"><div class="glyph dot">·</div><div class="name">·</div><div class="role">bullet</div></div>
+    <div class="item"><div class="glyph" style="width:18px;height:18px;border:2px solid #E5E8EB;border-top-color:#3182F6;border-radius:50%;animation:s .7s linear infinite;"></div><div class="name">spinner</div><div class="role">CSS only</div></div>
+  </div>
+  <style>@keyframes s{to{transform:rotate(360deg);}}</style>
+</body></html>

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8" />
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body{margin:0;padding:20px;background:#fff;font-family:var(--font-sans);}
+  .row{display:flex;gap:12px;flex-wrap:wrap;}
+  .pair{width:160px;border:1px solid #E5E8EB;border-radius:10px;overflow:hidden;}
+  .top{height:48px;display:flex;align-items:center;padding:0 14px;font-size:13px;font-weight:600;}
+  .bot{padding:8px 14px;font-size:11px;font-family:ui-monospace,Menlo,monospace;color:#8B95A1;}
+  .name{font-size:11px;color:#191F28;font-weight:600;margin-bottom:2px;font-family:var(--font-sans);}
+  .role{font-size:10.5px;color:#8B95A1;font-family:var(--font-sans);}
+</style></head>
+<body>
+  <div class="row">
+    <div class="pair">
+      <div class="top" style="background:#E8FBF0;color:#00C73C">사용 가능해요</div>
+      <div class="bot"><div class="name">success</div><div class="role">#00C73C border / #E8FBF0 bg</div></div>
+    </div>
+    <div class="pair">
+      <div class="top" style="background:#FFF0F2;color:#F04452">다른 키워드를 선택해 주세요</div>
+      <div class="bot"><div class="name">error</div><div class="role">#F04452 border / #FFF0F2 bg</div></div>
+    </div>
+    <div class="pair">
+      <div class="top" style="background:#FFF0F2;color:#D92B2B">⚡ 남은 신청 5개</div>
+      <div class="bot"><div class="name">error-strong</div><div class="role">#D92B2B (urgent text)</div></div>
+    </div>
+    <div class="pair">
+      <div class="top" style="background:#F8FAFF;color:#3182F6;border-bottom:1px solid #D0E2FF">알려드릴 안내사항</div>
+      <div class="bot"><div class="name">info</div><div class="role">#D0E2FF border / #F8FAFF bg</div></div>
+    </div>
+  </div>
+</body></html>

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8" />
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body{margin:0;padding:20px;background:#fff;font-family:var(--font-sans);display:flex;flex-direction:column;gap:14px;}
+  .agree{display:flex;align-items:center;gap:12px;background:#F8FAFF;border:1.5px solid #D0E2FF;border-radius:10px;padding:14px 16px;}
+  .wrap{position:relative;width:22px;height:22px;flex-shrink:0;margin-top:1px;}
+  .slider{position:absolute;inset:0;background:#fff;border:2px solid #C4CBD4;border-radius:5px;}
+  .slider.on{background:#3182F6;border-color:#3182F6;}
+  .slider::before{content:'';position:absolute;width:5px;height:10px;left:6px;top:2px;border-right:2.5px solid transparent;border-bottom:2.5px solid transparent;transform:rotate(45deg);}
+  .slider.on::before{border-right-color:#fff;border-bottom-color:#fff;}
+  .txt{font-size:14px;color:#4A5568;line-height:1.5;letter-spacing:-0.3px;word-break:keep-all;flex:1;}
+  .txt strong{color:#191F28;}
+</style></head>
+<body>
+  <div class="agree">
+    <div class="wrap"><div class="slider"></div></div>
+    <div class="txt"><strong>네이버 블로그 탭 상단 노출</strong>을 목표로 작성되며 <strong>노출 순위는 변동</strong>될 수 있음을 이해했습니다. <span style="color:#8B95A1">(unchecked)</span></div>
+  </div>
+  <div class="agree">
+    <div class="wrap"><div class="slider on"></div></div>
+    <div class="txt"><strong>네이버 블로그 탭 상단 노출</strong>을 목표로 작성되며 <strong>노출 순위는 변동</strong>될 수 있음을 이해했습니다. <span style="color:#3182F6">(checked)</span></div>
+  </div>
+</body></html>

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8" />
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body{margin:0;padding:20px;background:#fff;font-family:var(--font-sans);}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .cell{display:flex;flex-direction:column;gap:6px;}
+  button{font-family:inherit;font-size:16px;font-weight:700;border:none;border-radius:10px;padding:15px;cursor:pointer;width:100%;}
+  .primary{background:#3182F6;color:#fff;}
+  .primary:hover{background:#1B6CF2;}
+  .disabled{background:#E5E8EB;color:#B0B8C1;cursor:not-allowed;}
+  .cancel{background:#F2F4F6;color:#4E5968;font-weight:600;}
+  .lbl{font-size:10.5px;color:#8B95A1;font-family:ui-monospace,Menlo,monospace;}
+</style></head>
+<body>
+  <div class="grid">
+    <div class="cell"><div class="lbl">primary · default</div><button class="primary">신청하기</button></div>
+    <div class="cell"><div class="lbl">primary · disabled</div><button class="disabled" disabled>신청하기</button></div>
+    <div class="cell"><div class="lbl">primary · loading</div><button class="primary" style="opacity:.85">신청 중...</button></div>
+    <div class="cell"><div class="lbl">cancel · secondary</div><button class="cancel">돌아가기</button></div>
+  </div>
+</body></html>

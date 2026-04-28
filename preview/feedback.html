@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8" />
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body{margin:0;padding:20px;background:#fff;font-family:var(--font-sans);display:flex;flex-direction:column;gap:10px;}
+  .fb{font-size:12px;display:flex;align-items:center;gap:6px;}
+  .fb.ok{color:#00C73C;}
+  .fb.err{color:#F04452;}
+  .fb.checking{color:#8B95A1;}
+  .spinner{width:12px;height:12px;border:2px solid #E5E8EB;border-top-color:#3182F6;border-radius:50%;animation:s .7s linear infinite;}
+  @keyframes s{to{transform:rotate(360deg);}}
+  .lbl{font-size:10.5px;color:#8B95A1;font-family:ui-monospace,Menlo,monospace;width:80px;flex-shrink:0;}
+  .row{display:flex;align-items:center;gap:14px;}
+</style></head>
+<body>
+  <div class="row"><div class="lbl">ok</div><div class="fb ok">사용 가능한 키워드예요</div></div>
+  <div class="row"><div class="lbl">ok</div><div class="fb ok">신청 가능한 지점이에요</div></div>
+  <div class="row"><div class="lbl">checking</div><div class="fb checking"><span class="spinner"></span>확인 중...</div></div>
+  <div class="row"><div class="lbl">error</div><div class="fb err">010-0000-0000 형식으로 입력해 주세요</div></div>
+  <div class="row"><div class="lbl">error</div><div class="fb err">7일 뒤 사용 가능해요. 다른 키워드를 선택해 주세요.</div></div>
+  <div class="row"><div class="lbl">error</div><div class="fb err">이미 신청된 지점이에요. 다른 지점을 선택해 주세요.</div></div>
+</body></html>

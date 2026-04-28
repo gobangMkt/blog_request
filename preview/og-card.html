@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8" />
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body{margin:0;padding:20px;background:#fff;font-family:var(--font-sans);}
+  .card{border:1.5px solid #E5E8EB;border-radius:10px;overflow:hidden;max-width:420px;}
+  .og{display:flex;text-decoration:none;color:inherit;}
+  .img{width:90px;min-height:90px;background:linear-gradient(135deg,#d4c8b0 0%,#a89a7a 100%);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;}
+  .body{flex:1;padding:12px 14px;display:flex;flex-direction:column;justify-content:center;gap:4px;}
+  .host{font-size:11px;color:#B0B8C1;}
+  .ttl{font-size:14px;font-weight:600;color:#191F28;line-height:1.4;}
+  .desc{font-size:12px;color:#8B95A1;line-height:1.4;}
+  .info{padding:14px 16px;background:#F8FAFF;border-top:1px solid #E5E8EB;}
+  .it{font-size:12px;font-weight:600;color:#3182F6;margin-bottom:10px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .fl{display:flex;flex-direction:column;gap:4px;}
+  .lbl{font-size:11px;font-weight:600;color:#8B95A1;}
+  input{padding:10px 12px;font-size:14px;border:1.5px solid #E5E8EB;border-radius:8px;background:#fff;color:#191F28;font-family:inherit;}
+</style></head>
+<body>
+  <div class="card">
+    <div class="og">
+      <div class="img">place photo</div>
+      <div class="body">
+        <div class="host">gobang.kr</div>
+        <div class="ttl">합정역 도보 5분 · 마포구 신축 고시원</div>
+        <div class="desc">월세 40만원 / 보증금 50만원, 주차 가능, 24시간 운영</div>
+      </div>
+    </div>
+    <div class="info">
+      <div class="it">✦ 지점 정보 (사실과 다를 경우 직접 수정해 주세요)</div>
+      <div class="grid">
+        <div class="fl"><div class="lbl">보증금</div><input value="50만원"></div>
+        <div class="fl"><div class="lbl">월세</div><input value="40만원"></div>
+      </div>
+    </div>
+  </div>
+</body></html>

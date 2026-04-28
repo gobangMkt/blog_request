@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8" />
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body{margin:0;padding:20px;background:#fff;font-family:var(--font-sans);display:flex;flex-direction:column;gap:12px;}
+  .notice{background:#F8FAFF;border:1.5px solid #D0E2FF;border-radius:10px;padding:14px 16px;}
+  .notice li{list-style:none;font-size:14px;color:#4A5568;line-height:1.6;padding-left:16px;position:relative;}
+  .notice li::before{content:'·';position:absolute;left:4px;color:#3182F6;font-weight:700;}
+  .notice strong{color:#191F28;font-weight:700;}
+  .urgent{font-size:14px;font-weight:600;color:#D92B2B;background:#FFF0F2;border-radius:8px;padding:10px 14px;}
+</style></head>
+<body>
+  <div class="notice">
+    <ul style="display:flex;flex-direction:column;gap:8px;margin:0;padding:0;">
+      <li>사진은 고방에 등록된 지점 사진만 사용됩니다.</li>
+      <li>작업은 신청 후 <strong>1~2주</strong> 소요됩니다.</li>
+    </ul>
+  </div>
+  <div class="urgent">⚡ 남은 신청 가능 횟수 <strong>5개</strong></div>
+</body></html>

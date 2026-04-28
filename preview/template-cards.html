@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8" />
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body{margin:0;padding:20px;background:#fff;font-family:var(--font-sans);}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:480px;}
+  .card{border:2px solid #E5E8EB;border-radius:12px;padding:16px 14px;background:#fff;}
+  .card.sel{border-color:#3182F6;background:#F0F6FF;}
+  .tag{font-size:11px;font-weight:700;color:#3182F6;background:#EEF3FF;border-radius:6px;padding:2px 8px;display:inline-block;margin-bottom:8px;}
+  .card.sel .tag{background:#3182F6;color:#fff;}
+  .ttl{font-size:16px;font-weight:700;color:#191F28;margin-bottom:4px;}
+  .desc{font-size:12px;color:#8B95A1;line-height:1.5;}
+  .help{display:inline-block;font-size:12px;color:#3182F6;margin-top:10px;text-decoration:underline;font-weight:500;}
+</style></head>
+<body>
+  <div class="cards">
+    <div class="card sel">
+      <div class="tag">A타입</div>
+      <div class="ttl">설명형</div>
+      <div class="desc">지점의 특징과<br>환경을 상세 설명</div>
+      <span class="help">항목 설명 보기</span>
+    </div>
+    <div class="card">
+      <div class="tag">B타입</div>
+      <div class="ttl">후기형</div>
+      <div class="desc">실제 경험을<br>바탕으로 한 후기</div>
+      <span class="help">항목 설명 보기</span>
+    </div>
+  </div>
+</body></html>

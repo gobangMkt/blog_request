@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8" />
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body{margin:0;padding:20px;background:#F2F4F6;font-family:var(--font-sans);}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .demo{background:#fff;border-radius:10px;padding:16px 14px;display:flex;flex-direction:column;gap:8px;min-height:90px;}
+  .sub{background:#fff;border:1px solid #E5E8EB;border-radius:8px;padding:10px 12px;font-size:12px;color:#191F28;}
+  .info{background:#F8FAFF;border:1.5px solid #D0E2FF;border-radius:10px;padding:10px 12px;font-size:12px;color:#4A5568;}
+  .tint{background:#FFF0F2;border-radius:8px;padding:10px 12px;font-size:12px;color:#D92B2B;font-weight:600;}
+  .lbl{font-size:10.5px;color:#8B95A1;font-family:ui-monospace,Menlo,monospace;letter-spacing:.2px;}
+  .ttl{font-size:11px;color:#191F28;font-weight:700;}
+</style></head>
+<body>
+  <div class="grid">
+    <div class="demo">
+      <div class="ttl">No box-shadow</div>
+      <div class="lbl">depth = bg + border</div>
+      <div class="sub">inner sheet on white</div>
+    </div>
+    <div class="demo">
+      <div class="ttl">Sheet stack</div>
+      <div class="lbl">8px gap, app-bg shows through</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin:-8px -14px -16px;padding:8px 14px 16px;background:#F2F4F6;border-radius:0 0 10px 10px">
+        <div style="background:#fff;height:18px;border-radius:6px"></div>
+        <div style="background:#fff;height:18px;border-radius:6px"></div>
+      </div>
+    </div>
+    <div class="demo">
+      <div class="ttl">Hairline divider</div>
+      <div class="lbl">1px #F2F4F6 only</div>
+      <div style="border-top:1px solid #F2F4F6;padding-top:8px;font-size:11px;color:#8B95A1">below header</div>
+    </div>
+    <div class="demo">
+      <div class="ttl">Tinted info surface</div>
+      <div class="lbl">#F8FAFF + #D0E2FF border</div>
+      <div class="info">알림 카드의 기본 형태</div>
+    </div>
+    <div class="demo">
+      <div class="ttl">Tinted error surface</div>
+      <div class="lbl">#FFF0F2, no border</div>
+      <div class="tint">⚡ 남은 신청 5개</div>
+    </div>
+    <div class="demo">
+      <div class="ttl">Bottom-bar shadow</div>
+      <div class="lbl">1px top hairline only</div>
+      <div style="border-top:1px solid #F2F4F6;background:#fff;padding:10px 0;text-align:center;font-size:11px;color:#191F28;font-weight:700;margin:0 -14px -16px;border-radius:0 0 10px 10px">신청하기</div>
+    </div>
+  </div>
+</body></html>

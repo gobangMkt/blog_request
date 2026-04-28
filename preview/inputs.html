@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8" />
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body{margin:0;padding:20px;background:#fff;font-family:var(--font-sans);}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 20px;}
+  .lbl{font-size:14px;font-weight:600;color:#191F28;margin-bottom:8px;}
+  .helper{font-size:10.5px;color:#8B95A1;font-family:ui-monospace,Menlo,monospace;margin-bottom:6px;}
+  input{width:100%;padding:14px 16px;border:1.5px solid #E5E8EB;border-radius:10px;font-size:15px;font-family:inherit;color:#191F28;outline:none;background:#fff;-webkit-appearance:none;}
+  input::placeholder{color:#B0B8C1;}
+  input.focus{border-color:#3182F6;}
+  input.valid{border-color:#00C73C;}
+  input.invalid{border-color:#F04452;}
+  .field{display:flex;flex-direction:column;}
+</style></head>
+<body>
+  <div class="grid">
+    <div class="field"><div class="helper">default</div><input placeholder="홍길동"></div>
+    <div class="field"><div class="helper">focused</div><input class="focus" value="홍길동"></div>
+    <div class="field"><div class="helper">valid</div><input class="valid" value="010-1234-5678"></div>
+    <div class="field"><div class="helper">invalid</div><input class="invalid" value="010-12"></div>
+  </div>
+</body></html>

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8" />
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body{margin:0;padding:0;background:rgba(0,0,0,.4);font-family:var(--font-sans);min-height:340px;display:flex;align-items:flex-end;justify-content:center;}
+  .sheet{background:#fff;border-radius:20px 20px 0 0;padding:28px 24px 32px;width:100%;max-width:480px;}
+  .icon{width:48px;height:48px;background:#F2F4F6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px;}
+  .ttl{font-size:20px;font-weight:700;color:#191F28;margin-bottom:8px;}
+  .desc{font-size:15px;color:#8B95A1;line-height:1.6;margin-bottom:16px;}
+  .summary{background:#F8FAFF;border:1.5px solid #E5E8EB;border-radius:10px;padding:14px 16px;margin-bottom:18px;display:flex;flex-direction:column;gap:8px;}
+  .sr{display:flex;align-items:flex-start;gap:8px;}
+  .sl{font-size:13px;color:#8B95A1;font-weight:500;min-width:70px;}
+  .sv{font-size:13px;color:#191F28;font-weight:600;flex:1;}
+  .btns{display:flex;flex-direction:column;gap:8px;}
+  .btn{width:100%;padding:14px;border:none;border-radius:10px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;}
+  .btn.confirm{background:#3182F6;color:#fff;}
+  .btn.cancel{background:#F2F4F6;color:#4E5968;font-weight:600;}
+</style></head>
+<body>
+  <div class="sheet">
+    <div class="icon">📋</div>
+    <div class="ttl">입력 내용 최종 확인</div>
+    <div class="desc">신청 후에는 내용을 수정할 수 없어요.</div>
+    <div class="summary">
+      <div class="sr"><div class="sl">이름</div><div class="sv">홍길동</div></div>
+      <div class="sr"><div class="sl">전화번호</div><div class="sv">010-1234-5678</div></div>
+      <div class="sr"><div class="sl">키워드</div><div class="sv">마포구고시원 / 합정동원룸</div></div>
+    </div>
+    <div class="btns">
+      <button class="btn confirm">신청 완료</button>
+      <button class="btn cancel">돌아가기</button>
+    </div>
+  </div>
+</body></html>

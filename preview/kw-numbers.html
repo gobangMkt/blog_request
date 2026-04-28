@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8" />
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body{margin:0;padding:24px;background:#fff;font-family:var(--font-sans);}
+  .row{display:flex;gap:24px;align-items:flex-start;}
+  .item{display:flex;flex-direction:column;align-items:center;gap:8px;}
+  .num{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;}
+  .idle{background:#F2F4F6;color:#8B95A1;}
+  .active{background:#EEF3FF;color:#3182F6;}
+  .valid{background:#E8FBF0;color:#00C73C;}
+  .invalid{background:#FFF0F2;color:#F04452;}
+  .lbl{font-size:11px;color:#191F28;font-weight:600;}
+  .role{font-size:10.5px;color:#8B95A1;font-family:ui-monospace,Menlo,monospace;}
+</style></head>
+<body>
+  <div class="row">
+    <div class="item"><div class="num idle">1</div><div class="lbl">idle</div><div class="role">empty input</div></div>
+    <div class="item"><div class="num active">2</div><div class="lbl">active</div><div class="role">checking</div></div>
+    <div class="item"><div class="num valid">1</div><div class="lbl">valid-num</div><div class="role">success</div></div>
+    <div class="item"><div class="num invalid">3</div><div class="lbl">invalid-num</div><div class="role">error</div></div>
+  </div>
+</body></html>

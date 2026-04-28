@@ -9,7 +9,7 @@ function LandingNav({ variant = 'A' }) {
     <nav className="nav">
       <div className="container nav-inner">
         <a href="#" className="nav-logo">
-          <img src="../assets/gobang-logo-flat.png" alt="고방" />
+          <img src="../assets/gobang-logo-new.png" alt="고방" style={{ height: 32 }} />
           <span>고방 블로그</span>
         </a>
         <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
@@ -113,7 +113,7 @@ function LandingFooter() {
     }}>
       <div className="container">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-          <img src="../assets/gobang-logo-flat.png" alt="고방" style={{ height: 24 }} />
+          <img src="../assets/gobang-logo-new.png" alt="고방" style={{ height: 28 }} />
           <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg-1)' }}>고방 · neoflatMKT</span>
         </div>
         <p style={{ fontSize: 16, color: 'var(--fg-3)', lineHeight: 1.7, maxWidth: 520 }}>
