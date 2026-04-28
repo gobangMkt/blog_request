@@ -1,0 +1,293 @@
+/* ========================================================================
+   Gobang / neoflatMKT — Colors & Type
+   Extracted from production codebase (Naver Blog request app, gas-code).
+   The product follows a Toss-style Korean fintech aesthetic: white sheets,
+   muted gray text scale, single primary blue, soft tinted info/success/error.
+   ======================================================================== */
+
+/* ---- Fonts ----
+   Primary: Pretendard (Korean + Latin variable). Loaded from Google Fonts in
+   production. To self-host, drop woff2s into fonts/Pretendard/ and uncomment
+   the @font-face below.
+*/
+@import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap');
+
+/*
+@font-face {
+  font-family: 'Pretendard';
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+  src: url('./fonts/Pretendard/PretendardVariable.woff2') format('woff2-variations');
+}
+*/
+
+:root {
+  /* ============================================================
+     COLOR — Brand
+     ============================================================ */
+  --brand-teal:       #00A0B0;   /* Logo teal (cyan-teal). Used on logo only. */
+  --brand-teal-deep:  #0095A5;   /* 3D logo darker shade */
+
+  /* ============================================================
+     COLOR — Primary (UI accent, CTAs, links, focus)
+     Toss-blue family. The product itself uses blue, NOT the logo teal.
+     ============================================================ */
+  --primary-50:  #F0F6FF;   /* selected card bg */
+  --primary-100: #EEF3FF;   /* badge bg, success-icon bg */
+  --primary-200: #D6E6FF;   /* button hover bg */
+  --primary-300: #D0E2FF;   /* notice-card border, agree-row border */
+  --primary-400: #3182F6;   /* PRIMARY — buttons, links, focus, kw active */
+  --primary-500: #1B6CF2;   /* primary hover (darker) */
+  --info-bg:     #F8FAFF;   /* notice-card / agree-row bg, very light blue */
+
+  /* ============================================================
+     COLOR — Foreground (text)
+     Strict 4-step gray scale. Use semantic vars below in practice.
+     ============================================================ */
+  --gray-900: #191F28;   /* fg1 — titles, primary text */
+  --gray-700: #4A5568;   /* fg2 — body, agree text, template body */
+  --gray-600: #4E5968;   /* btn-cancel text */
+  --gray-500: #8B95A1;   /* fg3 — labels, captions, muted text */
+  --gray-400: #B0B8C1;   /* fg4 — placeholder, char-count, og-host */
+  --gray-300: #C4CBD4;   /* checkbox border (unchecked) */
+
+  /* ============================================================
+     COLOR — Background / Surface
+     ============================================================ */
+  --bg-app:      #F2F4F6;   /* app body bg, also used for inactive pills */
+  --bg-surface:  #FFFFFF;   /* cards, sections, sheets */
+  --bg-info:     #F8FAFF;   /* tinted info surface */
+
+  /* ============================================================
+     COLOR — Border / Divider
+     ============================================================ */
+  --border-input:    #E5E8EB;   /* default input border, dividers */
+  --border-divider:  #F2F4F6;   /* hairline between sheets */
+
+  /* ============================================================
+     COLOR — Semantic (success / error / warning)
+     ============================================================ */
+  --success:        #00C73C;   /* valid input border, "ok" feedback */
+  --success-bg:     #E8FBF0;   /* valid kw-num bg */
+
+  --error:          #F04452;   /* invalid input border, "error" feedback */
+  --error-strong:   #D92B2B;   /* urgent message text */
+  --error-bg:       #FFF0F2;   /* invalid kw-num bg, urgent banner bg */
+
+  /* ============================================================
+     COLOR — Overlay
+     ============================================================ */
+  --overlay-scrim: rgba(0, 0, 0, 0.4);   /* modal backdrop */
+
+  /* ============================================================
+     TYPE — Family
+     ============================================================ */
+  --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo',
+               'Malgun Gothic', sans-serif;
+
+  /* ============================================================
+     TYPE — Scale (raw)
+     ============================================================ */
+  --fs-11: 11px;   /* og-host, info-field-label, type-tag */
+  --fs-12: 12px;   /* char-count, og-desc, feedback, helper */
+  --fs-13: 13px;   /* status-label, summary-label, section-title, og-host */
+  --fs-14: 14px;   /* body, field-label, header subtitle */
+  --fs-15: 15px;   /* input value, modal-desc */
+  --fs-16: 16px;   /* button label, template-card-title */
+  --fs-18: 18px;   /* off-screen h2 */
+  --fs-20: 20px;   /* page h1, modal-title */
+  --fs-22: 22px;   /* modal-icon emoji */
+  --fs-24: 24px;   /* off-screen icon */
+  --fs-28: 28px;   /* success icon */
+
+  /* ============================================================
+     TYPE — Weight
+     ============================================================ */
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;   /* labels, section-titles */
+  --fw-bold:     700;   /* h1, modal-title, button, value text */
+
+  /* ============================================================
+     TYPE — Line height
+     ============================================================ */
+  --lh-tight:   1.4;   /* h1 */
+  --lh-normal:  1.5;   /* agree-text */
+  --lh-relaxed: 1.6;   /* body, notice text, textarea */
+  --lh-loose:   1.7;   /* template-desc-body, success-screen p */
+
+  /* ============================================================
+     TYPE — Letter spacing
+     Korean text is typically slightly tightened.
+     ============================================================ */
+  --ls-tight:  -0.3px;   /* agree text */
+  --ls-normal:  0px;
+  --ls-wide:    0.3px;   /* small uppercase-ish section titles */
+
+  /* ============================================================
+     SPACING — 4px base
+     ============================================================ */
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3:  12px;
+  --sp-4:  16px;
+  --sp-5:  20px;
+  --sp-6:  24px;
+  --sp-7:  28px;
+  --sp-8:  32px;
+
+  /* ============================================================
+     RADII
+     ============================================================ */
+  --r-sm:    5px;    /* small tag, checkbox */
+  --r-md:    8px;    /* small button, urgent banner, tag */
+  --r-lg:    10px;   /* default — inputs, buttons, cards */
+  --r-xl:    12px;   /* template-card */
+  --r-2xl:   20px;   /* modal-sheet top corners */
+  --r-full:  9999px; /* circle (kw-num, icon-circle) */
+
+  /* ============================================================
+     SHADOW / ELEVATION
+     This product uses NO drop shadows. Depth is signaled with
+     borders + bg color + inset tints. Keep it shadowless.
+     ============================================================ */
+  --shadow-none: none;
+  --shadow-sheet: 0 -1px 0 var(--border-divider);   /* top hairline on bottom-bar */
+
+  /* ============================================================
+     LAYOUT
+     ============================================================ */
+  --page-max:   480px;   /* mobile-first; the form caps here */
+  --content-pad: 20px;
+
+  /* ============================================================
+     MOTION
+     ============================================================ */
+  --dur-fast:    0.15s;   /* state changes, hover, border tints */
+  --dur-base:    0.2s;    /* modal slide-up */
+  --dur-slow:    0.3s;    /* progress bar */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spin:   linear;  /* loading spinner only */
+}
+
+/* ============================================================
+   SEMANTIC ALIASES
+   Use these in component CSS. Map → tokens above.
+   ============================================================ */
+:root {
+  /* foreground */
+  --fg-1: var(--gray-900);   /* primary text / titles */
+  --fg-2: var(--gray-700);   /* secondary body */
+  --fg-3: var(--gray-500);   /* labels, captions */
+  --fg-4: var(--gray-400);   /* placeholder, hint */
+  --fg-link: var(--primary-400);
+  --fg-on-primary: #FFFFFF;
+
+  /* surface */
+  --surface-app:    var(--bg-app);
+  --surface-card:   var(--bg-surface);
+  --surface-info:   var(--bg-info);
+  --surface-overlay: var(--overlay-scrim);
+
+  /* border */
+  --border-default: var(--border-input);
+  --border-strong:  var(--gray-300);
+  --border-info:    var(--primary-300);
+
+  /* state */
+  --state-focus:   var(--primary-400);
+  --state-valid:   var(--success);
+  --state-invalid: var(--error);
+}
+
+/* ============================================================
+   SEMANTIC TYPE STYLES (apply directly via class)
+   ============================================================ */
+.t-h1 {
+  font-family: var(--font-sans);
+  font-size: var(--fs-20);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  color: var(--fg-1);
+  letter-spacing: var(--ls-tight);
+}
+
+.t-h2 {
+  font-family: var(--font-sans);
+  font-size: var(--fs-18);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  color: var(--fg-1);
+}
+
+.t-section-eyebrow {
+  /* small uppercase-feeling label above a section */
+  font-size: var(--fs-13);
+  font-weight: var(--fw-semibold);
+  color: var(--fg-3);
+  letter-spacing: var(--ls-wide);
+}
+
+.t-label {
+  font-size: var(--fs-14);
+  font-weight: var(--fw-semibold);
+  color: var(--fg-1);
+  line-height: var(--lh-normal);
+}
+
+.t-body {
+  font-size: var(--fs-14);
+  font-weight: var(--fw-regular);
+  color: var(--fg-2);
+  line-height: var(--lh-relaxed);
+}
+
+.t-body-lg {
+  font-size: var(--fs-15);
+  font-weight: var(--fw-regular);
+  color: var(--fg-1);
+  line-height: var(--lh-relaxed);
+}
+
+.t-caption {
+  font-size: var(--fs-12);
+  font-weight: var(--fw-regular);
+  color: var(--fg-3);
+  line-height: var(--lh-normal);
+}
+
+.t-helper {
+  font-size: var(--fs-12);
+  font-weight: var(--fw-regular);
+  color: var(--fg-4);
+  line-height: var(--lh-normal);
+}
+
+.t-button {
+  font-size: var(--fs-16);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0;
+}
+
+.t-tag {
+  font-size: var(--fs-11);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-wide);
+}
+
+/* ============================================================
+   GLOBAL RESET (mirrors what the app uses)
+   ============================================================ */
+.gobang-reset *, .gobang-reset *::before, .gobang-reset *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+.gobang-reset {
+  font-family: var(--font-sans);
+  background: var(--surface-app);
+  color: var(--fg-1);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
