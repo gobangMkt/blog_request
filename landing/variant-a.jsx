@@ -303,10 +303,9 @@ function VariantA() {
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8,
             }}>
               <span>💡 같은 포스팅, <strong style={{ color: '#2B85CC' }}>20만 원 절약</strong>이에요.</span>
-              <a href="https://soomgo.com/prices/%EB%B8%94%EB%A1%9C%EA%B7%B8-%EB%A7%88%EC%BC%80%ED%8C%85"
-                 target="_blank" style={{ fontSize: 15, color: 'var(--fg-4)', textDecoration: 'underline' }}>
-                * 블로그 마케팅 플랫폼 평균 가격 기준 →
-              </a>
+              <span style={{ fontSize: 15, color: 'var(--fg-4)' }}>
+                * 네이버·구글 '블로그 마케팅 평균 견적' 검색 기준
+              </span>
             </div>
           </div>
         </div>

@@ -28,7 +28,8 @@ function findFreePort(start) {
   });
 }
 
-findFreePort(5500).then((PORT) => {
+const envPort = process.env.PORT ? parseInt(process.env.PORT) : null;
+(envPort ? Promise.resolve(envPort) : findFreePort(5500)).then((PORT) => {
   const url = `http://localhost:${PORT}`;
   http.createServer((req, res) => {
     let filePath = path.join(BASE, req.url === '/' ? 'index.html' : req.url);
