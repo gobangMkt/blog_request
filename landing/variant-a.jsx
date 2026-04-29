@@ -40,30 +40,19 @@ function BenefitsGrid() {
     { e: '⚡', t: '결제 후 1주 내 발행', d: '선정 안내 후 빠르게 진행돼요.' },
   ];
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(2, 1fr)',
-      gap: 20,
-    }}>
+    <div className="benefits-grid">
       {items.map((f, i) => (
-        <div key={i} style={{
-          display: 'flex', flexDirection: 'column', gap: 16,
-          padding: '36px 32px',
-          background: '#fff',
-          borderRadius: 20,
-          border: '1px solid var(--border-input)',
-          transition: 'box-shadow 0.18s',
-        }}
+        <div key={i} className="benefit-card"
           onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 24px rgba(43,133,204,0.12)'}
           onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
         >
           <div style={{
-            fontSize: 48, lineHeight: 1,
+            fontSize: 44, lineHeight: 1,
             display: 'inline-block',
             animation: `emojiPop 0.55s ${i * 0.08}s cubic-bezier(0.34,1.56,0.64,1) both`,
           }}>{f.e}</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--fg-1)', lineHeight: 1.3, wordBreak: 'keep-all' }}>{f.t}</div>
-          <div style={{ fontSize: 17, color: 'var(--fg-3)', lineHeight: 1.7, wordBreak: 'keep-all' }}>{f.d}</div>
+          <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--fg-1)', lineHeight: 1.3, wordBreak: 'keep-all' }}>{f.t}</div>
+          <div style={{ fontSize: 16, color: 'var(--fg-3)', lineHeight: 1.7, wordBreak: 'keep-all' }}>{f.d}</div>
         </div>
       ))}
     </div>
@@ -78,7 +67,7 @@ function VariantA() {
       <LandingNav variant="A" />
 
       {/* 1. HERO */}
-      <section style={{ padding: '80px 0 100px', background: 'linear-gradient(180deg, #E8F2FA 0%, #fff 100%)' }}>
+      <section id="hero" style={{ padding: '80px 0 100px', background: 'linear-gradient(180deg, #E8F2FA 0%, #fff 100%)' }}>
         <div className="container center-stack" style={{ maxWidth: 820 }}>
 
           <div style={{ animation: 'gemFloat 3.5s ease-in-out infinite', marginBottom: 28 }}>
@@ -157,12 +146,8 @@ function VariantA() {
           </div>
 
           {/* stat strip */}
-          <div style={{
-            marginTop: 52, display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: 1, background: 'var(--border-divider)',
-            border: '1px solid var(--border-divider)', borderRadius: 20, overflow: 'hidden',
-            width: '100%', maxWidth: 720,
+          <div className="stat-strip" style={{
+            marginTop: 52,
             animation: 'fadeInUp 0.5s 0.5s ease both',
           }}>
             {[
@@ -173,7 +158,7 @@ function VariantA() {
             ].map((s, i) => (
               <div key={i} style={{ background: '#fff', padding: '26px 12px', textAlign: 'center' }}>
                 <div style={{ fontSize: 32, fontWeight: 900, color: s.c, letterSpacing: '-0.6px', lineHeight: 1.1 }}>{s.n}</div>
-                <div style={{ fontSize: 17, color: 'var(--fg-3)', marginTop: 8, fontWeight: 600 }}>{s.l}</div>
+                <div style={{ fontSize: 16, color: 'var(--fg-3)', marginTop: 8, fontWeight: 600 }}>{s.l}</div>
               </div>
             ))}
           </div>
@@ -229,12 +214,12 @@ function VariantA() {
           </div>
 
           {/* 가격 비교 — 바 차트 + 비교 테이블 */}
-          <div style={{ background: '#fff', borderRadius: 20, padding: '44px 48px', border: '1px solid var(--border-input)' }}>
+          <div className="compare-outer">
             <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg-3)', marginBottom: 40, textAlign: 'center' }}>
               같은 서비스, 얼마나 차이날까요?
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'end' }}>
+            <div className="compare-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'end' }}>
 
               {/* 왼쪽: 바 차트 */}
               <div>
@@ -335,11 +320,11 @@ function VariantA() {
             그걸 저희는 <span style={{ color: '#2B85CC' }}>10만 원</span>에 드려요.
           </h2>
 
-          <div style={{
+          <div className="price-card" style={{
             width: '100%',
             background: 'linear-gradient(160deg, #E8F2FA 0%, #EAF4FD 100%)',
             border: '2px solid #4AA8E0',
-            borderRadius: 28, padding: '48px 40px',
+            borderRadius: 28,
             position: 'relative', overflow: 'hidden',
           }}>
             <div style={{
@@ -356,13 +341,13 @@ function VariantA() {
               <div style={{ fontSize: 30, color: '#4AA8E0' }}>↓</div>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 19, fontWeight: 800, color: '#2B85CC', letterSpacing: '0.5px', marginBottom: 12 }}>Beta 이벤트가</div>
-                <div style={{
-                  fontSize: 90, fontWeight: 900, letterSpacing: '-3px', lineHeight: 1,
+                <div className="price-big" style={{
+                  fontWeight: 900, letterSpacing: '-3px', lineHeight: 1,
                   background: 'linear-gradient(135deg, #2B85CC 0%, #4AA8E0 100%)',
                   WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
                 }}>
-                  100,000<span style={{ fontSize: 36 }}>원</span>
+                  100,000<span className="price-big-unit">원</span>
                 </div>
                 <div style={{ fontSize: 19, color: 'var(--fg-3)', marginTop: 14 }}>VAT 별도 · 1건 기준</div>
               </div>
@@ -460,9 +445,9 @@ function VariantA() {
       {/* CTA */}
       <section id="cta" style={{ padding: '100px 0' }}>
         <div className="container">
-          <div style={{
+          <div className="cta-inner" style={{
             background: 'linear-gradient(135deg, #2B85CC 0%, #3D96D8 50%, #4AA8E0 100%)',
-            borderRadius: 28, padding: '72px 48px', color: '#fff', textAlign: 'center',
+            borderRadius: 28, color: '#fff', textAlign: 'center',
             position: 'relative', overflow: 'hidden',
           }}>
             <div style={{
@@ -564,14 +549,90 @@ function VariantA() {
           from { opacity: 0; transform: scale(0.4) rotate(-10deg); }
           to   { opacity: 1; transform: scale(1) rotate(0deg); }
         }
-        @media (max-width: 640px) {
-          h1 { font-size: 40px !important; letter-spacing: -1px !important; }
-          #price h2 { font-size: 26px !important; }
-          #cta > .container > div { padding: 48px 24px !important; }
-          #cta h2 { font-size: 28px !important; }
+
+        /* stat strip */
+        .stat-strip {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 1px;
+          background: var(--border-divider);
+          border: 1px solid var(--border-divider);
+          border-radius: 20px;
+          overflow: hidden;
+          width: 100%;
+          max-width: 720px;
         }
-        @media (max-width: 760px) {
-          .compare-grid { grid-template-columns: 1fr !important; }
+
+        /* benefits grid */
+        .benefits-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 20px;
+        }
+        .benefit-card {
+          display: flex; flex-direction: column; gap: 14px;
+          padding: 32px 28px;
+          background: #fff;
+          border-radius: 20px;
+          border: 1px solid var(--border-input);
+          transition: box-shadow 0.18s;
+        }
+
+        /* compare */
+        .compare-outer {
+          background: #fff;
+          border-radius: 20px;
+          padding: 44px 48px;
+          border: 1px solid var(--border-input);
+        }
+
+        /* price card */
+        .price-card { padding: 48px 40px; }
+        .price-big { font-size: 90px; }
+        .price-big-unit { font-size: 36px; }
+
+        /* cta inner */
+        .cta-inner { padding: 72px 48px; }
+
+        /* ── 모바일 ── */
+        @media (max-width: 640px) {
+          /* hero */
+          #hero { padding: 56px 0 72px !important; }
+          #hero h1 { font-size: 38px !important; letter-spacing: -1px !important; }
+
+          /* stat strip → 2×2 */
+          .stat-strip {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+
+          /* why section */
+          #why { padding: 64px 0 !important; }
+
+          /* compare: stack vertically */
+          .compare-outer { padding: 24px 18px !important; }
+          .compare-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+
+          /* benefits */
+          .benefits-grid { grid-template-columns: 1fr !important; }
+          .benefit-card { padding: 24px 20px !important; }
+
+          /* price section */
+          #price { padding: 72px 0 !important; }
+          .price-card { padding: 32px 20px !important; }
+          .price-big { font-size: 58px !important; }
+          .price-big-unit { font-size: 26px !important; }
+
+          /* process section */
+          #process { padding: 64px 0 !important; }
+
+          /* faq */
+          #faq { padding: 64px 0 !important; }
+
+          /* cta */
+          #cta { padding: 64px 0 !important; }
+          .cta-inner { padding: 48px 24px !important; border-radius: 20px !important; }
+          #cta h2 { font-size: 28px !important; }
+          #cta .btn { font-size: 17px !important; padding: 16px 28px !important; }
         }
       `}</style>
     </div>
