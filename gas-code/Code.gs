@@ -196,7 +196,8 @@ function submitForm(formData) {
   // \uc644\ub8cc \ub0b4\uc5ed\uc5d0 \uc9c0\uc810URL(C\uc5f4), \uc2e0\uccad\uc790\ubc88\ud638(E\uc5f4)\ub9cc \ucd94\uac00 \u2014 \ub098\uba38\uc9c0 \uc5f4 \uac74\ub4dc\ub9ac\uc9c0 \uc54a\uc74c
   var doneSheet = ss.getSheetByName('\uc644\ub8cc \ub0b4\uc5ed');
   if (doneSheet) {
-    doneSheet.appendRow(['', '', formData.placeUrl || '', '', formData.phone || '']);
+    // 완료일(A), 키워드(B), 전화번호(C), 지점URL(D), 블로그URL(E)
+    doneSheet.appendRow(['', '', formData.phone || '', formData.placeUrl || '', '']);
   }
 
   // 신청 접수 이메일 알림
