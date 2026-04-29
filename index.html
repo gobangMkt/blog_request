@@ -40,7 +40,7 @@
     .status-label { font-size: 13px; color: #8B95A1; }
     .status-value { font-size: 14px; font-weight: 700; color: #191F28; text-align: right; }
     .status-bar-wrap { width: 100%; height: 6px; background: #F2F4F6; border-radius: 10px; overflow: hidden; }
-    .status-bar { height: 100%; border-radius: 10px; background: #3182F6; transition: width 0.3s; }
+    .status-bar { height: 100%; border-radius: 10px; background: #2B85CC; transition: width 0.3s; }
     .status-bar.urgent { background: #F04452; }
     .status-urgent-msg {
       font-size: 14px; font-weight: 600; color: #D92B2B;
@@ -51,7 +51,7 @@
 
     .notice-card {
       background: #F8FAFF;
-      border: 1.5px solid #D0E2FF;
+      border: 1.5px solid #A4CCE8;
       border-radius: 10px;
       padding: 14px 16px;
       margin-top: 8px;
@@ -73,11 +73,11 @@
       content: '·';
       position: absolute;
       left: 4px;
-      color: #3182F6;
+      color: #2B85CC;
       font-weight: 700;
     }
     .notice-card a {
-      color: #3182F6;
+      color: #2B85CC;
       text-decoration: underline;
     }
 
@@ -107,7 +107,7 @@
     }
 
     input::placeholder, textarea::placeholder { color: #B0B8C1; }
-    input:focus, textarea:focus { border-color: #3182F6; }
+    input:focus, textarea:focus { border-color: #2B85CC; }
     input.valid { border-color: #00C73C; }
     input.invalid { border-color: #F04452; }
 
@@ -146,7 +146,7 @@
     .spinner {
       width: 16px; height: 16px;
       border: 2px solid #E5E8EB;
-      border-top-color: #3182F6;
+      border-top-color: #2B85CC;
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
     }
@@ -193,7 +193,7 @@
     .place-preview.loaded .preview-info { display: block; }
 
     .preview-info-title {
-      font-size: 12px; font-weight: 600; color: #3182F6; margin-bottom: 10px;
+      font-size: 12px; font-weight: 600; color: #2B85CC; margin-bottom: 10px;
     }
 
     .info-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -218,7 +218,7 @@
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0; margin-top: 13px;
     }
-    .kw-num.active { background: #EEF3FF; color: #3182F6; }
+    .kw-num.active { background: #E8F2FA; color: #2B85CC; }
     .kw-num.valid-num { background: #E8FBF0; color: #00C73C; }
     .kw-num.invalid-num { background: #FFF0F2; color: #F04452; }
     .kw-body { flex: 1; }
@@ -231,11 +231,11 @@
     }
 
     button[type="submit"] {
-      width: 100%; padding: 15px; background: #3182F6; color: #fff;
+      width: 100%; padding: 15px; background: #2B85CC; color: #fff;
       border: none; border-radius: 10px; font-size: 16px; font-weight: 700;
       font-family: inherit; cursor: pointer; transition: background 0.15s;
     }
-    button[type="submit"]:hover:not(:disabled) { background: #1B6CF2; }
+    button[type="submit"]:hover:not(:disabled) { background: #1E6DB0; }
     button[type="submit"]:disabled { background: #E5E8EB; color: #B0B8C1; cursor: not-allowed; }
 
     .char-count { font-size: 12px; color: #B0B8C1; text-align: right; margin-top: 6px; }
@@ -257,7 +257,7 @@
       justify-content: center; min-height: 100vh; padding: 40px 20px; text-align: center;
     }
     .success-icon {
-      width: 64px; height: 64px; background: #EEF3FF; border-radius: 50%;
+      width: 64px; height: 64px; background: #E8F2FA; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-size: 28px; margin-bottom: 20px;
     }
@@ -296,7 +296,7 @@
 
     .agree-row {
       display: flex; align-items: center; gap: 12px; cursor: pointer;
-      background: #F8FAFF; border: 1.5px solid #D0E2FF;
+      background: #F8FAFF; border: 1.5px solid #A4CCE8;
       border-radius: 10px; padding: 14px 16px;
     }
     .agree-text { font-size: 14px; color: #4A5568; line-height: 1.5; flex: 1; letter-spacing: -0.3px; word-break: keep-all; }
@@ -317,7 +317,7 @@
       transform: rotate(45deg);
       transition: border-color 0.15s;
     }
-    .toggle-input:checked + .toggle-slider { background: #3182F6; border-color: #3182F6; }
+    .toggle-input:checked + .toggle-slider { background: #2B85CC; border-color: #2B85CC; }
     .toggle-input:checked + .toggle-slider::before { border-color: #fff; }
     .modal-summary {
       background: #F8FAFF; border: 1.5px solid #E5E8EB;
@@ -335,7 +335,7 @@
       margin-bottom: 14px;
     }
     .template-help-btn {
-      font-size: 13px; color: #3182F6; cursor: pointer; font-weight: 500;
+      font-size: 13px; color: #2B85CC; cursor: pointer; font-weight: 500;
       text-decoration: underline; flex-shrink: 0;
     }
     .template-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -345,25 +345,25 @@
       transition: border-color 0.15s, background 0.15s;
       background: #fff;
     }
-    .template-card.selected { border-color: #3182F6; background: #F0F6FF; }
+    .template-card.selected { border-color: #2B85CC; background: #E8F2FA; }
     .template-type-tag {
-      font-size: 11px; font-weight: 700; color: #3182F6;
-      background: #EEF3FF; border-radius: 6px; padding: 2px 8px;
+      font-size: 11px; font-weight: 700; color: #2B85CC;
+      background: #E8F2FA; border-radius: 6px; padding: 2px 8px;
       display: inline-block; margin-bottom: 8px;
     }
-    .template-card.selected .template-type-tag { background: #3182F6; color: #fff; }
+    .template-card.selected .template-type-tag { background: #2B85CC; color: #fff; }
     .template-card-title { font-size: 16px; font-weight: 700; color: #191F28; margin-bottom: 4px; }
     .template-card-desc { font-size: 12px; color: #8B95A1; line-height: 1.5; }
     .template-card-help {
-      display: inline-block; font-size: 12px; color: #3182F6;
+      display: inline-block; font-size: 12px; color: #2B85CC;
       margin-top: 10px; cursor: pointer; text-decoration: underline; font-weight: 500;
     }
     .template-example-link {
       margin-top: 12px; padding-top: 10px; border-top: 1px solid #E5E8EB;
     }
     .template-example-link a {
-      display: inline-block; font-size: 13px; font-weight: 600; color: #3182F6;
-      text-decoration: none; background: #EEF3FF; border-radius: 8px;
+      display: inline-block; font-size: 13px; font-weight: 600; color: #2B85CC;
+      text-decoration: none; background: #E8F2FA; border-radius: 8px;
       padding: 6px 14px;
     }
     .template-example-link a:hover { background: #D6E6FF; }
@@ -377,12 +377,12 @@
     }
     .template-desc-head-tag {
       font-size: 11px; font-weight: 700; color: #fff;
-      background: #3182F6; border-radius: 5px; padding: 2px 8px;
+      background: #2B85CC; border-radius: 5px; padding: 2px 8px;
     }
     .template-desc-body { padding: 12px 16px; font-size: 14px; color: #4A5568; line-height: 1.7; }
 
     .btn-confirm {
-      width: 100%; padding: 15px; background: #3182F6; color: #fff;
+      width: 100%; padding: 15px; background: #2B85CC; color: #fff;
       border: none; border-radius: 10px; font-size: 16px; font-weight: 700;
       font-family: inherit; cursor: pointer;
     }
@@ -430,8 +430,8 @@
       <div class="notice-card">
         <ul>
           <li>사진은 고방에 등록된 지점 사진만 사용됩니다. 사진 추가를 원하실 경우 <a href="https://u-ceo.kr/login" target="_blank">u-ceo.kr/login</a> 에서 로그인 후 지점 사진을 먼저 추가해 주세요.</li>
-          <li>작업은 신청 후 <strong>1~2주</strong> 소요됩니다.</li>
-          <li>신청 완료 후 대상자로 선정되면 <strong>별도 알림문자</strong>가 발송됩니다. 문자를 통해 결제 및 진행 안내를 받으실 수 있습니다.</li>
+          <li>작업은 신청 후 <strong>1주 내</strong> 발행됩니다.</li>
+          <li>작업 완료 후 입력하신 번호로 <strong>카카오 알림톡</strong>이 발송됩니다.</li>
         </ul>
       </div>
     </div>
@@ -499,7 +499,7 @@
 
       <div class="section">
         <div class="section-title">키워드 · 최소 1개, 최대 3개</div>
-        <div style="background:#F8FAFF;border:1.5px solid #D0E2FF;border-radius:8px;padding:12px 14px;margin-bottom:14px;">
+        <div style="background:#F8FAFF;border:1.5px solid #A4CCE8;border-radius:8px;padding:12px 14px;margin-bottom:14px;">
           <div style="font-size:14px;color:#4A5568;line-height:1.6;">· 띄어쓰기는 무시됩니다. <span style="color:#8B95A1;">(예: '마포구고시원' = '마포구 고시원')</span></div>
         </div>
 
@@ -699,10 +699,43 @@
   var urlDebounce = null;
   var urlCheckDebounce = null;
 
-  function setFeedback(id, type, msg) {
+  function setFeedback(id, type, msg, hint) {
     var el = document.getElementById('fb-' + id);
     el.className = 'feedback ' + type;
-    el.textContent = msg;
+    if (hint) {
+      el.style.flexDirection = 'column';
+      el.style.alignItems = 'flex-start';
+      el.innerHTML = '<span>' + msg + '</span>' +
+        '<div style="margin-top:8px;padding:10px 12px;background:#F8FAFF;border:1px solid #A4CCE8;border-radius:8px;font-size:12px;color:#4A5568;line-height:1.6;width:100%;">' +
+        '💡 <strong>비슷한 키워드로 변경해보세요</strong><br>' + hint + '</div>';
+    } else {
+      el.style.flexDirection = '';
+      el.style.alignItems = '';
+      el.textContent = msg;
+    }
+  }
+
+  function kwSuggest(kw) {
+    var suggestions = [];
+    var replacements = [
+      ['고시원', ['고시텔', '원룸텔', '1인실']],
+      ['원룸', ['원룸텔', '오피스텔', '1룸']],
+      ['오피스텔', ['원룸', '원룸텔', '소형아파트']],
+      ['고시텔', ['고시원', '원룸텔', '1인실']],
+    ];
+    var matched = false;
+    for (var i = 0; i < replacements.length; i++) {
+      var from = replacements[i][0], tos = replacements[i][1];
+      if (kw.indexOf(from) !== -1) {
+        matched = true;
+        tos.forEach(function(to) { suggestions.push(kw.replace(from, to)); });
+        break;
+      }
+    }
+    if (!matched) {
+      suggestions.push(kw + '추천', kw + '후기');
+    }
+    return '예) ' + suggestions.slice(0, 3).map(function(s) { return '<strong>' + s + '</strong>'; }).join(', ') + ' 등';
   }
 
   function setKwNum(id, state) {
@@ -842,7 +875,7 @@
             } else {
               kwStatus[id] = false; self.className = 'invalid';
               setKwNum(id, 'invalid-num');
-              setFeedback(id, 'error', result.remainingDays + '일 뒤 사용 가능해요. 다른 키워드를 선택해 주세요.');
+              setFeedback(id, 'error', result.remainingDays + '일 뒤 사용 가능해요.', kwSuggest(val));
             }
             checkSubmit();
           })
