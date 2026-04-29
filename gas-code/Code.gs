@@ -201,6 +201,25 @@ function submitForm(formData) {
     });
   }
 
+  // 신청 접수 이메일 알림
+  try {
+    var NOTIFY_EMAIL = 'archoit94@neoflat.net';
+    var subject = '[고방 블로그] 새 신청 접수 — ' + formData.name + ' / ' + (formData.keyword1 || '');
+    var body = [
+      '새로운 블로그 신청이 접수됐어요.',
+      '',
+      '신청일시: ' + Utilities.formatDate(now, 'Asia/Seoul', 'yyyy-MM-dd HH:mm'),
+      '이름: ' + formData.name,
+      '전화번호: ' + formData.phone,
+      '지점 URL: ' + formData.placeUrl,
+      '키워드: ' + [formData.keyword1, formData.keyword2, formData.keyword3].filter(Boolean).join(' / '),
+      '작성 타입: ' + (formData.templateType || 'A') + '타입',
+      '',
+      '▶ 신청 내역 확인: https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID,
+    ].join('\n');
+    MailApp.sendEmail(NOTIFY_EMAIL, subject, body);
+  } catch(mailErr) {}
+
   return { success: true };
 }
 
