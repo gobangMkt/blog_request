@@ -27,6 +27,9 @@
     }
 
     .header-inner { max-width: 480px; margin: 0 auto; padding-bottom: 20px; }
+    .header-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .header-logo img { height: 28px; }
+    .header-logo-text { font-size: 14px; font-weight: 700; color: #191F28; }
     .header h1 { font-size: 20px; font-weight: 700; color: #191F28; line-height: 1.4; }
     .header p { font-size: 14px; color: #8B95A1; margin-top: 4px; }
 
@@ -416,6 +419,10 @@
 <div id="form-area" style="display:none;">
   <div class="header">
     <div class="header-inner">
+      <div class="header-logo">
+        <img src="assets/U_ALF.png" alt="고방" />
+        <span class="header-logo-text">고방 블로그 마케팅</span>
+      </div>
       <h1>블로그 작성 신청서</h1>
       <p>키워드와 지점 정보를 입력해 주세요</p>
     </div>
@@ -706,8 +713,8 @@
       el.style.flexDirection = 'column';
       el.style.alignItems = 'flex-start';
       el.innerHTML = '<span>' + msg + '</span>' +
-        '<div style="margin-top:8px;padding:10px 12px;background:#F8FAFF;border:1px solid #A4CCE8;border-radius:8px;font-size:12px;color:#4A5568;line-height:1.6;width:100%;">' +
-        '💡 <strong>비슷한 키워드로 변경해보세요</strong><br>' + hint + '</div>';
+        '<div style="margin-top:5px;font-size:12px;color:#8B95A1;line-height:1.6;width:100%;">' +
+        '💡 ' + hint + '</div>';
     } else {
       el.style.flexDirection = '';
       el.style.alignItems = '';
@@ -802,7 +809,7 @@
             setFeedback('url', 'error', '서버 연결에 실패했어요. 다시 시도해 주세요.');
             checkSubmit();
           });
-      }, 600);
+      }, 300);
     } else {
       this.className = 'invalid'; setFeedback('url', 'error', 'https://gobang.kr/place/숫자 형식으로 입력해 주세요');
       preview.style.display = 'none';
@@ -839,7 +846,7 @@
         .catch(function() {
           preview.className = 'place-preview loaded';
         });
-    }, 800);
+    }, 400);
   }
 
   document.getElementById('name').addEventListener('input', checkSubmit);
@@ -882,7 +889,7 @@
           .catch(function() {
             setFeedback(id, 'error', '확인 중 오류가 발생했어요'); checkSubmit();
           });
-      }, 600);
+      }, 300);
     });
   });
 
