@@ -196,8 +196,14 @@ function submitForm(formData) {
   // \uc2e0\uccad \uc989\uc2dc \uc644\ub8cc\ub0b4\uc5ed\uc5d0 \ud0a4\uc6cc\ub4dc \ub4f1\ub85d (\uc911\ubcf5 \ubc29\uc9c0)
   var doneSheet = ss.getSheetByName('\uc644\ub8cc \ub0b4\uc5ed');
   if (doneSheet) {
+    if (doneSheet.getLastRow() === 0) {
+      doneSheet.appendRow(['\uc644\ub8cc\uc77c\uc2dc', '\ud0a4\uc6cc\ub4dc', '\uc9c0\uc810 URL', '\uc2e0\uccad\uc790 \uc5f0\ub77d\uccb4']);
+      doneSheet.getRange(1, 1, 1, 4).setFontWeight('bold').setBackground('#f0f0f0');
+    }
     [formData.keyword1, formData.keyword2, formData.keyword3].forEach(function(kw) {
-      if (kw && kw.trim() !== '') doneSheet.appendRow([now, kw.trim()]);
+      if (kw && kw.trim() !== '') {
+        doneSheet.appendRow([now, kw.trim(), formData.placeUrl || '', formData.phone || '']);
+      }
     });
   }
 
