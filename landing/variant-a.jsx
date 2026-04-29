@@ -124,7 +124,7 @@ function VariantA() {
           </p>
 
           <div style={{ animation: 'fadeInUp 0.5s 0.3s ease both', marginTop: 36 }}>
-            <a href="https://gobangmkt.github.io/blog_request/" target="_blank"
+            <a href="https://cutt.ly/ltLb9jgX" target="_blank"
                className="btn btn-primary btn-lg"
                style={{
                  background: 'linear-gradient(135deg, #2B85CC 0%, #4AA8E0 100%)',
@@ -479,7 +479,7 @@ function VariantA() {
               <h2 style={{ fontSize: 42, fontWeight: 800, lineHeight: 1.25, letterSpacing: '-0.8px', wordBreak: 'keep-all', marginBottom: 28 }}>
                 10만 원으로<br />가볍게 시작해 보세요.
               </h2>
-              <a href="https://gobangmkt.github.io/blog_request/" target="_blank"
+              <a href="https://cutt.ly/ltLb9jgX" target="_blank"
                  className="btn btn-lg"
                  style={{
                    background: '#fff', color: '#2B85CC',

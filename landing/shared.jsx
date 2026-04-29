@@ -33,7 +33,7 @@ function LandingNav({ variant = 'A' }) {
               }}>{item.label}</a>
             </React.Fragment>
           ))}
-          <a href="https://gobangmkt.github.io/blog_request/" target="_blank" className="nav-cta" style={{ marginLeft: 6 }}>신청하기</a>
+          <a href="https://cutt.ly/ltLb9jgX" target="_blank" className="nav-cta" style={{ marginLeft: 6 }}>신청하기</a>
         </div>
       </div>
       <style>{`@media(max-width:640px){.nav-link-d{display:none}}`}</style>
