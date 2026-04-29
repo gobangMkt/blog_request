@@ -282,6 +282,8 @@
       border-radius: 20px 20px 0 0;
       padding: 28px 24px 32px;
       width: 100%; max-width: 480px;
+      max-height: 90vh;
+      overflow-y: auto;
       animation: slideUp 0.2s ease;
     }
     @keyframes slideUp {
@@ -437,8 +439,8 @@
       <div class="notice-card">
         <ul>
           <li>사진은 고방에 등록된 지점 사진만 사용됩니다. 사진 추가를 원하실 경우 <a href="https://u-ceo.kr/login" target="_blank">u-ceo.kr/login</a> 에서 로그인 후 지점 사진을 먼저 추가해 주세요.</li>
-          <li>작업은 신청 후 <strong>1주 내</strong> 발행됩니다.</li>
-          <li>작업 완료 후 입력하신 번호로 <strong>카카오 알림톡</strong>이 발송됩니다.</li>
+          <li>결제 완료 후, <strong>영업일 7일 내</strong> 발행됩니다.</li>
+          <li>신청서 작성 후, 대상자 선정하여 결제링크와 함께 별도 <strong>알림톡</strong> 발송드리며, 결제가 완료되어야 신청완료입니다.</li>
         </ul>
       </div>
     </div>
@@ -568,7 +570,7 @@
         </div>
       </div>
 
-      <div class="section">
+      <div class="section" style="display:flex;flex-direction:column;gap:10px;">
         <label class="agree-row" for="agreeToggle">
           <div class="toggle-wrap">
             <input type="checkbox" id="agreeToggle" class="toggle-input">
@@ -576,12 +578,19 @@
           </div>
           <span class="agree-text">입력하신 키워드로 <strong>네이버 블로그 탭 상단 노출</strong>을 목표로 작성되며, 알고리즘 특성상 <strong>노출 순위 및 유지 기간은 변동</strong>될 수 있음을 이해했습니다.</span>
         </label>
+        <label class="agree-row" for="agreeToggle2">
+          <div class="toggle-wrap">
+            <input type="checkbox" id="agreeToggle2" class="toggle-input">
+            <span class="toggle-slider"></span>
+          </div>
+          <span class="agree-text">신청 접수 후 <strong>대상자에게만</strong> 결제링크가 포함된 알림톡이 발송되며, <strong>결제가 완료되어야 작업이 시작</strong>됩니다.</span>
+        </label>
       </div>
 
       <div style="height: 20px;"></div>
 
       <div class="bottom-bar">
-        <button type="submit" id="submitBtn" disabled>신청하기</button>
+        <button type="submit" id="submitBtn" disabled>신청 접수하기</button>
       </div>
 
     </form>
@@ -632,8 +641,27 @@
     <div class="modal-title">입력 내용 최종 확인</div>
     <div class="modal-desc">신청 후에는 내용을 수정할 수 없어요.<br>아래 내용이 맞는지 확인해 주세요.</div>
     <div class="modal-summary" id="modalSummary"></div>
+    <div style="border:1.5px solid #E5E8EB;border-radius:10px;margin-bottom:16px;">
+      <div style="background:#F8FAFF;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;border-radius:10px 10px 0 0;" id="privacyToggleHeader">
+        <span style="font-size:13px;font-weight:600;color:#191F28;">개인정보 수집 및 이용 동의 <span style="color:#F04452;">*필수</span></span>
+        <span style="font-size:11px;color:#8B95A1;" id="privacyArrow">▶ 내용 보기</span>
+      </div>
+      <div style="display:none;padding:12px 14px;font-size:12px;color:#4A5568;line-height:1.7;border-top:1px solid #E5E8EB;" id="privacyDetail">
+        <b>수집 항목</b> 이름, 휴대전화번호<br>
+        <b>수집 목적</b> 서비스 제공 및 신청 관리<br>
+        <b>보유 기간</b> 서비스 종료 후 즉시 파기<br>
+        <span style="color:#8B95A1;">동의 거부 시 서비스 이용이 제한될 수 있습니다.</span>
+      </div>
+      <label id="privacyAgreeLabel" for="privacyAgree" style="display:flex;align-items:center;gap:12px;padding:11px 14px;cursor:pointer;border-top:1px solid #E5E8EB;">
+        <div class="toggle-wrap">
+          <input type="checkbox" id="privacyAgree" class="toggle-input">
+          <span class="toggle-slider"></span>
+        </div>
+        <span class="agree-text">위 내용을 확인하였으며, 개인정보 수집 및 이용에 동의합니다.</span>
+      </label>
+    </div>
     <div class="modal-btns">
-      <button class="btn-confirm" id="modalConfirm">신청 완료</button>
+      <button class="btn-confirm" id="modalConfirm" disabled style="opacity:0.4;">동의하고 신청 완료하기</button>
       <button class="btn-cancel" id="modalCancel">돌아가기</button>
     </div>
   </div>
@@ -641,8 +669,8 @@
 
 <div class="success-screen" id="successScreen">
   <div class="success-icon">✅</div>
-  <h2>신청이 완료됐어요</h2>
-  <p>작업이 완료되면 입력하신 번호로<br>카카오 알림톡이 발송됩니다.</p>
+  <h2>신청접수가 완료됐어요</h2>
+  <p>대상자 선정 후, 결제링크와 함께<br>별도 알림톡 발송드립니다.<br>결제 완료 후 발행 안내 드릴게요.</p>
 </div>
 
 <script>
@@ -897,7 +925,7 @@
     var kw3 = document.getElementById('kw3').value.trim();
     var desc = document.getElementById('description').value.trim();
     var agreed = document.getElementById('agreeToggle').checked;
-
+    var agreed2 = document.getElementById('agreeToggle2').checked;
     var ok =
       name.length >= 2 &&
       /^010-\d{4}-\d{4}$/.test(phone) &&
@@ -906,12 +934,14 @@
       (kw2.length === 0 || kwStatus.kw2 === true) &&
       (kw3.length === 0 || kwStatus.kw3 === true) &&
       desc.length > 0 &&
-      agreed === true;
+      agreed === true &&
+      agreed2 === true;
 
     document.getElementById('submitBtn').disabled = !ok;
   }
 
   document.getElementById('agreeToggle').addEventListener('change', checkSubmit);
+  document.getElementById('agreeToggle2').addEventListener('change', checkSubmit);
 
   var selectedTemplate = 'A';
   document.querySelectorAll('.template-card').forEach(function(card) {
@@ -955,7 +985,30 @@
       return '<div class="summary-row"><span class="summary-label">' + r.label + '</span><span class="summary-value">' + r.value + '</span></div>';
     }).join('');
     document.getElementById('modalSummary').innerHTML = html;
+    document.getElementById('privacyAgree').checked = false;
+    document.getElementById('modalConfirm').disabled = true;
+    document.getElementById('modalConfirm').style.opacity = '0.4';
+    document.getElementById('privacyDetail').style.display = 'none';
+    document.getElementById('privacyArrow').textContent = '▶ 내용 보기';
     document.getElementById('modalOverlay').classList.add('show');
+  });
+
+  document.getElementById('privacyToggleHeader').addEventListener('click', function() {
+    var detail = document.getElementById('privacyDetail');
+    var arrow = document.getElementById('privacyArrow');
+    var open = detail.style.display !== 'none';
+    detail.style.display = open ? 'none' : 'block';
+    arrow.textContent = open ? '▶ 내용 보기' : '▼ 접기';
+  });
+
+  document.getElementById('privacyAgreeLabel').addEventListener('click', function(e) {
+    e.stopPropagation();
+    setTimeout(function() {
+      var checked = document.getElementById('privacyAgree').checked;
+      var btn = document.getElementById('modalConfirm');
+      btn.disabled = !checked;
+      btn.style.opacity = checked ? '1' : '0.4';
+    }, 0);
   });
 
   document.getElementById('modalCancel').addEventListener('click', function() {
@@ -985,7 +1038,7 @@
         document.getElementById('form-area').style.display = 'none';
         document.getElementById('successScreen').style.display = 'flex';
       } else {
-        btn.disabled = false; btn.textContent = '신청하기';
+        btn.disabled = false; btn.textContent = '신청 접수하기';
         if (result.reason === 'duplicate_url') {
           alert('이미 신청된 지점 URL이에요. 다른 지점을 선택해 주세요.');
         } else {
@@ -993,7 +1046,7 @@
         }
       }
     }).catch(function() {
-      btn.disabled = false; btn.textContent = '신청하기';
+      btn.disabled = false; btn.textContent = '신청 접수하기';
       alert('오류가 발생했어요. 다시 시도해 주세요.');
     });
   });
