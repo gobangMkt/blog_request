@@ -493,6 +493,54 @@ function VariantA() {
         </div>
       </section>
 
+      {/* ── 문의하기 ── */}
+      <section style={{
+        padding: '64px 0',
+        background: 'var(--bg-app)',
+        borderTop: '1px solid var(--border-input)',
+        textAlign: 'center',
+      }}>
+        <div className="container">
+          <div style={{ fontSize: 28, marginBottom: 12 }}>💬</div>
+          <h2 style={{
+            fontSize: 26, fontWeight: 800, color: 'var(--fg-1)',
+            letterSpacing: '-0.5px', marginBottom: 10, wordBreak: 'keep-all',
+          }}>
+            궁금한 점이 있으신가요?
+          </h2>
+          <p style={{
+            fontSize: 17, color: 'var(--fg-3)', lineHeight: 1.7,
+            marginBottom: 32, wordBreak: 'keep-all',
+          }}>
+            서비스 내용, 진행 방식, 가격 등<br />
+            무엇이든 편하게 문의해 주세요.
+          </p>
+          <a
+            href="https://u-ceo.channel.io/workflows/828761"
+            target="_blank"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 10,
+              background: '#2B85CC', color: '#fff',
+              padding: '16px 32px', borderRadius: 14,
+              fontSize: 17, fontWeight: 800, textDecoration: 'none',
+              boxShadow: '0 4px 18px rgba(43,133,204,0.28)',
+              transition: 'transform 0.15s, box-shadow 0.15s',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 8px 28px rgba(43,133,204,0.36)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.transform = '';
+              e.currentTarget.style.boxShadow = '0 4px 18px rgba(43,133,204,0.28)';
+            }}
+          >
+            <span style={{ fontSize: 20 }}>💬</span>
+            채널톡으로 문의하기
+          </a>
+        </div>
+      </section>
+
       <LandingFooter />
 
       <style>{`
