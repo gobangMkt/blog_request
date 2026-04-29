@@ -742,7 +742,7 @@
     if (!matched) {
       suggestions.push(kw + '추천', kw + '후기');
     }
-    return '예) ' + suggestions.slice(0, 3).map(function(s) { return '<strong>' + s + '</strong>'; }).join(', ') + ' 등';
+    return '다른 키워드를 사용해보세요. 예) ' + suggestions.slice(0, 3).map(function(s) { return '<strong>' + s + '</strong>'; }).join(', ') + ' 등';
   }
 
   function setKwNum(id, state) {

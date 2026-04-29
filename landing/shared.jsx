@@ -9,15 +9,31 @@ function LandingNav({ variant = 'A' }) {
     <nav className="nav">
       <div className="container nav-inner">
         <a href="#" className="nav-logo">
-          <img src="../assets/gobang-logo-new.png" alt="고방" style={{ height: 32 }} />
-          <span>고방 블로그</span>
+          <img src="assets/U_ALF.png" alt="고방" style={{ height: 32 }} />
+          <span>블로그 마케팅 이벤트</span>
+          <span style={{
+            fontSize: 11, fontWeight: 800, color: 'var(--primary-400)',
+            background: 'var(--primary-100)',
+            padding: '2px 8px', borderRadius: 6,
+            letterSpacing: '0.3px', marginLeft: 2,
+          }}>beta</span>
         </a>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
-          <a href="#why" style={{ fontSize: 15, fontWeight: 500, color: 'var(--fg-3)' }} className="nav-link-d">왜 이 가격</a>
-          <a href="#price" style={{ fontSize: 15, fontWeight: 500, color: 'var(--fg-3)' }} className="nav-link-d">가격</a>
-          <a href="#process" style={{ fontSize: 15, fontWeight: 500, color: 'var(--fg-3)' }} className="nav-link-d">진행 방식</a>
-          <a href="#faq" style={{ fontSize: 15, fontWeight: 500, color: 'var(--fg-3)' }} className="nav-link-d">FAQ</a>
-          <a href="#cta" className="nav-cta">신청하기</a>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {[
+            { label: '채널 소개', href: '#why' },
+            { label: '가격 확인', href: '#price' },
+            { label: '진행 방식', href: '#process' },
+            { label: 'FAQ',     href: '#faq' },
+          ].map((item, i) => (
+            <React.Fragment key={i}>
+              {i > 0 && <span style={{ color: 'var(--border-input)', fontSize: 16, userSelect: 'none' }}>|</span>}
+              <a href={item.href} className="nav-link-d" style={{
+                fontSize: 15, fontWeight: 500, color: 'var(--fg-3)',
+                padding: '4px 2px',
+              }}>{item.label}</a>
+            </React.Fragment>
+          ))}
+          <a href="https://gobangmkt.github.io/blog_request/" target="_blank" className="nav-cta" style={{ marginLeft: 6 }}>신청하기</a>
         </div>
       </div>
       <style>{`@media(max-width:640px){.nav-link-d{display:none}}`}</style>
@@ -83,7 +99,16 @@ function FaqItem({ q, a, defaultOpen }) {
         textAlign: 'left', fontSize: 20, fontWeight: 600, color: 'var(--fg-1)',
         padding: 0,
       }}>
-        <span style={{ flex: 1, paddingRight: 16, wordBreak: 'keep-all' }}>{q}</span>
+        <span style={{ flex: 1, paddingRight: 16, wordBreak: 'keep-all', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+          <span style={{
+            flexShrink: 0,
+            fontSize: 13, fontWeight: 800, color: 'var(--primary-400)',
+            background: 'var(--primary-100)',
+            padding: '3px 9px', borderRadius: 6,
+            marginTop: 2, letterSpacing: '0.5px',
+          }}>Q</span>
+          <span>{q}</span>
+        </span>
         <span style={{
           width: 24, height: 24, flexShrink: 0,
           color: 'var(--primary-400)', fontSize: 22,
@@ -113,11 +138,11 @@ function LandingFooter() {
     }}>
       <div className="container">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-          <img src="../assets/gobang-logo-new.png" alt="고방" style={{ height: 28 }} />
+          <img src="assets/U_ALF.png" alt="고방" style={{ height: 28 }} />
           <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg-1)' }}>고방 · neoflatMKT</span>
         </div>
         <p style={{ fontSize: 16, color: 'var(--fg-3)', lineHeight: 1.7, maxWidth: 520 }}>
-          전국 고시원·원룸·셰어하우스 지점주를 위한 네이버 블로그 상위노출 마케팅 서비스.<br />
+          고방 공식 블로그 Beta 오픈 이벤트 페이지입니다.<br />
           gobang.kr · u-ceo.kr
         </p>
         <div style={{ marginTop: 24, fontSize: 14, color: 'var(--fg-4)' }}>
