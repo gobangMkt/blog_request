@@ -657,22 +657,18 @@
 
   // 페이지 로드 시 접근 가능 여부 확인
   document.addEventListener('DOMContentLoaded', function() {
-    callAPI('checkAccess').then(function(data) {
-      document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('form-area').style.display = 'block';
 
+    callAPI('checkAccess').then(function(data) {
       if (!data.ok) {
+        document.getElementById('form-area').style.display = 'none';
         document.getElementById('offReason').textContent = data.reason;
         document.getElementById('offScreen').style.display = 'flex';
         return;
       }
-
       setupStatusBanner(data);
-      document.getElementById('form-area').style.display = 'block';
-    }).catch(function() {
-      document.getElementById('loadingScreen').style.display = 'none';
-      document.getElementById('offReason').textContent = '서버 연결에 실패했어요. 잠시 후 다시 시도해 주세요.';
-      document.getElementById('offScreen').style.display = 'flex';
-    });
+    }).catch(function() {});
   });
 
   function setupStatusBanner(data) {
