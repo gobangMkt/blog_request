@@ -327,16 +327,18 @@ function VariantA() {
             borderRadius: 28,
             position: 'relative', overflow: 'hidden',
           }}>
-            <div style={{
-              position: 'absolute', top: 24, right: 24,
-              background: 'linear-gradient(135deg, #2B85CC, #4AA8E0)',
-              color: '#fff',
-              fontSize: 15, fontWeight: 800,
-              padding: '8px 20px', borderRadius: 100,
-            }}>67% OFF</div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-              <div style={{ fontSize: 20, color: 'var(--fg-3)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 10 }}>
-                정가 <span style={{ fontSize: 27, fontWeight: 700, textDecoration: 'line-through', color: 'var(--fg-3)' }}>300,000원</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <div style={{ fontSize: 20, color: 'var(--fg-3)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  정가 <span style={{ fontSize: 27, fontWeight: 700, textDecoration: 'line-through', color: 'var(--fg-3)' }}>300,000원</span>
+                </div>
+                <div style={{
+                  background: 'linear-gradient(135deg, #2B85CC, #4AA8E0)',
+                  color: '#fff',
+                  fontSize: 15, fontWeight: 800,
+                  padding: '6px 16px', borderRadius: 100,
+                  whiteSpace: 'nowrap',
+                }}>67% OFF</div>
               </div>
               <div style={{ fontSize: 30, color: '#4AA8E0' }}>↓</div>
               <div style={{ textAlign: 'center' }}>
