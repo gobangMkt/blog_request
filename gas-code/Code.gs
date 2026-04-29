@@ -121,20 +121,23 @@ function checkKeyword(keyword) {
   var cfg = getSettings();
   var limitDays = cfg.keywordDays || 90;
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  var sheet = ss.getSheetByName('\uc644\ub8cc \ub0b4\uc5ed');
+  // \ud0a4\uc6cc\ub4dc \uc911\ubcf5 \uccb4\ud06c\ub294 \uc2e0\uccad \ub0b4\uc5ed\uc5d0\uc11c \uc77d\uc74c (col1: \uc2e0\uccad\uc77c\uc2dc, col5~7: \ud0a4\uc6cc\ub4dc1~3)
+  var sheet = ss.getSheetByName('\uc2e0\uccad \ub0b4\uc5ed');
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return { available: true };
-  var data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+  var data = sheet.getRange(2, 1, lastRow - 1, 7).getValues();
   var today = new Date();
   today.setHours(0, 0, 0, 0);
   for (var i = 0; i < data.length; i++) {
     if (!data[i][0]) continue;
-    var completedDate = new Date(data[i][0]);
-    var normalizedStored = String(data[i][1]).trim().replace(/\s+/g, '');
-    if (normalizedStored === normalizedInput) {
-      completedDate.setHours(0, 0, 0, 0);
-      var diffDays = Math.floor((today - completedDate) / (1000 * 60 * 60 * 24));
-      if (diffDays < limitDays) {
+    var submittedDate = new Date(data[i][0]);
+    submittedDate.setHours(0, 0, 0, 0);
+    var diffDays = Math.floor((today - submittedDate) / (1000 * 60 * 60 * 24));
+    if (diffDays >= limitDays) continue;
+    // col5, col6, col7 (index 4, 5, 6)
+    for (var k = 4; k <= 6; k++) {
+      var normalizedStored = String(data[i][k]).trim().replace(/\s+/g, '');
+      if (normalizedStored === normalizedInput) {
         return { available: false, remainingDays: limitDays - diffDays };
       }
     }
@@ -193,18 +196,14 @@ function submitForm(formData) {
   var now = new Date();
   sheet.appendRow([now, formData.name, formData.phone, formData.placeUrl, formData.keyword1, formData.keyword2 || '', formData.keyword3 || '', formData.description, formData.deposit || '', formData.monthly || '', formData.walking || '', formData.templateType || 'A', '\uc2e0\uccad\uc644\ub8cc', '', '']);
 
-  // \uc2e0\uccad \uc989\uc2dc \uc644\ub8cc\ub0b4\uc5ed\uc5d0 \ud0a4\uc6cc\ub4dc \ub4f1\ub85d (\uc911\ubcf5 \ubc29\uc9c0)
+  // \uc644\ub8cc \ub0b4\uc5ed\uc5d0 \uc9c0\uc810 URL + \uc5f0\ub77d\ucc98\ub9cc 1\ud589 \uc800\uc7a5
   var doneSheet = ss.getSheetByName('\uc644\ub8cc \ub0b4\uc5ed');
   if (doneSheet) {
     if (doneSheet.getLastRow() === 0) {
-      doneSheet.appendRow(['\uc644\ub8cc\uc77c\uc2dc', '\ud0a4\uc6cc\ub4dc', '\uc9c0\uc810 URL', '\uc2e0\uccad\uc790 \uc5f0\ub77d\uccb4']);
-      doneSheet.getRange(1, 1, 1, 4).setFontWeight('bold').setBackground('#f0f0f0');
+      doneSheet.appendRow(['\uc9c0\uc810 URL', '\uc2e0\uccad\uc790 \uc5f0\ub77d\ucc98']);
+      doneSheet.getRange(1, 1, 1, 2).setFontWeight('bold').setBackground('#f0f0f0');
     }
-    [formData.keyword1, formData.keyword2, formData.keyword3].forEach(function(kw) {
-      if (kw && kw.trim() !== '') {
-        doneSheet.appendRow([now, kw.trim(), formData.placeUrl || '', formData.phone || '']);
-      }
-    });
+    doneSheet.appendRow([formData.placeUrl || '', formData.phone || '']);
   }
 
   // 신청 접수 이메일 알림
