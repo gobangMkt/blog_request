@@ -93,7 +93,7 @@ function checkPlaceUrl(url) {
   var sheet = ss.getSheetByName('\uc2e0\uccad \ub0b4\uc5ed');
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return { available: true };
-  var data = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+  var data = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
   var normalizedInput = url.trim().toLowerCase();
 
   var periodStart = null, periodEnd = null;
@@ -101,7 +101,7 @@ function checkPlaceUrl(url) {
   if (cfg.endDate)   { periodEnd   = new Date(cfg.endDate);   periodEnd.setHours(23, 59, 59, 999); }
 
   for (var i = 0; i < data.length; i++) {
-    var rowUrl = String(data[i][3]).trim().toLowerCase();
+    var rowUrl = String(data[i][4]).trim().toLowerCase();
     if (rowUrl !== normalizedInput) continue;
 
     if (!periodStart && !periodEnd) return { available: false };
@@ -187,11 +187,11 @@ function submitForm(formData) {
 
   var sheet = ss.getSheetByName('\uc2e0\uccad \ub0b4\uc5ed');
   if (sheet.getLastRow() === 0) {
-    sheet.appendRow(['\uc2e0\uccad\uc77c\uc2dc', '\uc774\ub984', '\uc804\ud654\ubc88\ud638', '\uc9c0\uc810 URL', '\ud0a4\uc6cc\ub4dc1', '\ud0a4\uc6cc\ub4dc2', '\ud0a4\uc6cc\ub4dc3', '\uac15\uc870 \ub0b4\uc6a9', '\ubcf4\uc99d\uae08', '\uc6d4\uc138', '\ub3c4\ubcf4\uc815\ubcf4', '\uc791\uc131 \ud0c0\uc785', '\uc0c1\ud0dc', '\uc644\ub8cc\uc77c', '\ube14\ub85c\uadf8 URL']);
-    sheet.getRange(1, 1, 1, 15).setFontWeight('bold').setBackground('#f0f0f0');
+    sheet.appendRow(['\uc2e0\uccad\uc77c\uc2dc', '\uacb0\uc81c\uc644\ub8cc\uc77c', '\uc774\ub984', '\uc804\ud654\ubc88\ud638', '\uc9c0\uc810 URL', '\ud0a4\uc6cc\ub4dc1', '\ud0a4\uc6cc\ub4dc2', '\ud0a4\uc6cc\ub4dc3', '\uac15\uc870 \ub0b4\uc6a9', '\ubcf4\uc99d\uae08', '\uc6d4\uc138', '\ub3c4\ubcf4\uc815\ubcf4', '\uc791\uc131 \ud0c0\uc785', '\uc0c1\ud0dc']);
+    sheet.getRange(1, 1, 1, 14).setFontWeight('bold').setBackground('#f0f0f0');
   }
   var now = new Date();
-  sheet.appendRow([now, formData.name, formData.phone, formData.placeUrl, formData.keyword1, formData.keyword2 || '', formData.keyword3 || '', formData.description, formData.deposit || '', formData.monthly || '', formData.walking || '', formData.templateType || 'A', '\uc2e0\uccad\uc644\ub8cc', '', '']);
+  sheet.appendRow([now, '', formData.name, formData.phone, formData.placeUrl, formData.keyword1, formData.keyword2 || '', formData.keyword3 || '', formData.description, formData.deposit || '', formData.monthly || '', formData.walking || '', formData.templateType || 'A', '\uc2e0\uccad\uc644\ub8cc']);
 
   // \uc644\ub8cc \ub0b4\uc5ed\uc5d0 \uc9c0\uc810URL(C\uc5f4), \uc2e0\uccad\uc790\ubc88\ud638(E\uc5f4)\ub9cc \ucd94\uac00 \u2014 \ub098\uba38\uc9c0 \uc5f4 \uac74\ub4dc\ub9ac\uc9c0 \uc54a\uc74c
   var doneSheet = ss.getSheetByName('\uc644\ub8cc \ub0b4\uc5ed');
