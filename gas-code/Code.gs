@@ -1,8 +1,10 @@
-var SPREADSHEET_ID = '1lgAsrtoeqv1-g3Nh3D21zTyuGLdAZuP5jSXxftlIxh0';
+var SPREADSHEET_ID    = '1lgAsrtoeqv1-g3Nh3D21zTyuGLdAZuP5jSXxftlIxh0';
+var TEMPLATE_PAYMENT  = 'KA01TP260515054842407YswDmAiR0ae';
+var TEMPLATE_COMPLETE = 'KA01TP2605150533203936iNKdKqNSyV';
 
 function getSettings() {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  var s = ss.getSheetByName('\uc124\uc815');
+  var s = ss.getSheetByName('설정');
   var data = s.getRange(1, 1, 5, 2).getValues();
   return {
     active:      String(data[0][1]).trim(),
@@ -17,26 +19,26 @@ function checkAccess() {
   var cfg = getSettings();
   var now = new Date();
 
-  if (cfg.active !== 'ON') return { ok: false, reason: '\uc2e0\uccad\uc744 \ubc1b\uc9c0 \uc54a\uace0 \uc788\uc5b4\uc694' };
+  if (cfg.active !== 'ON') return { ok: false, reason: '신청을 받지 않고 있어요' };
 
   if (cfg.startDate) {
     cfg.startDate.setHours(0,0,0,0);
     if (now < cfg.startDate) {
       var diff = Math.ceil((cfg.startDate - now) / 86400000);
-      return { ok: false, reason: diff + '\uc77c \ud6c4 \uc2e0\uccad \uac00\ub2a5\ud569\ub2c8\ub2e4' };
+      return { ok: false, reason: diff + '일 후 신청 가능합니다' };
     }
   }
 
   if (cfg.endDate) {
     cfg.endDate.setHours(23,59,59,999);
-    if (now > cfg.endDate) return { ok: false, reason: '\uc2e0\uccad \uae30\uac04\uc774 \ub9c8\uac10\ub418\uc5c8\uc5b4\uc694' };
+    if (now > cfg.endDate) return { ok: false, reason: '신청 기간이 마감되었어요' };
   }
 
   if (cfg.maxCount !== null) {
     var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    var sheet = ss.getSheetByName('\uc2e0\uccad \ub0b4\uc5ed');
+    var sheet = ss.getSheetByName('신청 내역');
     var count = Math.max(0, sheet.getLastRow() - 1);
-    if (count >= cfg.maxCount) return { ok: false, reason: '\uc2e0\uccad \uc778\uc6d0\uc774 \ub9c8\uac10\ub418\uc5c8\uc5b4\uc694' };
+    if (count >= cfg.maxCount) return { ok: false, reason: '신청 인원이 마감되었어요' };
   }
 
   return { ok: true };
@@ -57,7 +59,7 @@ function doPost(e) {
       var access = checkAccess();
       var cfg = getSettings();
       var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-      var sheet = ss.getSheetByName('\uc2e0\uccad \ub0b4\uc5ed');
+      var sheet = ss.getSheetByName('신청 내역');
       var currentCount = Math.max(0, sheet.getLastRow() - 1);
       result = {
         ok: access.ok,
@@ -90,7 +92,7 @@ function checkPlaceUrl(url) {
   if (!url) return { available: true };
   var cfg = getSettings();
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  var sheet = ss.getSheetByName('\uc2e0\uccad \ub0b4\uc5ed');
+  var sheet = ss.getSheetByName('신청 내역');
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return { available: true };
   var data = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
@@ -103,9 +105,7 @@ function checkPlaceUrl(url) {
   for (var i = 0; i < data.length; i++) {
     var rowUrl = String(data[i][4]).trim().toLowerCase();
     if (rowUrl !== normalizedInput) continue;
-
     if (!periodStart && !periodEnd) return { available: false };
-
     var rowDate = new Date(data[i][0]);
     var inPeriod = true;
     if (periodStart && rowDate < periodStart) inPeriod = false;
@@ -121,7 +121,7 @@ function checkKeyword(keyword) {
   var cfg = getSettings();
   var limitDays = cfg.keywordDays || 90;
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  var sheet = ss.getSheetByName('\uc644\ub8cc \ub0b4\uc5ed');
+  var sheet = ss.getSheetByName('완료 내역');
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return { available: true };
   var data = sheet.getRange(2, 1, lastRow - 1, 7).getValues();
@@ -155,17 +155,17 @@ function fetchPlaceInfo(url) {
     if (!ogTitleMatch) ogTitleMatch = html.match(/<meta\s+content="([^"]+)"\s+property="og:title"/i);
     if (ogTitleMatch) {
       result.ogTitle = ogTitleMatch[1];
-      var mMatch = ogTitleMatch[1].match(/\uc6d4\s+([0-9~,]+)/);
-      if (mMatch) result.monthly = mMatch[1] + '\ub9cc\uc6d0';
-      var dMatch = ogTitleMatch[1].match(/\ubcf4\s+([0-9~,]+)/);
-      if (dMatch) result.deposit = dMatch[1] + '\ub9cc\uc6d0';
+      var mMatch = ogTitleMatch[1].match(/월\s+([0-9~,]+)/);
+      if (mMatch) result.monthly = mMatch[1] + '만원';
+      var dMatch = ogTitleMatch[1].match(/보\s+([0-9~,]+)/);
+      if (dMatch) result.deposit = dMatch[1] + '만원';
     }
 
     var ogDescMatch = html.match(/<meta\s+property="og:description"\s+content="([^"]+)"/i);
     if (!ogDescMatch) ogDescMatch = html.match(/<meta\s+content="([^"]+)"\s+property="og:description"/i);
     if (ogDescMatch) {
       result.ogDesc = ogDescMatch[1];
-      var wMatch = ogDescMatch[1].match(/([\uac00-\ud7a3]+\uc5ed\s+\ub3c4\ubcf4\s+[0-9]+\ubd84)/);
+      var wMatch = ogDescMatch[1].match(/([가-힣]+역\s+도보\s+[0-9]+분)/);
       if (wMatch) result.walking = wMatch[1];
     }
 
@@ -185,19 +185,25 @@ function submitForm(formData) {
   var urlCheck = checkPlaceUrl(formData.placeUrl);
   if (!urlCheck.available) return { success: false, reason: 'duplicate_url' };
 
-  var sheet = ss.getSheetByName('\uc2e0\uccad \ub0b4\uc5ed');
+  var sheet = ss.getSheetByName('신청 내역');
   if (sheet.getLastRow() === 0) {
-    sheet.appendRow(['\uc2e0\uccad\uc77c\uc2dc', '\uacb0\uc81c\uc644\ub8cc\uc77c', '\uc2e0\uccad\uc790', '\uc804\ud654\ubc88\ud638', '\uc9c0\uc810 URL', '\ud0a4\uc6cc\ub4dc1', '\ud0a4\uc6cc\ub4dc2', '\ud0a4\uc6cc\ub4dc3', '\uac15\uc870 \ub0b4\uc6a9', '\ubcf4\uc99d\uae08', '\uc6d4\uc138', '\ub3c4\ubcf4\uc815\ubcf4', '\uc791\uc131 \ud0c0\uc785', '\uc0c1\ud0dc']);
+    sheet.appendRow(['신청일시', '결제완료일', '신청자', '전화번호', '지점 URL', '키워드1', '키워드2', '키워드3', '강조 내용', '보증금', '월세', '도보정보', '작성 타입', '상태']);
     sheet.getRange(1, 1, 1, 14).setFontWeight('bold').setBackground('#f0f0f0');
   }
   var now = new Date();
-  sheet.appendRow([now, '', formData.name, formData.phone, formData.placeUrl, formData.keyword1, formData.keyword2 || '', formData.keyword3 || '', formData.description, formData.deposit || '', formData.monthly || '', formData.walking || '', formData.templateType || 'A', '\uc2e0\uccad\uc644\ub8cc']);
+  sheet.appendRow([now, '', formData.name, formData.phone, formData.placeUrl, formData.keyword1, formData.keyword2 || '', formData.keyword3 || '', formData.description, formData.deposit || '', formData.monthly || '', formData.walking || '', formData.templateType || 'A', '신청완료']);
 
-  // \uc644\ub8cc \ub0b4\uc5ed\uc5d0 \uc9c0\uc810URL(C\uc5f4), \uc2e0\uccad\uc790\ubc88\ud638(E\uc5f4)\ub9cc \ucd94\uac00 \u2014 \ub098\uba38\uc9c0 \uc5f4 \uac74\ub4dc\ub9ac\uc9c0 \uc54a\uc74c
-  var doneSheet = ss.getSheetByName('\uc644\ub8cc \ub0b4\uc5ed');
+  var doneSheet = ss.getSheetByName('완료 내역');
   if (doneSheet) {
-    // D-day(A), 신청자(B), 전화번호(C), 지점URL(D), 장악키워드(E), 블로그URL(F), 완료일(G)
-    doneSheet.appendRow(['', formData.name || '', formData.phone || '', formData.placeUrl || '', '', '', '']);
+    // D-day(A), 신청자(B), 전화번호(C), 지점URL(D), 장악키워드(E), 블로그URL(F), 완료일(G), 발송(H)
+    doneSheet.appendRow(['', formData.name || '', formData.phone || '', formData.placeUrl || '', '', '', '', false]);
+  }
+
+  // 결제 요청 알림톡
+  try {
+    sendAlimtalk(formData.phone, TEMPLATE_PAYMENT, { '#{신청자}': formData.name || '' });
+  } catch(alimErr) {
+    Logger.log('결제 요청 알림톡 실패: ' + alimErr);
   }
 
   // 신청 접수 이메일 알림
@@ -222,37 +228,108 @@ function submitForm(formData) {
   return { success: true };
 }
 
-// 신청 내역 B열(결제완료일) 입력 시 → 완료 내역 A열(D-day) 자동 계산
-function onEdit(e) {
-  var sheet = e.range.getSheet();
-  if (sheet.getName() !== '신청 내역') return;
-  if (e.range.getColumn() !== 2 || e.range.getRow() < 2) return;
+// SOLAPI HMAC-SHA256 인증 헤더 생성
+function getSolapiAuthHeader() {
+  var props     = PropertiesService.getScriptProperties();
+  var apiKey    = props.getProperty('SOLAPI_API_KEY');
+  var apiSecret = props.getProperty('SOLAPI_API_SECRET');
+  var date      = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
+  var salt      = Utilities.getUuid();
+  var signature = Utilities.computeHmacSha256Signature(date + salt, apiSecret)
+    .map(function(b) { return ('0' + (b & 0xFF).toString(16)).slice(-2); })
+    .join('');
+  return 'HMAC-SHA256 apiKey=' + apiKey + ', date=' + date + ', salt=' + salt + ', signature=' + signature;
+}
 
-  var paymentDate = e.range.getValue();
-  if (!paymentDate) return;
-
-  var dDay = new Date(paymentDate);
-  dDay.setDate(dDay.getDate() + 7);
-
-  var placeUrl = sheet.getRange(e.range.getRow(), 5).getValue(); // E열 = 지점 URL
-  if (!placeUrl) return;
-
-  var doneSheet = e.source.getSheetByName('완료 내역');
-  if (!doneSheet) return;
-  var lastRow = doneSheet.getLastRow();
-  if (lastRow < 2) return;
-
-  var doneUrls = doneSheet.getRange(2, 4, lastRow - 1, 1).getValues(); // D열(지점 URL)
-  var normalizedUrl = String(placeUrl).trim().toLowerCase();
-  for (var i = 0; i < doneUrls.length; i++) {
-    if (String(doneUrls[i][0]).trim().toLowerCase() === normalizedUrl) {
-      doneSheet.getRange(i + 2, 1).setValue(dDay);
-      break;
+// 알림톡 발송
+function sendAlimtalk(to, templateId, variables) {
+  var pfId    = PropertiesService.getScriptProperties().getProperty('SOLAPI_PF_ID');
+  var payload = {
+    message: {
+      to: String(to).replace(/[^0-9]/g, ''),
+      kakaoOptions: { pfId: pfId, templateId: templateId, variables: variables }
     }
+  };
+  var res = UrlFetchApp.fetch('https://api.solapi.com/messages/v4/send', {
+    method: 'post',
+    contentType: 'application/json',
+    headers: { Authorization: getSolapiAuthHeader() },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  });
+  Logger.log('알림톡 응답: ' + res.getContentText());
+  return res;
+}
+
+// 설치형 트리거 등록 — 코드 붙여넣기 후 최초 1회 실행
+function setupTrigger() {
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === 'onSheetEdit') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('onSheetEdit')
+    .forSpreadsheet(SpreadsheetApp.openById(SPREADSHEET_ID))
+    .onEdit()
+    .create();
+}
+
+// 설치형 onEdit 핸들러
+function onSheetEdit(e) {
+  var sheet     = e.range.getSheet();
+  var sheetName = sheet.getName();
+  var col       = e.range.getColumn();
+  var row       = e.range.getRow();
+
+  // 신청 내역 B열(결제완료일) → 완료 내역 A열(D-day) 자동 계산
+  if (sheetName === '신청 내역' && col === 2 && row >= 2) {
+    var paymentDate = e.range.getValue();
+    if (!paymentDate) return;
+    var dDay = new Date(paymentDate);
+    dDay.setDate(dDay.getDate() + 7);
+    var placeUrl = sheet.getRange(row, 5).getValue();
+    if (!placeUrl) return;
+    var doneSheet = e.source.getSheetByName('완료 내역');
+    if (!doneSheet) return;
+    var lastRow = doneSheet.getLastRow();
+    if (lastRow < 2) return;
+    var doneUrls = doneSheet.getRange(2, 4, lastRow - 1, 1).getValues();
+    var normalizedUrl = String(placeUrl).trim().toLowerCase();
+    for (var i = 0; i < doneUrls.length; i++) {
+      if (String(doneUrls[i][0]).trim().toLowerCase() === normalizedUrl) {
+        doneSheet.getRange(i + 2, 1).setValue(dDay);
+        break;
+      }
+    }
+  }
+
+  // 완료 내역 H열(발송 체크박스) → 작업완료 알림톡 발송
+  if (sheetName === '완료 내역' && col === 8 && row >= 2) {
+    if (e.range.getValue() !== true) return;
+    var rowData  = sheet.getRange(row, 1, 1, 8).getValues()[0];
+    var phone    = String(rowData[2]).replace(/[^0-9]/g, '');
+    var keyword  = String(rowData[4] || '').trim();
+    var blogUrl  = String(rowData[5] || '').trim();
+    var placeUrl2 = String(rowData[3] || '');
+
+    if (!phone || !keyword || !blogUrl) {
+      e.range.setValue(false);
+      return;
+    }
+
+    try {
+      sendAlimtalk(phone, TEMPLATE_COMPLETE, {
+        '#{지점 URL}':   placeUrl2,
+        '#{장악키워드}': keyword,
+        '#{블로그URL}':  blogUrl
+      });
+    } catch(err) {
+      Logger.log('작업완료 알림톡 실패: ' + err);
+    }
+
+    e.range.setValue(false);
   }
 }
 
 function testAuth() {
-  var ss = SpreadsheetApp.openById('1lgAsrtoeqv1-g3Nh3D21zTyuGLdAZuP5jSXxftlIxh0');
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   Logger.log(ss.getName());
 }
