@@ -187,7 +187,7 @@ function submitForm(formData) {
 
   var sheet = ss.getSheetByName('\uc2e0\uccad \ub0b4\uc5ed');
   if (sheet.getLastRow() === 0) {
-    sheet.appendRow(['\uc2e0\uccad\uc77c\uc2dc', '\uacb0\uc81c\uc644\ub8cc\uc77c', '\uc774\ub984', '\uc804\ud654\ubc88\ud638', '\uc9c0\uc810 URL', '\ud0a4\uc6cc\ub4dc1', '\ud0a4\uc6cc\ub4dc2', '\ud0a4\uc6cc\ub4dc3', '\uac15\uc870 \ub0b4\uc6a9', '\ubcf4\uc99d\uae08', '\uc6d4\uc138', '\ub3c4\ubcf4\uc815\ubcf4', '\uc791\uc131 \ud0c0\uc785', '\uc0c1\ud0dc']);
+    sheet.appendRow(['\uc2e0\uccad\uc77c\uc2dc', '\uacb0\uc81c\uc644\ub8cc\uc77c', '\uc2e0\uccad\uc790', '\uc804\ud654\ubc88\ud638', '\uc9c0\uc810 URL', '\ud0a4\uc6cc\ub4dc1', '\ud0a4\uc6cc\ub4dc2', '\ud0a4\uc6cc\ub4dc3', '\uac15\uc870 \ub0b4\uc6a9', '\ubcf4\uc99d\uae08', '\uc6d4\uc138', '\ub3c4\ubcf4\uc815\ubcf4', '\uc791\uc131 \ud0c0\uc785', '\uc0c1\ud0dc']);
     sheet.getRange(1, 1, 1, 14).setFontWeight('bold').setBackground('#f0f0f0');
   }
   var now = new Date();
