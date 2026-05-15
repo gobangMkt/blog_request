@@ -124,13 +124,13 @@ function checkKeyword(keyword) {
   var sheet = ss.getSheetByName('\uc644\ub8cc \ub0b4\uc5ed');
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return { available: true };
-  var data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+  var data = sheet.getRange(2, 1, lastRow - 1, 7).getValues();
   var today = new Date();
   today.setHours(0, 0, 0, 0);
   for (var i = 0; i < data.length; i++) {
-    if (!data[i][0]) continue;
-    var completedDate = new Date(data[i][0]);
-    var normalizedStored = String(data[i][1]).trim().replace(/\s+/g, '');
+    if (!data[i][6]) continue;
+    var completedDate = new Date(data[i][6]);
+    var normalizedStored = String(data[i][4]).trim().replace(/\s+/g, '');
     if (normalizedStored === normalizedInput) {
       completedDate.setHours(0, 0, 0, 0);
       var diffDays = Math.floor((today - completedDate) / (1000 * 60 * 60 * 24));
@@ -196,8 +196,8 @@ function submitForm(formData) {
   // \uc644\ub8cc \ub0b4\uc5ed\uc5d0 \uc9c0\uc810URL(C\uc5f4), \uc2e0\uccad\uc790\ubc88\ud638(E\uc5f4)\ub9cc \ucd94\uac00 \u2014 \ub098\uba38\uc9c0 \uc5f4 \uac74\ub4dc\ub9ac\uc9c0 \uc54a\uc74c
   var doneSheet = ss.getSheetByName('\uc644\ub8cc \ub0b4\uc5ed');
   if (doneSheet) {
-    // 완료일(A), 키워드(B), 전화번호(C), 지점URL(D), 블로그URL(E)
-    doneSheet.appendRow(['', '', formData.phone || '', formData.placeUrl || '', '']);
+    // D-day(A), 신청자(B), 전화번호(C), 지점URL(D), 장악키워드(E), 블로그URL(F), 완료일(G)
+    doneSheet.appendRow(['', formData.name || '', formData.phone || '', formData.placeUrl || '', '', '', '']);
   }
 
   // 신청 접수 이메일 알림
@@ -220,6 +220,36 @@ function submitForm(formData) {
   } catch(mailErr) {}
 
   return { success: true };
+}
+
+// 신청 내역 B열(결제완료일) 입력 시 → 완료 내역 A열(D-day) 자동 계산
+function onEdit(e) {
+  var sheet = e.range.getSheet();
+  if (sheet.getName() !== '신청 내역') return;
+  if (e.range.getColumn() !== 2 || e.range.getRow() < 2) return;
+
+  var paymentDate = e.range.getValue();
+  if (!paymentDate) return;
+
+  var dDay = new Date(paymentDate);
+  dDay.setDate(dDay.getDate() + 7);
+
+  var placeUrl = sheet.getRange(e.range.getRow(), 5).getValue(); // E열 = 지점 URL
+  if (!placeUrl) return;
+
+  var doneSheet = e.source.getSheetByName('완료 내역');
+  if (!doneSheet) return;
+  var lastRow = doneSheet.getLastRow();
+  if (lastRow < 2) return;
+
+  var doneUrls = doneSheet.getRange(2, 4, lastRow - 1, 1).getValues(); // D열(지점 URL)
+  var normalizedUrl = String(placeUrl).trim().toLowerCase();
+  for (var i = 0; i < doneUrls.length; i++) {
+    if (String(doneUrls[i][0]).trim().toLowerCase() === normalizedUrl) {
+      doneSheet.getRange(i + 2, 1).setValue(dDay);
+      break;
+    }
+  }
 }
 
 function testAuth() {
