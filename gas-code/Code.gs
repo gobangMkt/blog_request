@@ -196,7 +196,9 @@ function submitForm(formData) {
   var doneSheet = ss.getSheetByName('완료 내역');
   if (doneSheet) {
     // D-day(A), 신청자(B), 전화번호(C), 지점URL(D), 장악키워드(E), 블로그URL(F), 완료일(G), 발송상태(H), 발송시간(I)
-    doneSheet.appendRow(['', formData.name || '', formData.phone || '', formData.placeUrl || '', '', '', '', '발송대기', '']);
+    doneSheet.appendRow(['', formData.name || '', formData.phone || '', formData.placeUrl || '', '', '', '', '', '']);
+    // 체크박스 서식 잔재를 덮어쓰기 위해 명시적으로 setValue
+    doneSheet.getRange(doneSheet.getLastRow(), 8).setValue('발송대기');
   }
 
   // 결제 요청 알림톡
