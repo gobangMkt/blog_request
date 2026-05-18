@@ -373,6 +373,9 @@ function setupH_Dropdown() {
   var sheet = ss.getSheetByName('완료 내역');
   var range = sheet.getRange(2, 8, 1000, 1);
 
+  // 체크박스 포함 기존 유효성 검사 완전 제거 후 재설정
+  range.clearDataValidations();
+
   var rule = SpreadsheetApp.newDataValidation()
     .requireValueInList(['발송대기', '발송하기'], false)
     .build();
