@@ -384,6 +384,29 @@ function setupH_Dropdown() {
   Logger.log('H열 드롭박스 설정 완료: [발송대기, 발송하기]');
 }
 
+// E+F+G 모두 채워진 기존 행 → 발송완료로 일괄 변경
+function fixCompletedRows() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('완료 내역');
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return;
+
+  var count = 0;
+  for (var i = 2; i <= lastRow; i++) {
+    var rowData = sheet.getRange(i, 1, 1, 8).getValues()[0];
+    var keyword      = String(rowData[4] || '').trim();
+    var blogUrl      = String(rowData[5] || '').trim();
+    var completeDate = rowData[6];
+    var currentH     = String(rowData[7] || '').trim();
+
+    if (keyword && blogUrl && completeDate && currentH !== '발송완료') {
+      sheet.getRange(i, 8).setValue('발송완료');
+      count++;
+    }
+  }
+  Logger.log('fixCompletedRows 완료: ' + count + '개 행 → 발송완료');
+}
+
 // H열 FALSE 값 정리 (마이그레이션 완료 후 남은 불필요한 값 제거)
 function cleanupH_Column() {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
