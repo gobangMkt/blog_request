@@ -195,8 +195,8 @@ function submitForm(formData) {
 
   var doneSheet = ss.getSheetByName('완료 내역');
   if (doneSheet) {
-    // D-day(A), 신청자(B), 전화번호(C), 지점URL(D), 장악키워드(E), 블로그URL(F), 완료일(G), 발송(H)
-    doneSheet.appendRow(['', formData.name || '', formData.phone || '', formData.placeUrl || '', '', '', '', false]);
+    // D-day(A), 신청자(B), 전화번호(C), 지점URL(D), 장악키워드(E), 블로그URL(F), 완료일(G), 발송상태(H), 발송시간(I)
+    doneSheet.appendRow(['', formData.name || '', formData.phone || '', formData.placeUrl || '', '', '', '', '발송대기', '']);
   }
 
   // 결제 요청 알림톡
@@ -301,17 +301,27 @@ function onSheetEdit(e) {
     }
   }
 
-  // 완료 내역 H열(발송 체크박스) → 작업완료 알림톡 발송
+  // 완료 내역 H열(발송 드롭박스) → 작업완료 알림톡 발송
   if (sheetName === '완료 내역' && col === 8 && row >= 2) {
-    if (e.range.getValue() !== true) return;
+    var currentValue = String(e.range.getValue()).trim();
+    if (currentValue !== '발송하기') return;
+
     var rowData  = sheet.getRange(row, 1, 1, 8).getValues()[0];
     var phone    = String(rowData[2]).replace(/[^0-9]/g, '');
     var keyword  = String(rowData[4] || '').trim();
     var blogUrl  = String(rowData[5] || '').trim();
+    var completeDate = rowData[6];
     var placeUrl2 = String(rowData[3] || '');
 
-    if (!phone || !keyword || !blogUrl) {
-      e.range.setValue(false);
+    // 조건 확인: E(키워드), F(블로그URL), G(완료일) 모두 필수
+    if (!keyword || !blogUrl || !completeDate) {
+      e.range.setValue('발송대기');
+      return;
+    }
+
+    var iCell = sheet.getRange(row, 9).getValue();
+    if (iCell) {
+      e.range.setValue('발송완료');
       return;
     }
 
@@ -321,15 +331,72 @@ function onSheetEdit(e) {
         '#{장악키워드}': keyword,
         '#{블로그URL}':  blogUrl
       });
+      sheet.getRange(row, 9).setValue(Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss'));
+      sheet.getRange(row, 8).setValue('발송완료');
     } catch(err) {
       Logger.log('작업완료 알림톡 실패: ' + err);
+      e.range.setValue('발송대기');
     }
-
-    e.range.setValue(false);
   }
 }
 
 function testAuth() {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   Logger.log(ss.getName());
+}
+
+// 마이그레이션: H열(true/false) → "발송대기"/"발송완료"로 변환
+function migrateToDropdown() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('완료 내역');
+  var lastRow = sheet.getLastRow();
+
+  if (lastRow < 2) {
+    Logger.log('완료 내역 데이터 없음');
+    return;
+  }
+
+  for (var i = 2; i <= lastRow; i++) {
+    var hValue = sheet.getRange(i, 8).getValue();
+    var newValue = hValue === true ? '발송완료' : '발송대기';
+    sheet.getRange(i, 8).setValue(newValue);
+  }
+
+  Logger.log('마이그레이션 완료: ' + (lastRow - 1) + '개 행 변환됨');
+}
+
+// H열에 드롭박스 설정
+function setupH_Dropdown() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('완료 내역');
+  var range = sheet.getRange(2, 8, 1000, 1);
+
+  var rule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['발송대기', '발송하기'], false)
+    .build();
+
+  range.setDataValidation(rule);
+  Logger.log('H열 드롭박스 설정 완료: [발송대기, 발송하기]');
+}
+
+// H열 FALSE 값 정리 (마이그레이션 완료 후 남은 불필요한 값 제거)
+function cleanupH_Column() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('완료 내역');
+  var lastRow = sheet.getLastRow();
+
+  if (lastRow < 2) {
+    Logger.log('완료 내역 데이터 없음');
+    return;
+  }
+
+  for (var i = 2; i <= lastRow; i++) {
+    var hValue = sheet.getRange(i, 8).getValue();
+    if (hValue === false || hValue === 'FALSE') {
+      sheet.getRange(i, 8).clearContent();
+      sheet.getRange(i, 8).setValue('발송대기');
+    }
+  }
+
+  Logger.log('H열 정리 완료: FALSE 값을 "발송대기"로 변환');
 }
