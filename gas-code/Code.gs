@@ -329,7 +329,7 @@ function onSheetEdit(e) {
 
     try {
       sendAlimtalk(phone, TEMPLATE_COMPLETE, {
-        '#{지점 URL}':   placeUrl2,
+        '#{지점URL}':    placeUrl2,
         '#{장악키워드}': keyword,
         '#{블로그URL}':  blogUrl
       });
