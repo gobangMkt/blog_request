@@ -367,7 +367,7 @@ function migrateToDropdown() {
   Logger.log('마이그레이션 완료: ' + (lastRow - 1) + '개 행 변환됨');
 }
 
-// H열에 드롭박스 설정
+// H열에 드롭박스 + 조건부 색상 설정
 function setupH_Dropdown() {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   var sheet = ss.getSheetByName('완료 내역');
@@ -379,9 +379,30 @@ function setupH_Dropdown() {
   var rule = SpreadsheetApp.newDataValidation()
     .requireValueInList(['발송대기', '발송하기'], false)
     .build();
-
   range.setDataValidation(rule);
-  Logger.log('H열 드롭박스 설정 완료: [발송대기, 발송하기]');
+
+  // 기존 조건부 서식 중 H열 외 규칙은 유지, H열 규칙만 교체
+  var existing = sheet.getConditionalFormatRules().filter(function(r) {
+    return r.getRanges().every(function(rng) { return rng.getColumn() !== 8; });
+  });
+
+  var newRules = [
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo('발송대기')
+      .setBackground('#F5F5F5').setFontColor('#9E9E9E')
+      .setRanges([range]).build(),
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo('발송하기')
+      .setBackground('#FFF8E1').setFontColor('#F57F17')
+      .setRanges([range]).build(),
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo('발송완료')
+      .setBackground('#E8F5E9').setFontColor('#388E3C')
+      .setRanges([range]).build()
+  ];
+
+  sheet.setConditionalFormatRules(existing.concat(newRules));
+  Logger.log('H열 드롭박스 + 색상 설정 완료');
 }
 
 // E+F+G 모두 채워진 기존 행 → 발송완료로 일괄 변경
