@@ -4,11 +4,14 @@ const { useState: useStateA, useEffect: useEffectA } = React;
 // ════════════════════════════════════════════════════════════════
 //  고방 블로그 — "U사장님 특가" 랜딩
 //  팔레트: 밝은 중립 베이스 + 틸(U 브랜드) 악센트 + 딥틸 대비 밴드 2곳
-//  상시 판매 · 정가 300,000 → 50% → 150,000 (VAT 별도)
+//  상시 판매 · 상품 2종 — 일반형 50,000 / 고급형 정가 200,000 → 150,000 (부가세 포함)
 // ════════════════════════════════════════════════════════════════
 
 const APPLY_URL = 'https://gobangmkt.github.io/blog_request/';
 const ASK_URL   = 'https://u-ceo.channel.io/workflows/828761';
+// 일반형(5만원) 접수 동선 — 신청폼에 등급 구분이 없어 당분간 채널톡 수동 접수.
+// 회사측 결제 버튼이나 등급 분기 폼이 생기면 이 상수만 교체하면 됨.
+const APPLY_URL_BASIC = ASK_URL;
 
 // ── SVG 아이콘 ────────────────────────────────────────────────────
 const Ic = {
@@ -57,7 +60,7 @@ function V2Nav() {
           <Pill style={{ fontSize: 11, padding: '3px 9px' }}>U사장님 특가</Pill>
         </a>
         <a href={APPLY_URL} target="_blank" rel="noopener" className="v2-cta v2-cta-sm">
-          15만원 신청 <Ic.arrow style={{ marginLeft: 2 }} />
+          신청하기 <Ic.arrow style={{ marginLeft: 2 }} />
         </a>
       </div>
     </nav>
@@ -111,113 +114,88 @@ function SearchProof() {
 // ════════════════════════════════════════════════════════════════
 function VariantA() {
   const benefits = [
-    { I: Ic.doc,    t: '고방 공식 블로그 정식 발행', d: '월 17만 명이 보는 공식 블로그에 내 지점 포스팅이 그대로 올라가요.' },
+    { I: Ic.doc,    t: '블로그 3곳에 3건 발행',     d: '고방 공식 블로그와 서브 블로그 2곳, 총 3건으로 잡을 자리를 늘려요.' },
+    { I: Ic.target, t: '키워드 3개 직접 지정',       d: '노리고 싶은 지역·유형 키워드를 직접 입력해요.' },
+    { I: Ic.pin,    t: '키워드 90일 선점',          d: '한 번 잡은 키워드는 그 기간 다른 지점 글에 쓰지 않아요.' },
     { I: Ic.layers, t: '템플릿 직접 선택',          d: 'A타입(설명형) / B타입(후기형) 중 원하는 방식을 직접 골라요.' },
-    { I: Ic.target, t: '키워드 1~3개 직접 제출',     d: '노리고 싶은 지역·유형 키워드를 직접 입력해요.' },
-    { I: Ic.spark,  t: '강조 포인트 반영',          d: '꼭 들어갔으면 하는 내용을 자유롭게 추가할 수 있어요.' },
+    { I: Ic.spark,  t: '강조 포인트 반영',          d: '보증금·월세·도보 정보까지 원하는 내용을 그대로 담아요.' },
     { I: Ic.bell,   t: '발행 URL 알림톡 발송',      d: '완료되면 카카오 알림톡으로 발행 링크를 바로 전달해요.' },
-    { I: Ic.bolt,   t: '결제 후 1주 내 발행',        d: '선정 안내·결제 후 영업일 7일 내 빠르게 진행돼요.' },
   ];
   const proofs = [
     { I: Ic.users, n: '17~18만', l: '월 방문자', s: '일 평균 4,500명+' },
-    { I: Ic.chart, n: '최적화 2+', l: '네이버 블로그 지수', s: '전체 상위 2.8%' },
+    { I: Ic.chart, n: '최적화 2+', l: '블로그 지수', s: '전체 상위 2.8%' },
     { I: Ic.pin,   n: '1인주거', l: '특화 채널', s: '고시원·셰어하우스 상위권' },
   ];
-  const steps = [
-    { n: 1, t: '신청',       d: '신청 폼에서 지점 정보 · 키워드 · 강조 내용 입력', tag: '사장님' },
+  const stepsPro = [
+    { n: 1, t: '신청',       d: '신청 폼에서 지점 정보, 키워드, 강조 내용 입력', tag: '사장님' },
     { n: 2, t: '대상자 선정', d: '내부 검토 후 알림톡으로 결제 안내', tag: '고방' },
-    { n: 3, t: '결제',       d: '안내받은 토스 결제링크로 결제 — 150,000원 (VAT 별도)', tag: '사장님' },
-    { n: 4, t: '작성 · 발행', d: '결제 후 영업일 7일 내 작성 → 공식 블로그 발행', tag: '고방' },
+    { n: 3, t: '결제',       d: '안내받은 토스 결제링크로 결제, 150,000원 (부가세 포함)', tag: '사장님' },
+    { n: 4, t: '작성 · 발행', d: '결제 후 영업일 7일 내 작성, 블로그 3곳에 발행', tag: '고방' },
     { n: 5, t: '결과 안내',   d: '발행 URL을 카카오 알림톡으로 발송', tag: '완료' },
   ];
+  const stepsBasic = [
+    { n: 1, t: '문의',   d: '채널톡으로 지점만 알려주세요. 따로 작성할 내용은 없어요', tag: '사장님' },
+    { n: 2, t: '결제',   d: '안내받은 결제링크로 결제, 50,000원', tag: '사장님' },
+    { n: 3, t: '발행',   d: '고방 공식 블로그에 1건 발행', tag: '고방' },
+  ];
+
+  const [track, setTrack] = useStateA('pro');
 
   return (
     <div className="v2" id="top">
       <V2Nav />
 
-      {/* ─── HERO (라이트) ─── */}
-      <header className="v2-hero">
+      {/* ─── HERO + 채널 신뢰 (통합) ─── */}
+      <header className="v2-hero" id="why">
         <div className="v2-hero-glow" aria-hidden />
-        <div className="v2-container v2-hero-inner">
-          <div className="v2-hero-logo v2-up d1">
-            <img src="assets/U_ALF.png" alt="고방" />
-          </div>
-
-          <div className="v2-hero-tags v2-up d1">
-            <span className="v2-tag"><i className="v2-dot" aria-hidden />U사장님 특가</span>
-          </div>
-
-          <h1 className="v2-h1 v2-up d2">
-            정가 30만원,<br />
-            지금 <span className="v2-acc">딱 반값</span>.
-          </h1>
-
-          <p className="v2-hero-sub v2-up d3">
-            월 <b>17만 명</b>이 보는 고방 공식 블로그에 <b className="v2-acc">정식 발행</b>.
-          </p>
-
-          <div className="v2-hero-price v2-up d4">
-            <div className="v2-hp-top">
-              <span className="v2-hp-off">50% OFF</span>
-              <span className="v2-hp-orig">300,000원</span>
+        <div className="v2-container v2-hero-split">
+          <div className="v2-hero-copy v2-up d1">
+            <div className="v2-hero-tags">
+              <span className="v2-tag"><i className="v2-dot" aria-hidden />U사장님 특가</span>
             </div>
-            <div className="v2-hp-now"><em className="num">150,000</em><span className="v2-hp-won">원</span></div>
-            <span className="v2-hp-vat">VAT 별도 · 1건 단독 신청</span>
+
+            <h1 className="v2-h1">
+              내 지점,<br />
+              네이버에서 <span className="v2-acc">검색되게</span>.
+            </h1>
+
+            <p className="v2-hero-sub">
+              <span>월 <b>17만 명</b>이 보는 <b className="v2-acc">고방 공식 블로그</b>에 정식 발행돼요.</span>
+              <span>지점 정보만 주시면, 글은 저희가 씁니다.</span>
+            </p>
+
+            <ul className="v2-ticks v2-hero-ticks">
+              {['노리는 키워드를 직접 지정', '상위노출 중인 키워드만 작성', '발행 후 URL 알림톡 전달'].map((t, i) => (
+                <li key={i}><span className="v2-tick"><Ic.check /></span>{t}</li>
+              ))}
+            </ul>
+
+            <div className="v2-hero-ctas">
+              <a href="#price" className="v2-cta v2-cta-lg">5만원부터, 상품 보기 <Ic.arrow style={{ marginLeft: 4 }} /></a>
+            </div>
           </div>
 
-          <div className="v2-strip v2-up d6">
-            {[['50%', '할인율'], ['17만+', '월 방문자'], ['최적화 2+', '블로그 지수'], ['7일 내', '발행']].map((s, i) => (
-              <div key={i} className="v2-strip-cell">
-                <div className="v2-strip-n">{s[0]}</div>
-                <div className="v2-strip-l">{s[1]}</div>
-              </div>
-            ))}
+          <div className="v2-hero-visual v2-up d3">
+            <SearchProof />
+            <div className="v2-hero-proof">
+              {proofs.map((p, i) => (
+                <div key={i} className="v2-hero-proof-cell">
+                  <div className="v2-hero-proof-n">{p.n}</div>
+                  <div className="v2-hero-proof-l">{p.l}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </header>
-
-      {/* ─── TRUST ─── */}
-      <section className="v2-sec v2-light" id="why">
-        <div className="v2-container">
-          <div className="v2-head">
-            <Eyebrow>어떤 채널인가요</Eyebrow>
-            <h2 className="v2-h2">아무 블로그가 아니에요.<br /><span className="v2-acc">고방 공식 블로그</span>에 실립니다.</h2>
-            <p className="v2-sub">1인주거 검색에 최적화된 채널. 숫자로 확인하세요.</p>
-          </div>
-          <div className="v2-proof-grid">
-            {proofs.map((p, i) => (
-              <div key={i} className="v2-proof-card">
-                <span className="v2-proof-ic"><p.I /></span>
-                <div className="v2-proof-n">{p.n}</div>
-                <div className="v2-proof-l">{p.l}</div>
-                <div className="v2-proof-s">{p.s}</div>
-              </div>
-            ))}
-          </div>
-          <div className="v2-proof-search">
-            <div className="v2-ps-copy">
-              <Eyebrow>실제 노출</Eyebrow>
-              <h3 className="v2-h3">신청한 키워드, <span className="v2-acc">블로그탭 상단</span>을 노려요.</h3>
-              <p className="v2-sub" style={{ marginTop: 14 }}>
-                고방 블로그는 관련 키워드 대부분에서 상위권에 노출돼요. 내 지점 글도 같은 자리를 노립니다.
-              </p>
-              <ul className="v2-ticks">
-                {['키워드 1~3개 직접 지정', '상위노출 중인 키워드만 작성', '발행 후 URL 알림톡 전달'].map((t, i) => (
-                  <li key={i}><span className="v2-tick"><Ic.check /></span>{t}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="v2-ps-mock"><SearchProof /></div>
-          </div>
-        </div>
-      </section>
 
       {/* ─── VALUE ─── */}
       <section className="v2-sec v2-tint" id="value">
         <div className="v2-container">
           <div className="v2-head">
-            <Eyebrow>15만원에 포함</Eyebrow>
+            <Eyebrow>고급형 15만원에 포함</Eyebrow>
             <h2 className="v2-h2">추가 비용 없이,<br />신청부터 발행까지 한 번에.</h2>
+            <p className="v2-sub">일반형 5만원은 공식 블로그에 1건 발행만 진행돼요.</p>
           </div>
           <div className="v2-ben-grid">
             {benefits.map((b, i) => (
@@ -235,61 +213,121 @@ function VariantA() {
       <section className="v2-sec v2-dark v2-price-sec" id="price">
         <div className="v2-container">
           <div className="v2-head">
-            <Eyebrow dark>U사장님 전용 특가</Eyebrow>
-            <h2 className="v2-h2 v2-on-dark">일반 블로그 마케팅 30만원~,<br />고방은 <span className="v2-acc-d">15만원</span>.</h2>
+            <Eyebrow dark>상품 선택</Eyebrow>
+            <h2 className="v2-h2 v2-on-dark">상품은 <span className="v2-acc-d">두 가지</span>예요.</h2>
+            <p className="v2-sub">검색 노출까지 챙길지, 글만 가볍게 올릴지로 나뉘어요.</p>
           </div>
-          <div className="v2-price-card">
-            <div className="v2-pc-top">
-              <span className="v2-pc-orig">정가 <s>300,000원</s></span>
-              <Pill>50% OFF</Pill>
+
+          <div className="v2-vat-note">(부가세 10% 포함)</div>
+
+          <div className="v2-plan-grid">
+            <div className="v2-plan">
+              <div className="v2-plan-name">일반형</div>
+              <div className="v2-plan-desc">가볍게 시작하는 입문형</div>
+              <div className="v2-plan-orig v2-plan-orig--empty" aria-hidden />
+              <div className="v2-pc-now v2-pc-now--sm"><em className="num">50,000</em><span className="v2-pc-won">원</span></div>
+              <div className="v2-pc-vat">1건 발행 기준</div>
+              <a href={APPLY_URL_BASIC} target="_blank" rel="noopener" className="v2-cta v2-plan-cta v2-plan-cta--ghost">
+                일반형 문의하기 <Ic.arrow style={{ marginLeft: 4 }} />
+              </a>
+              <ul className="v2-plan-feat">
+                <li><span className="v2-tick"><Ic.check /></span>고방 공식 블로그에 1건 발행</li>
+                <li><span className="v2-tick"><Ic.check /></span>지점만 알려주면 끝, 작성할 내용 없음</li>
+                <li className="is-off"><span className="v2-cross">×</span>키워드 지정·선점 없음</li>
+                <li className="is-off"><span className="v2-cross">×</span>템플릿·강조 내용 반영 없음</li>
+                <li className="is-off"><span className="v2-cross">×</span>발행 URL 전달·상담 없음</li>
+              </ul>
+              <div className="v2-plan-note">순위를 잡아주진 않지만, 공식 블로그에 글이 쌓이는 효과는 같아요.</div>
             </div>
-            <div className="v2-pc-arrow" aria-hidden>↓</div>
-            <div className="v2-pc-label">U사장님 특가가</div>
-            <div className="v2-pc-now"><em className="num">150,000</em><span className="v2-pc-won">원</span></div>
-            <div className="v2-pc-vat">VAT 별도 · 1건 기준</div>
-            <div className="v2-pc-note">
-              <span className="v2-tick"><Ic.check /></span>
-              일반 블로그 마케팅 대비 <b>15만원 절약</b> — 채널 품질은 그 이상이에요.
+
+            <div className="v2-plan v2-plan--hero">
+              <span className="v2-plan-badge">가장 많이 선택</span>
+              <div className="v2-plan-name">고급형</div>
+              <div className="v2-plan-desc">검색 노출까지 챙기는 완성형</div>
+              <div className="v2-plan-orig">정가 <s>200,000원</s></div>
+              <div className="v2-pc-now"><em className="num">150,000</em><span className="v2-pc-won">원</span></div>
+              <div className="v2-pc-vat">3건 발행 기준</div>
+              <a href={APPLY_URL} target="_blank" rel="noopener" className="v2-cta v2-plan-cta">
+                고급형 신청하기 <Ic.arrow style={{ marginLeft: 4 }} />
+              </a>
+              <ul className="v2-plan-feat">
+                {['블로그 3곳에 3건 발행', '키워드 3개 직접 지정', '키워드 90일 선점', '작성 템플릿 선택', '강조 내용 반영', '영업일 7일 내 발행', '발행 URL 알림톡 전달', '수정·문의 상담'].map((t, i) => (
+                  <li key={i}><span className="v2-tick"><Ic.check /></span>{t}</li>
+                ))}
+              </ul>
             </div>
           </div>
+
           <div className="v2-compare">
+            <div className="v2-cmp-row v2-cmp-head">
+              <span className="v2-cmp-l">상세 비교</span>
+              <span className="v2-cmp-basic">일반형</span>
+              <span className="v2-cmp-gobang">고급형</span>
+            </div>
             {[
-              ['가격', '30만원~', '15만원'],
-              ['채널 트래픽', '미보장', '월 17만+'],
-              ['블로그 등급', '일반', '최적화 2+'],
-              ['키워드 선택', '제한적', '1~3개 직접'],
-              ['발행 기간', '2~4주+', '7일 내'],
-              ['결과 알림', '없음', '카카오 알림톡'],
+              ['group', '발행'],
+              ['포스팅 건수', '1건', '3건'],
+              ['발행처', '공식 블로그', '공식+서브 2곳'],
+              ['발행 기한', '순차 발행', '영업일 7일 내'],
+              ['group', '키워드 · 작성'],
+              ['키워드 지정', null, '3개'],
+              ['키워드 90일 선점', null, '제공'],
+              ['작성 템플릿 선택', null, 'A · B타입'],
+              ['강조 내용 반영', null, '제공'],
+              ['group', '사후 관리'],
+              ['발행 URL 전달', null, '카카오 알림톡'],
+              ['수정·문의 상담', null, '제공'],
             ].map((r, i) => (
-              <div key={i} className="v2-cmp-row">
-                <span className="v2-cmp-l">{r[0]}</span>
-                <span className="v2-cmp-normal">{r[1]}</span>
-                <span className="v2-cmp-gobang">{r[2]}</span>
-              </div>
+              r[0] === 'group' ? (
+                <div key={i} className="v2-cmp-group">{r[1]}</div>
+              ) : (
+                <div key={i} className="v2-cmp-row">
+                  <span className="v2-cmp-l">{r[0]}</span>
+                  <span className={r[1] ? 'v2-cmp-basic' : 'v2-cmp-basic is-none'}>{r[1] || '×'}</span>
+                  <span className="v2-cmp-gobang">{r[2]}</span>
+                </div>
+              )
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── PROCESS ─── */}
+      {/* ─── PROCESS (등급 전환) ─── */}
       <section className="v2-sec v2-light" id="process">
         <div className="v2-container" style={{ maxWidth: 760 }}>
-          <div className="v2-head"><Eyebrow>진행 방식</Eyebrow><h2 className="v2-h2">신청부터 발행까지</h2></div>
+          <div className="v2-head">
+            <Eyebrow>진행 방식</Eyebrow>
+            <h2 className="v2-h2">상품에 따라 <span className="v2-acc">할 일이 달라져요</span>.</h2>
+            <p className="v2-sub">고급형은 키워드를 받아 3곳에 발행하고, 일반형은 받을 것도 쓸 것도 없어요.</p>
+          </div>
+
+          <div className="v2-seg" role="tablist">
+            {[['basic', '일반형 5만원'], ['pro', '고급형 15만원']].map(([k, label]) => (
+              <button key={k} role="tab" aria-selected={track === k}
+                className={'v2-seg-btn' + (track === k ? ' is-on' : '')}
+                onClick={() => setTrack(k)}>{label}</button>
+            ))}
+          </div>
+
           <div className="v2-steps">
-            {steps.map((s, i) => (
+            {(track === 'pro' ? stepsPro : stepsBasic).map((s2, i, arr) => (
               <div key={i} className="v2-step">
-                <div className="v2-step-n num">{s.n}</div>
-                <div className="v2-step-line" style={{ display: i === steps.length - 1 ? 'none' : 'block' }} aria-hidden />
+                <div className="v2-step-n num">{s2.n}</div>
+                <div className="v2-step-line" style={{ display: i === arr.length - 1 ? 'none' : 'block' }} aria-hidden />
                 <div className="v2-step-body">
                   <div className="v2-step-head">
-                    <h3>{s.t}</h3>
-                    <span className="v2-step-tag">{s.tag}</span>
+                    <h3>{s2.t}</h3>
+                    <span className="v2-step-tag">{s2.tag}</span>
                   </div>
-                  <p>{s.d}</p>
+                  <p>{s2.d}</p>
                 </div>
               </div>
             ))}
           </div>
+
+          <a href={track === 'pro' ? APPLY_URL : APPLY_URL_BASIC} target="_blank" rel="noopener" className="v2-cta v2-seg-cta">
+            {track === 'pro' ? '고급형 신청하기' : '일반형 문의하기'} <Ic.arrow style={{ marginLeft: 4 }} />
+          </a>
         </div>
       </section>
 
@@ -298,7 +336,11 @@ function VariantA() {
         <div className="v2-container" style={{ maxWidth: 760 }}>
           <div className="v2-head"><Eyebrow>자주 묻는 질문</Eyebrow><h2 className="v2-h2">신청 전에 확인해 주세요</h2></div>
           <div className="v2-faq-box">
-            <V2Faq open q="작성 후 알림을 주나요?"
+            <V2Faq open q="일반형과 고급형, 뭐가 다른가요?"
+              a="가장 큰 차이는 <strong>키워드</strong>예요. 고급형은 원하는 키워드 3개를 지정해 블로그 3곳에 발행하고 결과 URL까지 알려드려요. 일반형은 <strong>공식 블로그에 1건만 발행</strong>되고 키워드 지정이나 상담은 포함되지 않아요." />
+            <V2Faq q="일반형으로 시작했다가 고급형으로 올릴 수 있나요?"
+              a="네. 이미 결제하신 5만원을 뺀 <strong>차액 10만원만 추가 결제</strong>하시면 고급형으로 진행해 드려요." />
+            <V2Faq q="작성 후 알림을 주나요?"
               a="네, 작성이 완료되면 <strong>신청 시 입력한 번호로 카카오톡 알림</strong>이 발송돼요. 발행된 포스팅 URL도 함께 전달돼요." />
             <V2Faq q="작성한 블로그는 어디에 노출되나요?"
               a="신청하신 키워드 기준으로 <strong>네이버 블로그탭 상위 진입을 목표</strong>로 작성해요. 네이버 알고리즘 특성상 순위·유지 기간은 변동될 수 있어요." />
@@ -316,12 +358,12 @@ function VariantA() {
       <section className="v2-sec v2-dark v2-final" id="cta">
         <div className="v2-container v2-final-inner">
           <span className="v2-final-period">U사장님 특가</span>
-          <h2 className="v2-final-h">정가 30만원짜리 포스팅,<br /><span className="v2-acc-d">지금은 15만원</span>이에요.</h2>
+          <h2 className="v2-final-h">가볍게 5만원,<br />제대로 하려면 <span className="v2-acc-d">15만원</span>.</h2>
           <a href={APPLY_URL} target="_blank" rel="noopener" className="v2-cta v2-cta-lg">
             지금 신청하기 <Ic.arrow style={{ marginLeft: 4 }} />
           </a>
-          <a href={ASK_URL} target="_blank" rel="noopener" className="v2-ask">
-            <Ic.chat style={{ fontSize: 18 }} /> 채널톡으로 문의하기
+          <a href={APPLY_URL_BASIC} target="_blank" rel="noopener" className="v2-ask">
+            <Ic.chat style={{ fontSize: 18 }} /> 일반형 5만원 문의하기
           </a>
         </div>
       </section>
@@ -452,7 +494,7 @@ function V2Styles() {
     .v2-hero {
       position:relative; overflow:hidden; text-align:center;
       background:linear-gradient(180deg,#E7F0FD 0%,#F3F8FE 56%,#FFFFFF 100%);
-      padding:74px 0 92px; margin-top:-64px; padding-top:128px;
+      padding:0 0 76px; margin-top:-64px; padding-top:118px;
     }
     .v2-hero-glow {
       position:absolute; left:50%; top:-220px; width:820px; height:580px; transform:translateX(-50%);
@@ -461,9 +503,16 @@ function V2Styles() {
       pointer-events:none;
     }
     .v2-hero-inner { position:relative; z-index:1; max-width:840px; }
+    .v2-hero-split { position:relative; z-index:1; display:grid; grid-template-columns:1.08fr .92fr; gap:48px; align-items:center; text-align:left; }
+    .v2-hero-ticks { margin-top:24px; gap:10px; }
+    .v2-hero-visual { display:flex; flex-direction:column; gap:16px; }
+    .v2-hero-proof { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    .v2-hero-proof-cell { background:rgba(255,255,255,.82); border:1px solid var(--line); border-radius:14px; padding:16px 10px; text-align:center; box-shadow:0 6px 18px rgba(16,37,43,.05); }
+    .v2-hero-proof-n { font-size:22px; font-weight:900; letter-spacing:-.6px; color:var(--accD); line-height:1.1; }
+    .v2-hero-proof-l { font-size:13px; color:var(--ink2); margin-top:5px; font-weight:600; word-break:keep-all; }
     .v2-hero-logo { margin:0 0 18px; }
     .v2-hero-logo img { height:58px; width:auto; filter:drop-shadow(0 10px 22px rgba(27,71,160,.24)); }
-    .v2-hero-tags { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:24px; }
+    .v2-hero-tags { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:22px; }
     .v2-tag {
       display:inline-flex; align-items:center; gap:9px;
       font-size:16px; font-weight:800; letter-spacing:-.2px; color:var(--accD);
@@ -479,11 +528,13 @@ function V2Styles() {
       background:#fff; border:1px solid var(--line); box-shadow:0 6px 16px rgba(27,71,160,.10);
     }
     .v2-cta-pill .v2-star { color:var(--gold); font-size:1.05em; }
-    .v2-h1 { font-size:62px; font-weight:900; line-height:1.1; letter-spacing:-2px; color:var(--ink); word-break:keep-all; margin:6px 0 18px; }
+    .v2-h1 { font-size:58px; font-weight:900; line-height:1.1; letter-spacing:-2px; color:var(--ink); word-break:keep-all; margin:6px 0 18px; }
     .v2-strike { color:#93A6A8; text-decoration:line-through; text-decoration-color:rgba(44,111,227,.55); text-decoration-thickness:3px; }
-    .v2-hero-sub { font-size:25px; line-height:1.5; color:var(--ink2); font-weight:600; word-break:keep-all; }
+    .v2-hero-sub { font-size:22px; line-height:1.5; color:var(--ink2); font-weight:600; word-break:keep-all; display:flex; flex-direction:column; gap:6px; }
+    .v2-hero-sub span { display:block; }
     .v2-hero-sub b { color:var(--ink); }
 
+    .v2-hero-ctas { margin-top:32px; }
     .v2-hero-price {
       display:inline-flex; flex-direction:column; align-items:center; gap:10px;
       margin:30px auto 4px; padding:28px 52px; border-radius:24px;
@@ -495,6 +546,8 @@ function V2Styles() {
     .v2-hp-now { display:inline-flex; align-items:baseline; gap:4px; line-height:1; }
     .v2-hp-now .num { font-size:78px; font-weight:900; line-height:.95; letter-spacing:-3px; color:var(--accD); }
     .v2-hp-won { font-size:36px; font-weight:900; color:var(--accD); }
+    .v2-hp-alt { display:inline-flex; align-items:center; gap:3px; margin-top:16px; font-size:15px; font-weight:600; color:var(--accD); }
+    .v2-hp-alt b { font-weight:800; }
     .v2-hp-vat { font-size:17px; color:var(--ink2); font-weight:600; }
 
     .v2-hero-cta { margin-top:32px; display:flex; flex-direction:column; align-items:center; gap:13px; }
@@ -565,12 +618,70 @@ function V2Styles() {
     .v2-pc-vat { font-size:16px; color:var(--ink2); margin-top:12px; }
     .v2-pc-note { display:flex; align-items:center; gap:11px; text-align:left; margin-top:22px; padding:16px 20px; background:var(--tint); border-radius:14px; font-size:16px; color:var(--ink); line-height:1.6; word-break:keep-all; }
 
-    .v2-compare { max-width:520px; margin:30px auto 0; background:rgba(255,255,255,.06); border:1px solid rgba(132,180,255,.22); border-radius:18px; overflow:hidden; }
+    /* 플랜 카드 2종 (일반형 / 고급형) */
+    .v2-vat-note { text-align:center; font-size:14px; color:var(--onD2); margin-bottom:18px; }
+    .v2-plan-grid { display:grid; grid-template-columns:1fr 1fr; gap:22px; max-width:900px; margin:0 auto; align-items:stretch; }
+    .v2-plan { position:relative; display:flex; flex-direction:column; background:#fff; border-radius:26px; padding:38px 32px; box-shadow:0 24px 56px rgba(0,0,0,.26); }
+    .v2-plan--hero { outline:2px solid var(--acc); outline-offset:-2px; }
+    .v2-plan-badge { position:absolute; top:-13px; left:50%; transform:translateX(-50%); background:var(--acc); color:#fff; font-size:13px; font-weight:800; padding:6px 14px; border-radius:999px; white-space:nowrap; letter-spacing:.2px; }
+    .v2-plan-name { font-size:22px; font-weight:900; color:var(--ink); }
+    .v2-plan-desc { font-size:15px; color:var(--ink2); margin-top:6px; }
+    .v2-plan-orig { margin-top:18px; min-height:26px; font-size:16px; color:var(--ink2); font-weight:600; }
+    .v2-plan-orig s { font-size:19px; font-weight:700; }
+    .v2-plan-orig--empty { visibility:hidden; }
+    .v2-plan .v2-pc-now { margin-top:2px; align-self:flex-start; }
+    .v2-plan .v2-pc-now .num { font-size:64px; letter-spacing:-2px; }
+    .v2-pc-now--sm .num { font-size:52px !important; }
+    .v2-plan .v2-pc-vat { margin-top:8px; font-size:15px; }
+    .v2-plan-feat { list-style:none; margin:24px 0 0; padding:0; display:flex; flex-direction:column; gap:11px; flex:1; }
+    .v2-plan-feat li { display:flex; align-items:flex-start; gap:10px; font-size:16px; font-weight:600; color:var(--ink); line-height:1.5; word-break:keep-all; }
+    .v2-plan-feat li.is-off { color:#98A2B3; font-weight:500; }
+    .v2-plan .v2-tick { width:22px; height:22px; font-size:12px; margin-top:1px; }
+    .v2-cross { display:inline-flex; width:22px; height:22px; align-items:center; justify-content:center; font-size:15px; color:#98A2B3; background:#EEF1F5; border-radius:50%; flex-shrink:0; margin-top:1px; }
+    .v2-plan-cta { margin-top:22px; width:100%; justify-content:center; }
+    .v2-plan-cta--ghost { background:#fff; color:var(--accD); border:2px solid var(--line); box-shadow:none; }
+    .v2-plan-note { margin-top:auto; padding-top:18px; font-size:14px; color:var(--ink2); line-height:1.6; word-break:keep-all; }
+
+    /* 진행 방식 — 등급 세그먼트 */
+    .v2-seg { display:flex; width:fit-content; padding:5px; gap:4px; background:#EEF1F5; border-radius:999px; margin:0 auto 34px; }
+    .v2-seg-btn { padding:11px 22px; border-radius:999px; font-size:16px; font-weight:700; color:var(--ink2); background:transparent; transition:background .15s, color .15s, box-shadow .15s; white-space:nowrap; }
+    .v2-seg-btn.is-on { background:#fff; color:var(--accD); box-shadow:0 2px 8px rgba(16,37,43,.12); }
+    .v2-seg-cta { display:flex; width:fit-content; margin:8px auto 0; padding:17px 30px; font-size:18px; }
+
+    .v2-vat-note { text-align:center; font-size:14px; color:var(--onD2); margin-bottom:18px; }
+    .v2-plan-grid { display:grid; grid-template-columns:1fr 1fr; gap:22px; max-width:900px; margin:0 auto; align-items:stretch; }
+    .v2-plan { position:relative; display:flex; flex-direction:column; background:#fff; border-radius:26px; padding:38px 32px; box-shadow:0 24px 56px rgba(0,0,0,.26); }
+    .v2-plan--hero { outline:2px solid var(--acc); outline-offset:-2px; }
+    .v2-plan-badge { position:absolute; top:-13px; left:50%; transform:translateX(-50%); background:var(--acc); color:#fff; font-size:13px; font-weight:800; padding:6px 14px; border-radius:999px; white-space:nowrap; letter-spacing:.2px; }
+    .v2-plan-name { font-size:22px; font-weight:900; color:var(--ink); }
+    .v2-plan-desc { font-size:15px; color:var(--ink2); margin-top:6px; }
+    .v2-plan-orig { margin-top:18px; min-height:26px; font-size:16px; color:var(--ink2); font-weight:600; }
+    .v2-plan-orig s { font-size:19px; font-weight:700; }
+    .v2-plan-orig--empty { visibility:hidden; }
+    .v2-plan .v2-pc-now { margin-top:2px; align-self:flex-start; }
+    .v2-plan .v2-pc-now .num { font-size:64px; letter-spacing:-2px; }
+    .v2-pc-now--sm .num { font-size:52px !important; }
+    .v2-plan .v2-pc-vat { margin-top:8px; font-size:15px; }
+    .v2-plan-feat { list-style:none; margin:24px 0 0; padding:0; display:flex; flex-direction:column; gap:11px; flex:1; }
+    .v2-plan-feat li { display:flex; align-items:flex-start; gap:10px; font-size:16px; font-weight:600; color:var(--ink); line-height:1.5; word-break:keep-all; }
+    .v2-plan-feat li.is-off { color:#98A2B3; font-weight:500; }
+    .v2-plan .v2-tick { width:22px; height:22px; font-size:12px; margin-top:1px; }
+    .v2-cross { display:inline-flex; width:22px; height:22px; align-items:center; justify-content:center; font-size:15px; color:#98A2B3; background:#EEF1F5; border-radius:50%; flex-shrink:0; margin-top:1px; }
+    .v2-plan-cta { margin-top:22px; width:100%; justify-content:center; }
+    .v2-plan-cta--ghost { background:#fff; color:var(--accD); border:2px solid var(--line); box-shadow:none; }
+    .v2-plan-note { margin-top:auto; padding-top:18px; font-size:14px; color:var(--ink2); line-height:1.6; word-break:keep-all; }
+
+    .v2-compare { max-width:900px; margin:34px auto 0; background:rgba(255,255,255,.06); border:1px solid rgba(132,180,255,.22); border-radius:18px; overflow:hidden; }
     .v2-cmp-row { display:grid; grid-template-columns:1fr 100px 110px; align-items:center; padding:14px 22px; border-bottom:1px solid rgba(255,255,255,.08); }
     .v2-cmp-row:last-child { border-bottom:none; }
     .v2-cmp-l { font-size:15px; color:var(--onD2); font-weight:600; }
-    .v2-cmp-normal { font-size:14px; color:var(--onD2); text-align:center; text-decoration:line-through; opacity:.65; }
-    .v2-cmp-gobang { font-size:15px; font-weight:800; color:var(--accBr); text-align:center; }
+    .v2-cmp-basic { font-size:15px; color:var(--onD2); text-align:center; font-weight:600; word-break:keep-all; }
+    .v2-cmp-basic.is-none { opacity:.4; }
+    .v2-cmp-head { background:rgba(255,255,255,.08); }
+    .v2-cmp-head .v2-cmp-l { font-weight:800; color:var(--onD); }
+    .v2-cmp-head .v2-cmp-basic, .v2-cmp-head .v2-cmp-gobang { font-weight:800; }
+    .v2-cmp-group { padding:15px 22px 9px; font-size:13px; font-weight:800; letter-spacing:.4px; color:var(--accBr); background:rgba(255,255,255,.04); border-bottom:1px solid rgba(255,255,255,.08); }
+    .v2-cmp-gobang { font-size:15px; font-weight:800; color:var(--accBr); text-align:center; word-break:keep-all; }
 
     /* process */
     .v2-steps { display:flex; flex-direction:column; }
@@ -618,6 +729,11 @@ function V2Styles() {
     .v2-up.d4{animation-delay:.34s}.v2-up.d5{animation-delay:.46s}.v2-up.d6{animation-delay:.58s}
 
     /* responsive */
+    @media (max-width:980px){
+      .v2-hero-split { grid-template-columns:1fr; gap:36px; }
+      .v2-hero-visual { max-width:420px; }
+    }
+    @media (max-width:880px){ .v2-plan-grid { grid-template-columns:1fr; } }
     @media (max-width:860px){
       .v2-proof-search { grid-template-columns:1fr; gap:30px; padding:28px; }
       .v2-ps-mock { display:flex; justify-content:center; }
@@ -643,6 +759,10 @@ function V2Styles() {
       .v2-price-card { padding:34px 22px; }
       .v2-pc-now .num { font-size:60px; } .v2-pc-won { font-size:25px; }
       .v2-cmp-row { grid-template-columns:1fr 78px 86px; padding:12px 16px; }
+      .v2-plan { padding:32px 22px; }
+      .v2-plan .v2-pc-now .num { font-size:52px; }
+      .v2-pc-now--sm .num { font-size:44px !important; }
+      .v2-cmp-group { padding:13px 16px 8px; }
       .v2-final-h { font-size:27px; }
       .v2-nav-name { display:none; }
       .v2-fab-wrap { left:16px; right:16px; bottom:16px; transform:none; animation:v2fabM 3.6s ease-in-out infinite; }
