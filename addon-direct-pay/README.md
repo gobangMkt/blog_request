@@ -36,7 +36,7 @@
 ## 배포 정보
 | 구분 | 값 |
 |---|---|
-| 폼 | https://gobangmkt.github.io/blog_request/부가상품-직접결제/form.html |
+| 폼 | https://gobangmkt.github.io/blog_request/addon-direct-pay/form.html |
 | GAS scriptId | `13UxHBrMESwMtOYWPniqDzfpmukokn6C6P0nJ5aOrOzedUcYigG07YpOs` |
 | GAS 웹앱 | 배포 ID는 `form.html`의 `GAS_URL` 참고 |
 | 시트 | 기존 15만원·10만원 폼과 같은 시트(`Code.gs` 상단 `SPREADSHEET_ID`) |

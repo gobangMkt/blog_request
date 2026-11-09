@@ -11,10 +11,10 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --pri:   #3182F6; --pri-h: #1B6CF2; --pri-50:#F0F6FF; --pri-100:#EEF3FF;
-      --teal:  #00A0B0; --teal-bg:rgba(0,160,176,.07); --teal-bd:rgba(0,160,176,.22);
+      --teal:  #00A0B0; --teal-bg:rgba(0,160,176,.07); --teal-bd:rgba(0,160,176,.22); --teal-ink:#00707C;
       --g900: #191F28; --g700: #4A5568; --g600: #4E5968; --g500: #8B95A1; --g400: #B0B8C1; --g300: #C4CBD4;
       --bg:   #F2F4F6; --sur: #FFFFFF; --info: #F8FAFF; --bdr: #E5E8EB; --bdr-i: #D0E2FF;
-      --ok:   #00C73C; --ok-bg:#E8FBF0;
+      --ok:   #00C73C; --ok-bg:#E8FBF0; --ok-ink:#00812A;
       --err:  #F04452; --err-bg:#FFF0F2; --err-str:#D92B2B;
       --f: 'Pretendard', -apple-system, sans-serif;
     }
@@ -22,21 +22,14 @@
     body { font-family: var(--f); background: var(--bg); min-height: 100vh; padding-bottom: 96px; color: var(--g900); }
     .page { max-width: 480px; margin: 0 auto; }
 
-    /* 헤더 — 결제 완료 확인이 먼저 보이게 */
+    /* 헤더 */
     .head { background: var(--sur); border-bottom: 1px solid var(--bdr); padding: 22px 20px 22px; }
     .head-logo { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
     .head-logo img { height: 24px; width: auto; }
     .head-logo span { font-size: 14px; font-weight: 700; color: var(--g700); }
-    .paid { display: inline-flex; align-items: center; gap: 8px; background: var(--ok-bg); color: #00812A; font-size: 14px; font-weight: 700; padding: 7px 14px; border-radius: 999px; margin-bottom: 14px; }
-    .paid svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .tag { display: inline-block; background: var(--teal-bg); color: var(--teal-ink); font-size: 14px; font-weight: 700; padding: 7px 14px; border-radius: 999px; margin-bottom: 14px; }
     .head h1 { font-size: 24px; font-weight: 800; line-height: 1.35; letter-spacing: -.5px; word-break: keep-all; }
     .head p { font-size: 15px; color: var(--g600); margin-top: 8px; line-height: 1.6; word-break: keep-all; }
-
-    /* 진행 단계 */
-    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 16px 12px 0; }
-    .step { background: var(--sur); border: 1px solid var(--bdr); border-radius: 12px; padding: 12px 6px; text-align: center; }
-    .step b { display: block; font-size: 16px; font-weight: 800; color: var(--teal); }
-    .step span { display: block; font-size: 13px; font-weight: 600; color: var(--g600); margin-top: 3px; }
 
     /* 섹션 */
     .sec { background: var(--sur); margin: 12px 12px 0; padding: 22px 18px 20px; border: 1px solid var(--bdr); border-radius: 18px; }
@@ -61,7 +54,7 @@
     input.invalid { border-color: var(--err); }
     textarea { resize: none; height: 120px; line-height: 1.6; }
     .fb { font-size: 13px; margin-top: 6px; min-height: 18px; display: flex; flex-direction: column; gap: 4px; }
-    .fb.ok { color: #00812A; } .fb.error { color: var(--err-str); } .fb.checking { color: var(--g500); }
+    .fb.ok { color: var(--ok-ink); } .fb.error { color: var(--err-str); } .fb.checking { color: var(--g500); }
     .fb-hint { font-size: 13px; color: var(--g600); line-height: 1.6; }
     .char-count { font-size: 13px; color: var(--g500); text-align: right; margin-top: 6px; }
     .note { font-size: 13px; color: var(--g500); line-height: 1.6; margin-top: 6px; word-break: keep-all; }
@@ -98,7 +91,7 @@
     .kw-item { display: flex; align-items: flex-start; gap: 12px; }
     .kw-num { width: 28px; height: 28px; border-radius: 50%; background: var(--bg); color: var(--g500); font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 12px; }
     .kw-num.active { background: var(--pri-100); color: var(--pri); }
-    .kw-num.ok { background: var(--ok-bg); color: #00812A; }
+    .kw-num.ok { background: var(--ok-bg); color: var(--ok-ink); }
     .kw-num.invalid { background: var(--err-bg); color: var(--err); }
     .kw-body { flex: 1; }
 
@@ -165,7 +158,7 @@
     <path fill="#fff" d="M5.5 10.5L7.8 12.8L14.5 6L13.3 4.8L7.8 10.3L6.7 9.2Z"/>
   </svg>
   <h2>신청서가 접수됐어요</h2>
-  <p>결제는 이미 완료돼서 추가로 하실 일은 없어요.</p>
+  <p>추가로 하실 일은 없어요.</p>
   <ul>
     <li>작성은 <strong>영업일 7일 이내</strong>에 진행돼요.</li>
     <li>발행이 끝나면 <strong>발행 URL을 알림톡</strong>으로 보내드려요.</li>
@@ -179,19 +172,9 @@
 
     <div class="head">
       <div class="head-logo"><img src="assets/U_ALF.png" alt="고방"><span>고방 블로그 마케팅</span></div>
-      <div class="paid">
-        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="10" fill="#00C73C"/><path d="M5.6 10.4l2.6 2.6 6.2-6.2" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        블로그 고급형 결제 완료
-      </div>
-      <h1>글 작성에 필요한 내용만<br>알려 주세요</h1>
-      <p>결제는 끝났어요. 아래 4가지를 적어 주시면 바로 작성을 시작해요. 약 3분이면 돼요.</p>
-    </div>
-
-    <div class="steps" aria-hidden="true">
-      <div class="step"><b>1</b><span>연락처</span></div>
-      <div class="step"><b>2</b><span>지점</span></div>
-      <div class="step"><b>3</b><span>키워드</span></div>
-      <div class="step"><b>4</b><span>스타일</span></div>
+      <div class="tag">부가상품 · 블로그 고급형</div>
+      <h1>블로그 고급형 신청서</h1>
+      <p>글 작성에 필요한 내용을 적어 주세요. 약 3분이면 돼요.</p>
     </div>
 
     <form id="applyForm" novalidate>
@@ -386,7 +369,7 @@
 </div>
 
 <script>
-  // GAS 웹앱 배포 URL — 부가상품-직접결제/gas-code 배포 후 채운다.
+  // GAS 웹앱 배포 URL — addon-direct-pay/gas-code 배포 ID
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbysJEvbkNX8PU7C5zcdfGqtw5xbfejQmDOIONr9PwssxwPyv2-HIQPI6uZtV2AChYS7/exec';
 
   function callAPI(action, params) {
@@ -471,17 +454,26 @@
   });
   document.getElementById('agree1').addEventListener('change', checkSubmit);
 
+  // 제출 버튼은 비활성일 때 "무엇이 남았는지"를 라벨로 말한다 (맨 위 항목부터 하나씩)
   function checkSubmit() {
-    var ok = document.getElementById('name').value.trim().length >= 2
-      && /^010-\d{4}-\d{4}$/.test(document.getElementById('phone').value)
-      && urlValid === true
-      && document.getElementById('kw1').value.trim().length > 0 && kwStatus.kw1 === true
-      && (document.getElementById('kw2').value.trim().length === 0 || kwStatus.kw2 === true)
-      && (document.getElementById('kw3').value.trim().length === 0 || kwStatus.kw3 === true)
-      && document.getElementById('description').value.trim().length > 0
-      && document.getElementById('agree1').checked;
-    document.getElementById('submitBtn').disabled = !ok;
+    var v = function(id) { return document.getElementById(id).value.trim(); };
+    var kws = ['kw1','kw2','kw3'].filter(function(id) { return v(id).length > 0; });
+    var need = '';
+    if (v('name').length < 2) need = '이름을 입력해 주세요';
+    else if (!document.getElementById('phone').value) need = '전화번호를 입력해 주세요';
+    else if (!/^010-\d{4}-\d{4}$/.test(document.getElementById('phone').value)) need = '전화번호 형식을 확인해 주세요';
+    else if (!v('placeUrl')) need = '지점 URL을 입력해 주세요';
+    else if (urlValid !== true) need = '지점 URL 형식을 확인해 주세요';
+    else if (!v('kw1')) need = '키워드를 1개 이상 입력해 주세요';
+    else if (kws.some(function(id) { return kwStatus[id] === null; })) need = '키워드를 확인하는 중이에요';
+    else if (kws.some(function(id) { return kwStatus[id] === false; })) need = '사용할 수 없는 키워드를 바꿔 주세요';
+    else if (!v('description')) need = '꼭 넣고 싶은 내용을 입력해 주세요';
+    else if (!document.getElementById('agree1').checked) need = '안내 내용에 동의해 주세요';
+    var btn = document.getElementById('submitBtn');
+    btn.disabled = !!need;
+    btn.textContent = need || '신청서 제출하기';
   }
+  checkSubmit(); // 첫 화면부터 버튼이 남은 항목을 말한다
 
   /* 작성 스타일 — 작성 타입 값: 직A(설명형) / 직B(후기형) */
   var selTmpl = '직A';

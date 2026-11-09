@@ -545,7 +545,7 @@ function setPriceByType_(sheet, row, tmplType) {
 }
 
 // 부가상품 직접결제 건 단가 — 직-일반(블로그 일반형) 70,000 / 직A·직B(고급형) 150,000, 모두 부가세 포함.
-// '직*' 행은 결제요청 알림톡·미결제 리마인드·결제링크 발송 대상이 아니다. 신규 폼 GAS는 부가상품-직접결제/ 폴더.
+// '직*' 행은 결제요청 알림톡·미결제 리마인드·결제링크 발송 대상이 아니다. 신규 폼 GAS는 addon-direct-pay/ 폴더.
 function setDirectPrice_(sheet, row, tmplType) {
   var price = (tmplType === '직-일반') ? 70000 : (tmplType === '직A' || tmplType === '직B') ? 150000 : 0;
   if (!price) return;
