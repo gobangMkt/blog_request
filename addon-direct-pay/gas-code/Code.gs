@@ -150,25 +150,12 @@ function submitForm(formData) {
   if (!kw.available) return { success: false, reason: 'keyword_taken', remainingDays: kw.remainingDays };
 
   var now = new Date();
-  // 알림톡 링크(?b=지점번호)로 들어온 제출이면 붙여넣기로 만든 '직-고급' 대기 행을 채운다(새 행을 만들지 않는다).
-  var branchNo = String(formData.branchNo || '').replace(/\D/g, '');
-  var pendingRow = branchNo ? findPendingPremiumRow_(sheet, branchNo, null) : 0;
-  var newRow;
-  if (pendingRow) {
-    // 신청일시(A)·결제완료일(B)=제출일(D-day는 작성 시작일 기준), 신청자(C)는 지점명(지점번호) 그대로 둔다.
-    sheet.getRange(pendingRow, 1, 1, 2).setValues([[now, now]]);
-    sheet.getRange(pendingRow, 4, 1, 10).setValues([[formData.phone, formData.placeUrl,
-      formData.keyword1, formData.keyword2 || '', formData.keyword3 || '', formData.description,
-      formData.deposit || '', formData.monthly || '', formData.walking || '', tmplType]]);
-    newRow = pendingRow;
-  } else {
-    // 신청일시, 결제완료일(=신청일: 결제는 이미 끝났고 D-day는 작성 시작일 기준), 신청자, 전화번호, 지점URL,
-    // 키워드1~3, 강조내용, 보증금, 월세, 도보, 작성타입, 상태
-    sheet.appendRow([now, now, formData.name, formData.phone, formData.placeUrl,
-      formData.keyword1, formData.keyword2 || '', formData.keyword3 || '', formData.description,
-      formData.deposit || '', formData.monthly || '', formData.walking || '', tmplType, '신청완료']);
-    newRow = sheet.getLastRow();
-  }
+  // 신청일시, 결제완료일(=신청일: 결제는 이미 끝났고 D-day는 작성 시작일 기준), 신청자, 전화번호, 지점URL,
+  // 키워드1~3, 강조내용, 보증금, 월세, 도보, 작성타입, 상태
+  sheet.appendRow([now, now, formData.name, formData.phone, formData.placeUrl,
+    formData.keyword1, formData.keyword2 || '', formData.keyword3 || '', formData.description,
+    formData.deposit || '', formData.monthly || '', formData.walking || '', tmplType, '신청완료']);
+  var newRow = sheet.getLastRow();
   setPriceByType_(sheet, newRow, tmplType); // P열(16) 단가
   sheet.getRange(newRow, 1, 1, sheet.getLastColumn()).setBackground(ROW_BG_PAID);
 
@@ -262,29 +249,12 @@ function registerOnePayment_(sheet, block) {
   return { status: 'added', branch: tag.branch, paidAt: tag.paidAt, row: row };
 }
 
-// ── 고급형: 알림 붙여넣기 → 담당자가 사장님 전화번호 입력 → 시트 저장 + 키워드 폼 링크 알림톡 ──
-// 행은 작성 타입 '직-고급'(대기)으로 만들고, 사장님이 폼(?b=지점번호)을 제출하면 그 행이 직A/직B로 채워진다.
-// 알림톡 템플릿 ID는 스크립트 속성 TEMPLATE_PREMIUM_FORM. 없으면 저장만 하고 발송하지 않는다.
+// ── 고급형: 알림 붙여넣기 → 담당자가 사장님 전화번호 입력 → 키워드 폼 링크 알림톡 발송 ──
+// 시트에는 쓰지 않는다. 사장님이 폼을 제출하면 submitForm이 행을 만든다(기존과 같다).
+// 알림톡 템플릿 ID는 스크립트 속성 TEMPLATE_PREMIUM_FORM(변수 #{지점명} 하나). 없으면 발송하지 않는다.
 // 발송 기록은 스크립트 속성 PF_<지점번호>_<결제일시>. 같은 건에 알림톡이 두 번 나가지 않게 한다.
 function premiumKey_(branchNo, paidAt) {
   return 'PF_' + String(branchNo) + '_' + Utilities.formatDate(paidAt, 'Asia/Seoul', 'yyyyMMddHHmm');
-}
-
-// '직-고급' 대기 행을 아래에서부터 찾는다. paidAt이 있으면 결제일시까지 같아야 한다.
-function findPendingPremiumRow_(sheet, branchNo, paidAt) {
-  var lastRow = sheet.getLastRow();
-  if (lastRow < 2) return 0;
-  var from = Math.max(2, lastRow - 199);
-  var data = sheet.getRange(from, 1, lastRow - from + 1, 13).getValues();
-  var want = paidAt ? Utilities.formatDate(paidAt, 'Asia/Seoul', 'yyyy-MM-dd HH:mm') : '';
-  for (var i = data.length - 1; i >= 0; i--) {
-    if (String(data[i][12] || '').trim() !== '직-고급') continue;
-    var m = String(data[i][2] || '').match(/\((\d+)\)\s*$/);
-    if (!m || m[1] !== String(branchNo)) continue;
-    if (want && (!data[i][0] || Utilities.formatDate(new Date(data[i][0]), 'Asia/Seoul', 'yyyy-MM-dd HH:mm') !== want)) continue;
-    return from + i;
-  }
-  return 0;
 }
 
 function registerPremium(payload) {
@@ -298,8 +268,6 @@ function registerPremium(payload) {
   if (!branchNo || !branch || !m) return { success: false, reason: 'bad_request' };
   var digits = String(payload.phone || '').replace(/\D/g, '');
   if (!/^01[016789]\d{7,8}$/.test(digits)) return { success: false, reason: 'bad_phone' };
-  var phone = digits.length === 11 ? digits.replace(/^(\d{3})(\d{4})(\d{4})$/, '$1-$2-$3')
-                                   : digits.replace(/^(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3');
   var paidAt = new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10), parseInt(m[4], 10), parseInt(m[5], 10));
   var key = premiumKey_(branchNo, paidAt);
 
@@ -307,27 +275,12 @@ function registerPremium(payload) {
   lock.waitLock(20000);
   try {
     if (props.getProperty(key)) return { success: true, status: 'already_sent' };
-    var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('신청 내역');
-    var label = branch + '(' + branchNo + ')';
-    var row = findPendingPremiumRow_(sheet, branchNo, paidAt);
-    if (row) {
-      sheet.getRange(row, 4).setValue(phone);
-    } else {
-      sheet.appendRow([paidAt, paidAt, label, phone, '', '', '', '', '', '', '', '', '직-고급', '신청완료']);
-      row = sheet.getLastRow();
-      if (!sheet.getRange(1, 16).getValue()) sheet.getRange(1, 16).setValue('단가');
-      var cell = sheet.getRange(row, 16);
-      cell.setValue(PRICE_DIRECT_PREMIUM);
-      cell.setNumberFormat('₩#,##0');
-      sheet.getRange(row, 1, 1, sheet.getLastColumn()).setBackground(ROW_BG_PAID);
-    }
-
     var tmpl = props.getProperty('TEMPLATE_PREMIUM_FORM');
-    if (!tmpl) return { success: true, status: 'saved_not_sent', row: row };
-    var sent = sendAlimtalk(digits, tmpl, { '#{지점명}': branch, '#{지점번호}': branchNo });
-    if (!sent.ok) return { success: true, status: 'send_failed', row: row, msg: sent.msg };
+    if (!tmpl) return { success: true, status: 'no_template' };
+    var sent = sendAlimtalk(digits, tmpl, { '#{지점명}': branch });
+    if (!sent.ok) return { success: true, status: 'send_failed', msg: sent.msg };
     props.setProperty(key, Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'));
-    return { success: true, status: 'sent', row: row };
+    return { success: true, status: 'sent' };
   } finally {
     lock.releaseLock();
   }

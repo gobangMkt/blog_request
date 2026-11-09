@@ -134,10 +134,10 @@
   var USABOSS_URL = 'https://u-ceo.kr';
 
   var SEND_LABEL = {
-    sent:           { ok: true,  msg: '저장했고 알림톡을 보냈어요. 사장님이 폼을 제출하면 이 행이 채워져요.' },
+    sent:           { ok: true,  msg: '알림톡을 보냈어요. 사장님이 폼을 제출하면 신청 내역에 행이 생겨요.' },
     already_sent:   { ok: true,  msg: '이미 알림톡을 보낸 건이에요.' },
-    saved_not_sent: { ok: true,  msg: '시트에는 저장했어요. 알림톡 템플릿이 아직 연결되지 않아 발송은 하지 않았어요.' },
-    send_failed:    { ok: false, msg: '시트에는 저장했지만 알림톡 발송에 실패했어요. 같은 번호로 다시 눌러 주세요.' },
+    no_template:    { ok: false, msg: '알림톡 템플릿이 아직 연결되지 않아 발송하지 못했어요.' },
+    send_failed:    { ok: false, msg: '알림톡 발송에 실패했어요. 같은 번호로 다시 눌러 주세요.' },
     bad_phone:      { ok: false, msg: '전화번호 형식을 확인해 주세요.' },
     unauthorized:   { ok: false, msg: '접근 코드가 맞지 않아요.' },
     bad_request:    { ok: false, msg: '알림에서 읽은 값에 문제가 있어요. 시트에 직접 입력해 주세요.' }
@@ -147,7 +147,7 @@
     var li = document.createElement('li'); li.className = 'ask';
     var b = document.createElement('b'); b.textContent = r.branch + '(' + r.branchNo + ') · ' + r.paidAt;
     var why = document.createElement('p'); why.className = 'why';
-    why.textContent = '고급형이에요. 사장님 전화번호를 넣으면 시트에 저장하고 키워드 폼 알림톡을 보내요.';
+    why.textContent = '고급형이에요. 사장님 전화번호를 넣으면 키워드 폼 알림톡을 보내요.';
     li.appendChild(b); li.appendChild(why);
     if (USABOSS_URL) {
       var a = document.createElement('a'); a.href = USABOSS_URL; a.target = '_blank'; a.rel = 'noopener';
@@ -158,15 +158,15 @@
     var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'cta';
     var msg = document.createElement('p'); msg.className = 'msg'; msg.hidden = true;
     function valid() { return /^01[016789]\d{7,8}$/.test(inp.value.replace(/\D/g, '')); }
-    function sync() { btn.textContent = valid() ? '저장하고 알림톡 발송하기' : '사장님 전화번호를 입력해 주세요'; btn.disabled = !valid(); }
+    function sync() { btn.textContent = valid() ? '알림톡 발송하기' : '사장님 전화번호를 입력해 주세요'; btn.disabled = !valid(); }
     inp.addEventListener('input', sync); sync();
     btn.addEventListener('click', function () {
-      btn.disabled = true; btn.textContent = '저장하는 중이에요'; msg.hidden = true;
+      btn.disabled = true; btn.textContent = '보내는 중이에요'; msg.hidden = true;
       fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'registerPremium', token: token.value.trim(),
         branch: r.branch, branchNo: r.branchNo, paidAt: r.paidAt, phone: inp.value }) })
         .then(function (res) { return res.json(); })
         .then(function (d) {
-          var s = SEND_LABEL[d.status || d.reason] || { ok: false, msg: '오류가 났어요. 시트를 확인해 주세요.' };
+          var s = SEND_LABEL[d.status || d.reason] || { ok: false, msg: '오류가 났어요. 잠시 뒤 다시 시도해 주세요.' };
           if (d.success && s.ok) {
             li.className = 'done'; li.innerHTML = '';
             var t = document.createElement('b'); t.textContent = r.branch + '(' + r.branchNo + ')';
