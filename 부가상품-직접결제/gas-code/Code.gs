@@ -5,49 +5,16 @@
    - 결제가 먼저 끝난 건이라: 결제요청 알림톡 없음 · 결제완료일 자동 기입 · 팀 알림메일(키워드·요청사항 포함).
    - 이 프로젝트에는 시트 편집 트리거(onSheetEdit)·리마인드 트리거를 두지 않는다
      (기존 15만원/10만원 GAS의 트리거와 중복 발동 방지). 설치하지 말 것.
-   - 설정 시트의 신청기간·최대 신청수·ON/OFF는 읽지 않는다(기존 폼 전용). 접근 제어 = 서명 링크 유효기간뿐.
+   - 설정 시트의 신청기간·최대 신청수·ON/OFF는 읽지 않는다(기존 폼 전용). 링크 발급·서명 없음 — 공개 폼.
+   - 결제 확인은 마케팅팀이 원장님께 폼 주소를 보내기 전에 한다(제출은 결제완료로 기록되고 팀 알림메일이 나간다).
    ═══════════════════════════════════════════════════════════ */
 var SPREADSHEET_ID = '1lgAsrtoeqv1-g3Nh3D21zTyuGLdAZuP5jSXxftlIxh0';
-var FORM_BASE_URL  = 'https://gobangmkt.github.io/blog_request/부가상품-직접결제/';
-var LINK_TTL_DAYS  = 14; // 발급일 + 14일이 마감 (결제 후 원장님이 작성할 시간)
 var PRICE_DIRECT_PREMIUM = 150000; // 직A/직B — 고급형, 부가세 포함 (2026-11-09 결제화면 기준)
 var DIRECT_TYPES   = ['직A', '직B'];
 
 // 신청 내역 행 배경색 — 결제완료일 있으면 노랑(기존 폼과 동일 규칙)
 var ROW_BG_PAID = '#FFE599';
 
-// ── 서명 링크 (URL 위조 방지) ───────────────────────────────────────
-// 비밀키는 스크립트 속성에 1회 자동 생성·보관 → 코드/깃에 노출되지 않음(repo는 public).
-function getLinkSecret() {
-  var props = PropertiesService.getScriptProperties();
-  var s = props.getProperty('LINK_SECRET');
-  if (!s) {
-    s = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
-    props.setProperty('LINK_SECRET', s);
-  }
-  return s;
-}
-
-function makeSig(from) {
-  var raw = Utilities.computeHmacSha256Signature(String(from), getLinkSecret());
-  return Utilities.base64EncodeWebSafe(raw).replace(/[=]+$/, '').slice(0, 16);
-}
-
-function linkEndDate(from) {
-  var y = parseInt(from.slice(0, 4), 10), mo = parseInt(from.slice(4, 6), 10), d = parseInt(from.slice(6, 8), 10);
-  return new Date(new Date(y, mo - 1, d, 0, 0, 0, 0).getTime() + LINK_TTL_DAYS * 86400000);
-}
-
-// 서명·기간 검증 — 서버 최종 방어선. 클라가 from/sig를 조작해도 여기서 막힌다.
-function verifyLink(from, sig) {
-  from = String(from || '');
-  if (!/^\d{8}$/.test(from))          return { ok: false, reason: '유효하지 않은 링크예요' };
-  if (sig !== makeSig(from))          return { ok: false, reason: '유효하지 않은 링크예요' };
-  if (new Date() > linkEndDate(from)) return { ok: false, reason: '신청 기간이 마감되었어요' };
-  return { ok: true };
-}
-
-// 설정 시트에서 이 폼이 쓰는 값만 읽는다: 5행 키워드 선점 일수, 6행 알림 수신 메일.
 function getSettings() {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   var s = ss.getSheetByName('설정');
@@ -60,67 +27,9 @@ function getSettings() {
   };
 }
 
-// ── 서명 링크 발급 (운영자 토큰 필요) ────────────────────────────────
-function checkInboxToken_(token) {
-  var t = PropertiesService.getScriptProperties().getProperty('INBOX_TOKEN');
-  return !!t && token === t;
-}
-
-function genLink(token, from) {
-  if (!checkInboxToken_(token)) return { ok: false, reason: 'unauthorized' };
-  from = String(from || '');
-  if (!/^\d{8}$/.test(from)) return { ok: false, reason: 'invalid_date' };
-  var link = encodeURI(FORM_BASE_URL) + '?from=' + from + '&sig=' + makeSig(from);
-  var end  = Utilities.formatDate(linkEndDate(from), 'Asia/Seoul', 'yyyy.MM.dd');
-  return { ok: true, link: link, end: end };
-}
-
 function doGet(e) {
-  if (e && e.parameter && e.parameter.gen !== undefined) return renderLinkGenerator();
   return ContentService.createTextOutput(JSON.stringify({ status: 'ok' }))
     .setMimeType(ContentService.MimeType.JSON);
-}
-
-// 운영자용 발급 페이지 — 웹앱 URL 뒤에 ?gen 을 붙여 접속
-function renderLinkGenerator() {
-  var SELF = ScriptApp.getService().getUrl();
-  var h =
-  '<!doctype html><html lang="ko"><head><meta charset="utf-8">' +
-  '<meta name="viewport" content="width=device-width,initial-scale=1"><title>신청 링크 발급</title><style>' +
-  '*{box-sizing:border-box;margin:0;padding:0}' +
-  'body{font-family:-apple-system,"Segoe UI",sans-serif;background:#F2F4F6;color:#191F28;padding:34px 18px;line-height:1.5}' +
-  '.wrap{max-width:520px;margin:0 auto}h1{font-size:20px;font-weight:800;margin-bottom:6px}' +
-  '.desc{font-size:14px;color:#8B95A1;margin-bottom:22px;word-break:keep-all}' +
-  'label{display:block;font-size:13px;font-weight:700;color:#4A5568;margin:0 0 7px}' +
-  'input{width:100%;padding:13px 14px;border:1.5px solid #E5E8EB;border-radius:10px;font-size:15px;font-family:inherit;margin-bottom:14px}' +
-  'button{width:100%;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;padding:14px;background:#3182F6;color:#fff}' +
-  '.card{background:#fff;border:1px solid #E5E8EB;border-radius:14px;padding:20px;margin-top:20px}' +
-  '.link{font-size:13px;word-break:break-all;background:#F8FAFF;border:1px solid #D0E2FF;border-radius:9px;padding:12px 14px;color:#1B6CF2;margin-bottom:12px}' +
-  '.copy{background:#00A0B0}.meta{font-size:13px;color:#8B95A1;margin-top:12px;text-align:center}' +
-  '.err{color:#D92B2B;font-size:14px;font-weight:600;margin-top:16px}' +
-  '</style></head><body><div class="wrap">' +
-  '<h1>부가상품 신청 링크 발급</h1>' +
-  '<div class="desc">운영자 토큰과 날짜를 입력하면 위조 방지 서명이 붙은 신청 링크가 생성돼요. 결제한 원장님께만 전달하세요.</div>' +
-  '<label>운영자 토큰</label><input type="password" id="tk" placeholder="발급 토큰" autocomplete="off">' +
-  '<label>시작 날짜 (이 날부터 ' + LINK_TTL_DAYS + '일간 유효)</label><input type="date" id="dt">' +
-  '<button id="gb">링크 생성</button><div id="out"></div></div><script>' +
-  'var SELF=' + JSON.stringify(SELF) + ';' +
-  '(function(){var d=new Date();document.getElementById("dt").value=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");' +
-  'var s=sessionStorage.getItem("gentk");if(s)document.getElementById("tk").value=s;})();' +
-  'document.getElementById("gb").addEventListener("click",function(){' +
-  'var tk=document.getElementById("tk").value.trim();var v=document.getElementById("dt").value;var b=this;var o=document.getElementById("out");' +
-  'if(!tk||!v){o.innerHTML="<div class=\\"err\\">토큰과 날짜를 입력하세요</div>";return;}' +
-  'sessionStorage.setItem("gentk",tk);b.disabled=true;b.textContent="생성 중...";' +
-  'fetch(SELF,{method:"POST",body:JSON.stringify({action:"genLink",token:tk,from:v.replace(/-/g,"")})}).then(function(r){return r.json();}).then(function(d){' +
-  'b.disabled=false;b.textContent="링크 생성";' +
-  'if(!d.ok){o.innerHTML="<div class=\\"err\\">"+(d.reason==="unauthorized"?"토큰이 올바르지 않습니다.":"날짜가 올바르지 않습니다.")+"</div>";return;}' +
-  'o.innerHTML="<div class=\\"card\\"><div class=\\"link\\" id=\\"lnk\\"></div><button class=\\"copy\\" id=\\"cpb\\">링크 복사</button><div class=\\"meta\\"></div></div>";' +
-  'document.getElementById("lnk").textContent=d.link;o.querySelector(".meta").textContent="마감 "+d.end+" (발급일 +' + LINK_TTL_DAYS + '일)";' +
-  'document.getElementById("cpb").addEventListener("click",function(){navigator.clipboard.writeText(d.link);this.textContent="복사됐어요";});' +
-  '}).catch(function(){b.disabled=false;b.textContent="링크 생성";o.innerHTML="<div class=\\"err\\">오류가 발생했어요</div>";});});' +
-  '</script></body></html>';
-  return HtmlService.createHtmlOutput(h).setTitle('신청 링크 발급')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
 function doPost(e) {
@@ -129,17 +38,12 @@ function doPost(e) {
     var payload = JSON.parse(e.postData.contents);
     var action = payload.action;
 
-    if (action === 'checkAccess') {
-      var link = verifyLink(payload.from, payload.sig);
-      result = { ok: link.ok, reason: link.reason || '' };
-    } else if (action === 'checkKeyword') {
+    if (action === 'checkKeyword') {
       result = checkKeyword(payload.keyword);
     } else if (action === 'fetchPlaceInfo') {
       result = fetchPlaceInfo(payload.url);
     } else if (action === 'submitForm') {
       result = submitForm(payload);
-    } else if (action === 'genLink') {
-      result = genLink(payload.token, payload.from);
     } else {
       result = { error: 'Unknown action: ' + action };
     }
@@ -231,10 +135,6 @@ function isRecentDuplicate_(sheet, placeUrl) {
 }
 
 function submitForm(formData) {
-  // 서버 최종 방어선 — 서명·기간 검증
-  var link = verifyLink(formData.from, formData.sig);
-  if (!link.ok) return { success: false, reason: link.reason };
-
   var tmplType = String(formData.templateType || '').trim();
   if (DIRECT_TYPES.indexOf(tmplType) < 0) return { success: false, reason: 'invalid_type' };
 

@@ -126,10 +126,10 @@
     button[type="submit"] { width: 100%; padding: 16px; background: var(--pri); color: #fff; border: none; border-radius: 10px; font-size: 17px; font-weight: 700; font-family: var(--f); cursor: pointer; }
     button[type="submit"]:disabled { background: var(--bdr); color: var(--g400); cursor: not-allowed; }
 
-    /* 마감 / 완료 */
-    .off-screen, .success { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; padding: 40px 24px; text-align: center; }
-    .off-screen h2, .success h2 { font-size: 22px; font-weight: 800; margin-bottom: 10px; }
-    .off-screen p, .success p { font-size: 16px; color: var(--g600); line-height: 1.7; word-break: keep-all; }
+    /* 완료 */
+    .success { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; padding: 40px 24px; text-align: center; }
+    .success h2 { font-size: 22px; font-weight: 800; margin-bottom: 10px; }
+    .success p { font-size: 16px; color: var(--g600); line-height: 1.7; word-break: keep-all; }
     .success ul { list-style: none; margin-top: 20px; text-align: left; background: var(--sur); border: 1px solid var(--bdr); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; }
     .success li { font-size: 15px; color: var(--g700); line-height: 1.6; word-break: keep-all; }
 
@@ -158,12 +158,6 @@
 </head>
 <body>
 
-<!-- 접근 불가 화면 -->
-<div class="off-screen" id="offScreen">
-  <h2>신청서를 열 수 없어요</h2>
-  <p id="offMsg"></p>
-</div>
-
 <!-- 접수 완료 화면 -->
 <div class="success" id="successScreen">
   <svg width="56" height="56" viewBox="0 0 20 20" fill="none" style="margin-bottom:20px;" aria-hidden="true">
@@ -180,7 +174,7 @@
 </div>
 
 <!-- 메인 폼 -->
-<div id="formArea" style="display:none;">
+<div id="formArea">
   <div class="page">
 
     <div class="head">
@@ -394,41 +388,10 @@
 <script>
   // GAS 웹앱 배포 URL — 부가상품-직접결제/gas-code 배포 후 채운다.
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbysJEvbkNX8PU7C5zcdfGqtw5xbfejQmDOIONr9PwssxwPyv2-HIQPI6uZtV2AChYS7/exec';
-  var LINK_TTL_DAYS = 14;  // 서버 LINK_TTL_DAYS와 같은 값 (표시용, 최종 판정은 서버 verifyLink)
-  var END_DATE = null;
-  var LINK_FROM = '', LINK_SIG = '';
 
-  (function() {
-    var p = new URLSearchParams(window.location.search);
-    var from = p.get('from');
-    LINK_SIG = p.get('sig') || '';
-    if (from && /^\d{8}$/.test(from)) {
-      LINK_FROM = from;
-      var d = from.slice(0,4) + '-' + from.slice(4,6) + '-' + from.slice(6,8);
-      END_DATE = new Date(new Date(d + 'T00:00:00+09:00').getTime() + LINK_TTL_DAYS * 86400000);
-    }
-  })();
-
-  function isExpired() { return !END_DATE || new Date() > END_DATE; }
-  function showOff(msg) {
-    document.getElementById('formArea').style.display = 'none';
-    document.getElementById('offMsg').textContent = msg;
-    document.getElementById('offScreen').style.display = 'flex';
-  }
   function callAPI(action, params) {
     return fetch(GAS_URL, { method: 'POST', body: JSON.stringify(Object.assign({ action: action }, params || {})) }).then(function(r){ return r.json(); });
   }
-
-  document.addEventListener('DOMContentLoaded', function() {
-    if (isExpired()) {
-      showOff(END_DATE ? '이 링크의 신청 기간이 끝났어요. 고방 채널톡으로 문의해 주세요.' : '유효하지 않은 링크예요. 결제 후 안내받은 링크로 접속해 주세요.');
-      return;
-    }
-    document.getElementById('formArea').style.display = 'block';
-    callAPI('checkAccess', { from: LINK_FROM, sig: LINK_SIG }).then(function(d) {
-      if (!d.ok) showOff(d.reason || '유효하지 않은 링크예요');
-    }).catch(function(){});
-  });
 
   var kwStatus = { kw1: null, kw2: null, kw3: null };
   var kwTimers = {}, urlTimer = null;
@@ -582,8 +545,6 @@
       monthly:      document.getElementById('monthly').value.trim(),
       walking:      document.getElementById('walking').value.trim(),
       templateType: selTmpl,
-      from:         LINK_FROM,
-      sig:          LINK_SIG,
       source:       'direct-pay'
     }).then(function(r) {
       if (r.success) { document.getElementById('formArea').style.display = 'none'; document.getElementById('successScreen').style.display = 'flex'; window.scrollTo(0,0); }
@@ -591,7 +552,6 @@
         btn.disabled = false; btn.textContent = '신청서 제출하기';
         var msg = r.reason === 'duplicate_url' ? '방금 같은 지점으로 제출된 내용이 있어요. 잠시 후 다시 확인해 주세요.'
                 : r.reason === 'keyword_taken' ? '입력한 키워드를 지금은 쓸 수 없어요. 다른 키워드로 바꿔 주세요.'
-                : (r.reason && /링크|마감|기간/.test(r.reason)) ? r.reason
                 : '오류가 났어요. 잠시 후 다시 시도해 주세요.';
         alert(msg);
       }
