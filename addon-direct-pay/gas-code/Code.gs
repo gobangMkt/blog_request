@@ -11,6 +11,8 @@
 var SPREADSHEET_ID = '1lgAsrtoeqv1-g3Nh3D21zTyuGLdAZuP5jSXxftlIxh0';
 var PRICE_DIRECT_PREMIUM = 150000; // 직A/직B — 고급형, 부가세 포함 (2026-11-09 결제화면 기준)
 var DIRECT_TYPES   = ['직A', '직B'];
+// 고급형 키워드 폼 안내 알림톡 템플릿(솔라피, 변수 #{지점명}). 스크립트 속성 TEMPLATE_PREMIUM_FORM이 있으면 그 값이 우선한다.
+var TEMPLATE_PREMIUM_FORM = 'KA01TP2611091218516116IoNk3cbXeW';
 
 // 신청 내역 행 배경색 — 결제완료일 있으면 노랑(기존 폼과 동일 규칙)
 var ROW_BG_PAID = '#FFE599';
@@ -275,7 +277,7 @@ function registerPremium(payload) {
   lock.waitLock(20000);
   try {
     if (props.getProperty(key)) return { success: true, status: 'already_sent' };
-    var tmpl = props.getProperty('TEMPLATE_PREMIUM_FORM');
+    var tmpl = props.getProperty('TEMPLATE_PREMIUM_FORM') || TEMPLATE_PREMIUM_FORM;
     if (!tmpl) return { success: true, status: 'no_template' };
     var sent = sendAlimtalk(digits, tmpl, { '#{지점명}': branch });
     if (!sent.ok) return { success: true, status: 'send_failed', msg: sent.msg };
