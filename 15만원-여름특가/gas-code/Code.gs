@@ -357,6 +357,21 @@ function onSheetEdit(e) {
     applyBlogPaymentComplete_(e.source, sheet, row, paymentDate);
   }
 
+  // 신청 내역 M열(작성 타입) 직접결제 건(직A/직B/직-일반) → 단가만 기입. 알림톡은 보내지 않는다.
+  // (10만원 GAS 핸들러와 같은 동작 — 두 트리거가 모두 설치돼 있어도 같은 값을 쓰므로 안전)
+  if (sheetName === '신청 내역' && col === 13 && row >= 2) {
+    var directType = String(e.range.getValue()).trim();
+    if (directType.indexOf('직') === 0) {
+      var directPrice = (directType === '직-일반') ? 70000 : (directType === '직A' || directType === '직B') ? 150000 : 0;
+      if (directPrice) {
+        if (!sheet.getRange(1, 16).getValue()) sheet.getRange(1, 16).setValue('단가');
+        var directCell = sheet.getRange(row, 16);
+        directCell.setValue(directPrice);
+        directCell.setNumberFormat('₩#,##0');
+      }
+    }
+  }
+
   // 완료 내역 H열(발송 드롭박스) → 작업완료 알림톡 발송 + [신청 내역] 주황색 표시
   if (sheetName === '완료 내역' && col === 8 && row >= 2) {
     var currentValue = String(e.range.getValue()).trim();
@@ -570,6 +585,7 @@ function sendPaymentLink(token, row) {
   if (row < 2 || row > sheet.getLastRow()) return { error: 'invalid_row' };
 
   var rowData = sheet.getRange(row, 1, 1, 14).getValues()[0];
+  if (String(rowData[12] || '').trim().indexOf('직') === 0) return { error: 'direct_payment' }; // 직접결제 건은 결제요청 대상 아님
   if (String(rowData[13] || '').indexOf('결제링크발송') >= 0) {
     return { ok: true, already: true };
   }

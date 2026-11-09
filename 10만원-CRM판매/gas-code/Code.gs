@@ -544,6 +544,17 @@ function setPriceByType_(sheet, row, tmplType) {
   cell.setNumberFormat('₩#,##0');
 }
 
+// 부가상품 직접결제 건 단가 — 직-일반(블로그 일반형) 70,000 / 직A·직B(고급형) 150,000, 모두 부가세 포함.
+// '직*' 행은 결제요청 알림톡·미결제 리마인드·결제링크 발송 대상이 아니다. 신규 폼 GAS는 부가상품-직접결제/ 폴더.
+function setDirectPrice_(sheet, row, tmplType) {
+  var price = (tmplType === '직-일반') ? 70000 : (tmplType === '직A' || tmplType === '직B') ? 150000 : 0;
+  if (!price) return;
+  if (!sheet.getRange(1, 16).getValue()) sheet.getRange(1, 16).setValue('단가');
+  var cell = sheet.getRange(row, 16);
+  cell.setValue(price);
+  cell.setNumberFormat('₩#,##0');
+}
+
 // 결제 요청 알림톡 발송 기록 — 신청 내역 O열(15) 타임스탬프, 재발송 방지용
 function markPaymentAlimtalkSent_(sheet, row) {
   if (!sheet.getRange(1, 15).getValue()) sheet.getRange(1, 15).setValue('결제요청 발송시간');
@@ -589,6 +600,7 @@ function remindUnpaidApplications() {
     var reminded  = data[i][16];  // Q(17): 리마인드 발송시간
 
     if (!applyDate || paidDate || reminded || !phone) continue;
+    if (String(data[i][12] || '').trim().indexOf('직') === 0) continue; // M: 직접결제 건은 리마인드 제외
 
     var d = new Date(applyDate);
     d.setHours(0, 0, 0, 0);
@@ -682,6 +694,8 @@ function onSheetEdit(e) {
   // (폼 제출 건은 submitForm에서 발송·O열 기록 — 여기는 시트 직접 입력 건 커버)
   if (sheetName === '신청 내역' && col === 13 && row >= 2) {
     var tmpl = String(e.range.getValue()).trim();
+    // 직접결제 건(직A/직B/직-일반)은 이미 결제된 건 — 단가만 기입하고 결제요청 알림톡은 절대 보내지 않는다.
+    if (tmpl.indexOf('직') === 0) { setDirectPrice_(sheet, row, tmpl); return; }
     if (tmpl !== '10-A' && tmpl !== '10-B') return;
     if (sheet.getRange(row, 15).getValue()) return; // O열 발송시간 있으면 재발송 방지
     var reqName  = sheet.getRange(row, 3).getValue();
@@ -946,6 +960,7 @@ function sendPaymentLink(token, row) {
   if (row < 2 || row > sheet.getLastRow()) return { error: 'invalid_row' };
 
   var rowData = sheet.getRange(row, 1, 1, 14).getValues()[0];
+  if (String(rowData[12] || '').trim().indexOf('직') === 0) return { error: 'direct_payment' }; // 직접결제 건은 결제요청 대상 아님
   if (String(rowData[13] || '').indexOf('결제링크발송') >= 0) {
     return { ok: true, already: true };
   }

@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>블로그 고급형 신청서 — 고방</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --pri:   #3182F6; --pri-h: #1B6CF2; --pri-50:#F0F6FF; --pri-100:#EEF3FF;
+      --teal:  #00A0B0; --teal-bg:rgba(0,160,176,.07); --teal-bd:rgba(0,160,176,.22);
+      --g900: #191F28; --g700: #4A5568; --g600: #4E5968; --g500: #8B95A1; --g400: #B0B8C1; --g300: #C4CBD4;
+      --bg:   #F2F4F6; --sur: #FFFFFF; --info: #F8FAFF; --bdr: #E5E8EB; --bdr-i: #D0E2FF;
+      --ok:   #00C73C; --ok-bg:#E8FBF0;
+      --err:  #F04452; --err-bg:#FFF0F2; --err-str:#D92B2B;
+      --f: 'Pretendard', -apple-system, sans-serif;
+    }
+    html, body { width: 100%; }
+    body { font-family: var(--f); background: var(--bg); min-height: 100vh; padding-bottom: 96px; color: var(--g900); }
+    .page { max-width: 480px; margin: 0 auto; }
+
+    /* 헤더 — 결제 완료 확인이 먼저 보이게 */
+    .head { background: var(--sur); border-bottom: 1px solid var(--bdr); padding: 22px 20px 22px; }
+    .head-logo { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
+    .head-logo img { height: 24px; width: auto; }
+    .head-logo span { font-size: 14px; font-weight: 700; color: var(--g700); }
+    .paid { display: inline-flex; align-items: center; gap: 8px; background: var(--ok-bg); color: #00812A; font-size: 14px; font-weight: 700; padding: 7px 14px; border-radius: 999px; margin-bottom: 14px; }
+    .paid svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .head h1 { font-size: 24px; font-weight: 800; line-height: 1.35; letter-spacing: -.5px; word-break: keep-all; }
+    .head p { font-size: 15px; color: var(--g600); margin-top: 8px; line-height: 1.6; word-break: keep-all; }
+
+    /* 진행 단계 */
+    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 16px 12px 0; }
+    .step { background: var(--sur); border: 1px solid var(--bdr); border-radius: 12px; padding: 12px 6px; text-align: center; }
+    .step b { display: block; font-size: 16px; font-weight: 800; color: var(--teal); }
+    .step span { display: block; font-size: 13px; font-weight: 600; color: var(--g600); margin-top: 3px; }
+
+    /* 섹션 */
+    .sec { background: var(--sur); margin: 12px 12px 0; padding: 22px 18px 20px; border: 1px solid var(--bdr); border-radius: 18px; }
+    .sec-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .sec-no { width: 26px; height: 26px; border-radius: 50%; background: var(--teal); color: #fff; font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .sec-title { font-size: 18px; font-weight: 800; letter-spacing: -.3px; }
+    .sec-sub { font-size: 14px; color: var(--g600); line-height: 1.6; margin: -6px 0 16px; word-break: keep-all; }
+    .field { margin-bottom: 18px; }
+    .field:last-child { margin-bottom: 0; }
+    .field-label { font-size: 15px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
+    .field-label a { font-size: 13px; font-weight: 600; color: var(--pri); text-decoration: none; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    input, textarea {
+      width: 100%; padding: 14px 15px; border: 1.5px solid var(--bdr); border-radius: 10px;
+      font-size: 16px; font-family: var(--f); color: var(--g900); background: var(--sur);
+      outline: none; transition: border-color .15s; -webkit-appearance: none;
+    }
+    input::placeholder, textarea::placeholder { color: var(--g400); }
+    input:focus, textarea:focus { border-color: var(--pri); }
+    input.valid { border-color: var(--ok); }
+    input.invalid { border-color: var(--err); }
+    textarea { resize: none; height: 120px; line-height: 1.6; }
+    .fb { font-size: 13px; margin-top: 6px; min-height: 18px; display: flex; flex-direction: column; gap: 4px; }
+    .fb.ok { color: #00812A; } .fb.error { color: var(--err-str); } .fb.checking { color: var(--g500); }
+    .fb-hint { font-size: 13px; color: var(--g600); line-height: 1.6; }
+    .char-count { font-size: 13px; color: var(--g500); text-align: right; margin-top: 6px; }
+    .note { font-size: 13px; color: var(--g500); line-height: 1.6; margin-top: 6px; word-break: keep-all; }
+
+    /* 안내 */
+    .notice { background: var(--info); border: 1.5px solid var(--bdr-i); border-radius: 12px; padding: 14px 16px; }
+    .notice ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .notice li { font-size: 14px; color: var(--g700); line-height: 1.6; padding-left: 14px; position: relative; word-break: keep-all; }
+    .notice li::before { content: '·'; position: absolute; left: 3px; color: var(--pri); font-weight: 800; }
+    .notice a { color: var(--pri); text-decoration: underline; }
+
+    /* 지점 미리보기 */
+    .place-preview { display: none; margin-top: 12px; border: 1.5px solid var(--bdr); border-radius: 10px; overflow: hidden; }
+    .preview-loading { display: none; align-items: center; justify-content: center; height: 56px; gap: 8px; color: var(--g500); font-size: 14px; }
+    .place-preview.loading .preview-loading { display: flex; }
+    .spin { width: 16px; height: 16px; border: 2px solid var(--bdr); border-top-color: var(--pri); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .og-card { display: none; text-decoration: none; color: inherit; }
+    .place-preview.loaded .og-card { display: flex; }
+    .og-img { width: 80px; min-height: 80px; background: var(--bg); flex-shrink: 0; overflow: hidden; }
+    .og-img img { width: 100%; height: 100%; object-fit: cover; }
+    .og-body { flex: 1; padding: 12px 14px; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
+    .og-title { font-size: 15px; font-weight: 700; line-height: 1.4; }
+    .og-desc { font-size: 13px; color: var(--g500); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .preview-info { display: none; padding: 14px 16px; background: var(--info); border-top: 1px solid var(--bdr); }
+    .place-preview.loaded .preview-info { display: block; }
+    .preview-info-title { font-size: 13px; font-weight: 700; color: var(--pri); margin-bottom: 10px; }
+    .info-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .info-fields.single { grid-template-columns: 1fr; margin-top: 10px; }
+    .info-field-label { font-size: 13px; font-weight: 600; color: var(--g600); margin-bottom: 4px; }
+    .info-fields input { padding: 11px 12px; font-size: 15px; border-radius: 8px; }
+
+    /* 키워드 */
+    .kw-item { display: flex; align-items: flex-start; gap: 12px; }
+    .kw-num { width: 28px; height: 28px; border-radius: 50%; background: var(--bg); color: var(--g500); font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 12px; }
+    .kw-num.active { background: var(--pri-100); color: var(--pri); }
+    .kw-num.ok { background: var(--ok-bg); color: #00812A; }
+    .kw-num.invalid { background: var(--err-bg); color: var(--err); }
+    .kw-body { flex: 1; }
+
+    /* 작성 스타일 */
+    .tmpl-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .tmpl-card { border: 2px solid var(--bdr); border-radius: 12px; padding: 16px 14px; cursor: pointer; background: var(--sur); transition: border-color .15s, background .15s; }
+    .tmpl-card.on { border-color: var(--pri); background: var(--pri-50); }
+    .tmpl-card-title { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
+    .tmpl-card-desc { font-size: 14px; color: var(--g600); line-height: 1.5; word-break: keep-all; }
+    .tmpl-card-eg { display: inline-block; font-size: 13px; color: var(--pri); margin-top: 10px; text-decoration: underline; font-weight: 600; }
+
+    /* 동의 */
+    .agree-row { display: flex; align-items: center; gap: 12px; cursor: pointer; background: var(--info); border: 1.5px solid var(--bdr-i); border-radius: 10px; padding: 14px 16px; }
+    .agree-text { font-size: 14px; color: var(--g700); line-height: 1.55; flex: 1; word-break: keep-all; }
+    .agree-text strong { color: var(--g900); }
+    .toggle { position: relative; width: 22px; height: 22px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-s { position: absolute; inset: 0; background: #fff; border: 2px solid var(--g300); border-radius: 5px; cursor: pointer; transition: background .15s, border-color .15s; }
+    .toggle-s::before { content: ''; position: absolute; width: 5px; height: 10px; left: 6px; top: 2px; border-right: 2.5px solid transparent; border-bottom: 2.5px solid transparent; transform: rotate(45deg); }
+    .toggle input:checked + .toggle-s { background: var(--pri); border-color: var(--pri); }
+    .toggle input:checked + .toggle-s::before { border-color: #fff; }
+
+    /* 하단 버튼 */
+    .bottom-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; padding: 12px 20px 16px; background: var(--sur); border-top: 1px solid var(--bdr); z-index: 100; }
+    button[type="submit"] { width: 100%; padding: 16px; background: var(--pri); color: #fff; border: none; border-radius: 10px; font-size: 17px; font-weight: 700; font-family: var(--f); cursor: pointer; }
+    button[type="submit"]:disabled { background: var(--bdr); color: var(--g400); cursor: not-allowed; }
+
+    /* 마감 / 완료 */
+    .off-screen, .success { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; padding: 40px 24px; text-align: center; }
+    .off-screen h2, .success h2 { font-size: 22px; font-weight: 800; margin-bottom: 10px; }
+    .off-screen p, .success p { font-size: 16px; color: var(--g600); line-height: 1.7; word-break: keep-all; }
+    .success ul { list-style: none; margin-top: 20px; text-align: left; background: var(--sur); border: 1px solid var(--bdr); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; }
+    .success li { font-size: 15px; color: var(--g700); line-height: 1.6; word-break: keep-all; }
+
+    /* 모달 */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 300; align-items: flex-end; justify-content: center; }
+    .modal-overlay.show { display: flex; }
+    .modal-sheet { background: var(--sur); border-radius: 20px 20px 0 0; padding: 28px 24px 32px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; animation: up .2s ease; }
+    @keyframes up { from { transform: translateY(100%); } }
+    .modal-title { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+    .modal-desc { font-size: 15px; color: var(--g600); line-height: 1.6; margin-bottom: 16px; }
+    .modal-sum { background: var(--info); border: 1.5px solid var(--bdr); border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
+    .sum-row { display: flex; align-items: flex-start; gap: 8px; }
+    .sum-lbl { font-size: 14px; color: var(--g500); font-weight: 500; min-width: 76px; flex-shrink: 0; }
+    .sum-val { font-size: 14px; font-weight: 600; word-break: break-all; flex: 1; }
+    .modal-btns { display: flex; flex-direction: column; gap: 8px; }
+    .btn-ok { width: 100%; padding: 16px; background: var(--pri); color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; font-family: var(--f); cursor: pointer; }
+    .btn-no { width: 100%; padding: 16px; background: var(--bg); color: var(--g600); border: none; border-radius: 10px; font-size: 16px; font-weight: 600; font-family: var(--f); cursor: pointer; }
+    .tmpl-desc-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+    .tmpl-desc-item { border: 1.5px solid var(--bdr); border-radius: 10px; overflow: hidden; }
+    .tmpl-desc-head { background: var(--info); padding: 12px 16px; font-size: 15px; font-weight: 700; }
+    .tmpl-desc-body { padding: 12px 16px; font-size: 14px; color: var(--g700); line-height: 1.7; word-break: keep-all; }
+    .tmpl-eg-link { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--bdr); }
+    .tmpl-eg-link a { display: inline-block; font-size: 14px; font-weight: 600; color: var(--pri); text-decoration: none; background: var(--pri-100); border-radius: 8px; padding: 7px 14px; }
+    @media (max-width: 480px) { .bottom-bar { left: 0; right: 0; transform: none; } }
+  </style>
+</head>
+<body>
+
+<!-- 접근 불가 화면 -->
+<div class="off-screen" id="offScreen">
+  <h2>신청서를 열 수 없어요</h2>
+  <p id="offMsg"></p>
+</div>
+
+<!-- 접수 완료 화면 -->
+<div class="success" id="successScreen">
+  <svg width="56" height="56" viewBox="0 0 20 20" fill="none" style="margin-bottom:20px;" aria-hidden="true">
+    <circle cx="10" cy="10" r="10" fill="#3182F6"/>
+    <path fill="#fff" d="M5.5 10.5L7.8 12.8L14.5 6L13.3 4.8L7.8 10.3L6.7 9.2Z"/>
+  </svg>
+  <h2>신청서가 접수됐어요</h2>
+  <p>결제는 이미 완료돼서 추가로 하실 일은 없어요.</p>
+  <ul>
+    <li>작성은 <strong>영업일 7일 이내</strong>에 진행돼요.</li>
+    <li>발행이 끝나면 <strong>발행 URL을 알림톡</strong>으로 보내드려요.</li>
+    <li>제출한 내용은 수정할 수 없어요. 변경이 필요하면 고방 채널톡으로 문의해 주세요.</li>
+  </ul>
+</div>
+
+<!-- 메인 폼 -->
+<div id="formArea" style="display:none;">
+  <div class="page">
+
+    <div class="head">
+      <div class="head-logo"><img src="assets/U_ALF.png" alt="고방"><span>고방 블로그 마케팅</span></div>
+      <div class="paid">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="10" fill="#00C73C"/><path d="M5.6 10.4l2.6 2.6 6.2-6.2" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        블로그 고급형 결제 완료
+      </div>
+      <h1>글 작성에 필요한 내용만<br>알려 주세요</h1>
+      <p>결제는 끝났어요. 아래 4가지를 적어 주시면 바로 작성을 시작해요. 약 3분이면 돼요.</p>
+    </div>
+
+    <div class="steps" aria-hidden="true">
+      <div class="step"><b>1</b><span>연락처</span></div>
+      <div class="step"><b>2</b><span>지점</span></div>
+      <div class="step"><b>3</b><span>키워드</span></div>
+      <div class="step"><b>4</b><span>스타일</span></div>
+    </div>
+
+    <form id="applyForm" novalidate>
+
+      <div class="sec">
+        <div class="notice">
+          <ul>
+            <li>사진은 고방에 등록된 지점 사진만 사용돼요. 추가하려면 <a href="https://u-ceo.kr/login" target="_blank" rel="noopener">u-ceo.kr</a>에 먼저 올려 주세요.</li>
+            <li>제출 후 <strong>영업일 7일 이내</strong> 발행되고, 발행 URL은 알림톡으로 보내드려요.</li>
+            <li>제출한 내용은 수정할 수 없어요.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-head"><span class="sec-no">1</span><span class="sec-title">연락처</span></div>
+        <div class="row">
+          <div class="field">
+            <div class="field-label">이름</div>
+            <input type="text" id="name" placeholder="홍길동" autocomplete="off">
+          </div>
+          <div class="field">
+            <div class="field-label">전화번호</div>
+            <input type="tel" id="phone" placeholder="010-0000-0000" maxlength="13" autocomplete="off">
+            <div class="fb" id="fb-phone"></div>
+          </div>
+        </div>
+        <div class="note">완료 알림톡이 이 번호로 가요.</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-head"><span class="sec-no">2</span><span class="sec-title">글을 쓸 지점</span></div>
+        <div class="field">
+          <div class="field-label">
+            지점 URL
+            <a href="https://gobang.kr" target="_blank" rel="noopener">고방 바로가기</a>
+          </div>
+          <input type="url" id="placeUrl" placeholder="https://gobang.kr/place/8102" autocomplete="off">
+          <div class="fb" id="fb-url"></div>
+          <div class="place-preview" id="placePreview">
+            <div class="preview-loading"><div class="spin"></div>지점 정보를 불러오는 중이에요</div>
+            <a class="og-card" id="ogCard" target="_blank" rel="noopener">
+              <div class="og-img" id="ogImgWrap"></div>
+              <div class="og-body">
+                <div class="og-title" id="ogTitle"></div>
+                <div class="og-desc" id="ogDesc"></div>
+              </div>
+            </a>
+            <div class="preview-info" id="previewInfo">
+              <div class="preview-info-title">지점 정보 (다르면 직접 고쳐 주세요)</div>
+              <div class="info-fields">
+                <div><div class="info-field-label">보증금</div><input type="text" id="deposit" placeholder="예: 50만원"></div>
+                <div><div class="info-field-label">월세</div><input type="text" id="monthly" placeholder="예: 40만원"></div>
+              </div>
+              <div class="info-fields single">
+                <div><div class="info-field-label">도보 정보</div><input type="text" id="walking" placeholder="예: 강남역 도보 5분"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-head"><span class="sec-no">3</span><span class="sec-title">노출하고 싶은 키워드</span></div>
+        <div class="sec-sub">최소 1개, 최대 3개까지 적을 수 있어요. 띄어쓰기는 무시돼요. (예: '마포구고시원'은 '마포구 고시원'과 같아요)</div>
+        <div class="field">
+          <div class="kw-item">
+            <div class="kw-num" id="kn-kw1">1</div>
+            <div class="kw-body">
+              <input type="text" id="kw1" placeholder="예: 마포구고시원" autocomplete="off">
+              <div class="fb" id="fb-kw1"></div>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="kw-item">
+            <div class="kw-num" id="kn-kw2">2</div>
+            <div class="kw-body">
+              <input type="text" id="kw2" placeholder="선택" autocomplete="off">
+              <div class="fb" id="fb-kw2"></div>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="kw-item">
+            <div class="kw-num" id="kn-kw3">3</div>
+            <div class="kw-body">
+              <input type="text" id="kw3" placeholder="선택" autocomplete="off">
+              <div class="fb" id="fb-kw3"></div>
+            </div>
+          </div>
+        </div>
+        <div class="note">지정한 키워드는 일정 기간 다른 지점 글에 쓰이지 않아요.</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-head"><span class="sec-no">4</span><span class="sec-title">글 스타일과 요청사항</span></div>
+        <div class="field">
+          <div class="field-label">
+            작성 스타일
+            <a href="#" id="tmplHelp">스타일 설명 보기</a>
+          </div>
+          <div class="tmpl-cards">
+            <div class="tmpl-card on" data-type="A">
+              <div class="tmpl-card-title">설명형</div>
+              <div class="tmpl-card-desc">지점의 특징과 환경을 정보 중심으로 정리해요</div>
+              <span class="tmpl-card-eg" data-type="A">예시 보기</span>
+            </div>
+            <div class="tmpl-card" data-type="B">
+              <div class="tmpl-card-title">후기형</div>
+              <div class="tmpl-card-desc">실제 지낸 느낌을 후기처럼 풀어줘요</div>
+              <span class="tmpl-card-eg" data-type="B">예시 보기</span>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">꼭 넣고 싶은 내용</div>
+          <textarea id="description" placeholder="예: 주차 가능, 조용한 분위기, 24시간 운영 등 강조할 내용을 적어 주세요." maxlength="300"></textarea>
+          <div class="char-count"><span id="charCount">0</span>/300</div>
+        </div>
+      </div>
+
+      <div class="sec" style="display:flex;flex-direction:column;gap:10px;">
+        <label class="agree-row" for="agree1">
+          <div class="toggle"><input type="checkbox" id="agree1"><span class="toggle-s"></span></div>
+          <span class="agree-text">입력한 키워드로 <strong>네이버 블로그 탭 상단 노출</strong>을 목표로 작성되며, 검색 알고리즘 특성상 <strong>노출 순위와 유지 기간은 달라질 수 있다</strong>는 점을 이해했어요.</span>
+        </label>
+      </div>
+
+      <div style="height:20px;"></div>
+      <div class="bottom-bar">
+        <button type="submit" id="submitBtn" disabled>신청서 제출하기</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 스타일 안내 모달 -->
+<div class="modal-overlay" id="tmplModal">
+  <div class="modal-sheet">
+    <div class="modal-title">작성 스타일 안내</div>
+    <div class="modal-desc">글 쓰는 방식을 골라 주세요</div>
+    <div class="tmpl-desc-list">
+      <div class="tmpl-desc-item" id="td-A">
+        <div class="tmpl-desc-head">설명형</div>
+        <div class="tmpl-desc-body">
+          <strong>객관적인 어투와 정보 전달 중심</strong>으로, 이 지점이 왜 좋은지와 주변 대비 강점을 근거 있게 정리해요.<br><br>
+          가격·입실 조건·시설·위치·편의시설처럼 비교 포인트를 구조화해서 처음 보는 사람도 한눈에 파악하게 만들어요.
+          <div class="tmpl-eg-link"><a href="https://blog.naver.com/neoflat1116/224260067840" target="_blank" rel="noopener">예시 글 보기</a></div>
+        </div>
+      </div>
+      <div class="tmpl-desc-item" id="td-B">
+        <div class="tmpl-desc-head">후기형</div>
+        <div class="tmpl-desc-body">
+          <strong>살았을 때의 느낌을 간접 체험</strong>하게, 후기처럼 자연스럽게 풀어 써요.<br><br>
+          동선·분위기·생활 체감 포인트를 자세히 묘사해서 어떤 생활이 펼쳐질지 감이 오게 만들어요.
+          <div class="tmpl-eg-link"><a href="https://blog.naver.com/neoflat1116/224260216013" target="_blank" rel="noopener">예시 글 보기</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-btns"><button type="button" class="btn-no" id="tmplClose">확인</button></div>
+  </div>
+</div>
+
+<!-- 최종 확인 모달 -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-sheet">
+    <div class="modal-title">입력 내용 최종 확인</div>
+    <div class="modal-desc">제출하면 내용을 수정할 수 없어요.</div>
+    <div class="modal-sum" id="confirmSum"></div>
+    <div style="border:1.5px solid var(--bdr);border-radius:10px;margin-bottom:16px;">
+      <div style="background:var(--info);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;border-radius:10px 10px 0 0;" id="privacyHead">
+        <span style="font-size:14px;font-weight:700;">개인정보 수집 및 이용 동의 <span style="color:var(--err-str);">(필수)</span></span>
+        <span style="font-size:13px;color:var(--g500);" id="privacyArrow">내용 보기</span>
+      </div>
+      <div style="display:none;padding:12px 14px;font-size:13px;color:var(--g700);line-height:1.7;border-top:1px solid var(--bdr);" id="privacyDetail">
+        <b>수집 항목</b> 이름, 휴대전화번호<br>
+        <b>수집 목적</b> 서비스 제공 및 신청 관리<br>
+        <b>보유 기간</b> 서비스 종료 후 즉시 파기<br>
+        <span style="color:var(--g500);">동의를 거부하면 서비스 이용이 제한될 수 있어요.</span>
+      </div>
+      <label id="privacyLabel" for="privacyAgree" style="display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;border-top:1px solid var(--bdr);">
+        <div class="toggle"><input type="checkbox" id="privacyAgree"><span class="toggle-s"></span></div>
+        <span class="agree-text">위 내용을 확인했고, 개인정보 수집 및 이용에 동의해요.</span>
+      </label>
+    </div>
+    <div class="modal-btns">
+      <button type="button" class="btn-ok" id="confirmOk" disabled style="opacity:.4;">동의하고 제출하기</button>
+      <button type="button" class="btn-no" id="confirmCancel">돌아가기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // GAS 웹앱 배포 URL — 부가상품-직접결제/gas-code 배포 후 채운다.
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbysJEvbkNX8PU7C5zcdfGqtw5xbfejQmDOIONr9PwssxwPyv2-HIQPI6uZtV2AChYS7/exec';
+  var LINK_TTL_DAYS = 14;  // 서버 LINK_TTL_DAYS와 같은 값 (표시용, 최종 판정은 서버 verifyLink)
+  var END_DATE = null;
+  var LINK_FROM = '', LINK_SIG = '';
+
+  (function() {
+    var p = new URLSearchParams(window.location.search);
+    var from = p.get('from');
+    LINK_SIG = p.get('sig') || '';
+    if (from && /^\d{8}$/.test(from)) {
+      LINK_FROM = from;
+      var d = from.slice(0,4) + '-' + from.slice(4,6) + '-' + from.slice(6,8);
+      END_DATE = new Date(new Date(d + 'T00:00:00+09:00').getTime() + LINK_TTL_DAYS * 86400000);
+    }
+  })();
+
+  function isExpired() { return !END_DATE || new Date() > END_DATE; }
+  function showOff(msg) {
+    document.getElementById('formArea').style.display = 'none';
+    document.getElementById('offMsg').textContent = msg;
+    document.getElementById('offScreen').style.display = 'flex';
+  }
+  function callAPI(action, params) {
+    return fetch(GAS_URL, { method: 'POST', body: JSON.stringify(Object.assign({ action: action }, params || {})) }).then(function(r){ return r.json(); });
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    if (isExpired()) {
+      showOff(END_DATE ? '이 링크의 신청 기간이 끝났어요. 고방 채널톡으로 문의해 주세요.' : '유효하지 않은 링크예요. 결제 후 안내받은 링크로 접속해 주세요.');
+      return;
+    }
+    document.getElementById('formArea').style.display = 'block';
+    callAPI('checkAccess', { from: LINK_FROM, sig: LINK_SIG }).then(function(d) {
+      if (!d.ok) showOff(d.reason || '유효하지 않은 링크예요');
+    }).catch(function(){});
+  });
+
+  var kwStatus = { kw1: null, kw2: null, kw3: null };
+  var kwTimers = {}, urlTimer = null;
+  var urlValid = false;
+
+  function setFb(id, type, msg, hint) {
+    var el = document.getElementById('fb-' + id);
+    el.className = 'fb ' + type;
+    el.innerHTML = msg ? '<span>' + msg + '</span>' + (hint ? '<span class="fb-hint">' + hint + '</span>' : '') : '';
+  }
+  function kwSuggest(kw) {
+    var map = [['고시원',['고시텔','원룸텔','1인실']],['원룸',['원룸텔','오피스텔']],['고시텔',['고시원','원룸텔']],['오피스텔',['원룸','원룸텔']]];
+    for (var i = 0; i < map.length; i++) { if (kw.indexOf(map[i][0]) !== -1) return '다른 키워드를 써 보세요. 예) ' + map[i][1].map(function(t){ return '<strong>' + kw.replace(map[i][0], t) + '</strong>'; }).join(', '); }
+    return '다른 키워드를 써 보세요. 예) <strong>' + kw + '추천</strong>, <strong>' + kw + '후기</strong>';
+  }
+  function setKn(id, cls) { document.getElementById('kn-' + id).className = 'kw-num' + (cls ? ' ' + cls : ''); }
+
+  document.getElementById('phone').addEventListener('input', function() {
+    var d = this.value.replace(/\D/g,'');
+    this.value = d.length <= 3 ? d : d.length <= 7 ? d.slice(0,3)+'-'+d.slice(3) : d.slice(0,3)+'-'+d.slice(3,7)+'-'+d.slice(7,11);
+    var ok = /^010-\d{4}-\d{4}$/.test(this.value);
+    this.className = this.value ? (ok ? 'valid' : 'invalid') : '';
+    setFb('phone', ok || !this.value ? '' : 'error', ok || !this.value ? '' : '010-0000-0000 형식으로 입력해 주세요');
+    checkSubmit();
+  });
+
+  // 결제를 마친 원장님이라 "이미 신청된 지점" 차단을 하지 않는다 — 형식만 확인한다.
+  document.getElementById('placeUrl').addEventListener('input', function() {
+    var val = this.value.trim(); var ok = /^https:\/\/gobang\.kr\/place\/\d+$/.test(val);
+    urlValid = false;
+    var preview = document.getElementById('placePreview');
+    if (!val) { this.className = ''; setFb('url','',''); preview.style.display = 'none'; checkSubmit(); return; }
+    if (!ok) { this.className = 'invalid'; setFb('url','error','https://gobang.kr/place/숫자 형식으로 입력해 주세요'); preview.style.display = 'none'; checkSubmit(); return; }
+    urlValid = true; this.className = 'valid'; setFb('url','ok','확인됐어요');
+    loadPlaceInfo(val); checkSubmit();
+  });
+
+  function loadPlaceInfo(url) {
+    var p = document.getElementById('placePreview');
+    p.style.display = 'block'; p.className = 'place-preview loading';
+    document.getElementById('ogCard').href = url;
+    clearTimeout(urlTimer);
+    urlTimer = setTimeout(function() {
+      callAPI('fetchPlaceInfo', { url: url }).then(function(r) {
+        p.className = 'place-preview loaded';
+        if (r.ogTitle) document.getElementById('ogTitle').textContent = r.ogTitle;
+        if (r.ogDesc)  document.getElementById('ogDesc').textContent  = r.ogDesc;
+        if (r.ogImage) { var img = document.createElement('img'); img.src = r.ogImage; img.alt = ''; document.getElementById('ogImgWrap').innerHTML = ''; document.getElementById('ogImgWrap').appendChild(img); }
+        if (r.deposit) document.getElementById('deposit').value = r.deposit;
+        if (r.monthly) document.getElementById('monthly').value = r.monthly;
+        if (r.walking) document.getElementById('walking').value = r.walking;
+      }).catch(function() { p.className = 'place-preview loaded'; });
+    }, 400);
+  }
+
+  ['kw1','kw2','kw3'].forEach(function(id) {
+    document.getElementById(id).addEventListener('input', function() {
+      var val = this.value.trim(); kwStatus[id] = null; setKn(id,'');
+      if (!val) { this.className = ''; setFb(id,'',''); checkSubmit(); return; }
+      setKn(id,'active'); setFb(id,'checking','확인 중이에요'); this.className = '';
+      clearTimeout(kwTimers[id]);
+      var self = this;
+      kwTimers[id] = setTimeout(function() {
+        callAPI('checkKeyword', { keyword: val }).then(function(r) {
+          if (self.value.trim() !== val) return;
+          if (r.available) { kwStatus[id] = true; self.className = 'valid'; setKn(id,'ok'); setFb(id,'ok','사용할 수 있는 키워드예요'); }
+          else { kwStatus[id] = false; self.className = 'invalid'; setKn(id,'invalid'); setFb(id,'error', r.remainingDays + '일 뒤에 사용할 수 있어요.', kwSuggest(val)); }
+          checkSubmit();
+        }).catch(function(){ setFb(id,'error','확인 중 오류가 났어요. 다시 입력해 주세요'); checkSubmit(); });
+      }, 300);
+    });
+  });
+
+  document.getElementById('name').addEventListener('input', checkSubmit);
+  document.getElementById('description').addEventListener('input', function() {
+    document.getElementById('charCount').textContent = this.value.length; checkSubmit();
+  });
+  document.getElementById('agree1').addEventListener('change', checkSubmit);
+
+  function checkSubmit() {
+    var ok = document.getElementById('name').value.trim().length >= 2
+      && /^010-\d{4}-\d{4}$/.test(document.getElementById('phone').value)
+      && urlValid === true
+      && document.getElementById('kw1').value.trim().length > 0 && kwStatus.kw1 === true
+      && (document.getElementById('kw2').value.trim().length === 0 || kwStatus.kw2 === true)
+      && (document.getElementById('kw3').value.trim().length === 0 || kwStatus.kw3 === true)
+      && document.getElementById('description').value.trim().length > 0
+      && document.getElementById('agree1').checked;
+    document.getElementById('submitBtn').disabled = !ok;
+  }
+
+  /* 작성 스타일 — 작성 타입 값: 직A(설명형) / 직B(후기형) */
+  var selTmpl = '직A';
+  document.querySelectorAll('.tmpl-card').forEach(function(c) {
+    c.addEventListener('click', function() {
+      document.querySelectorAll('.tmpl-card').forEach(function(x){ x.classList.remove('on'); });
+      this.classList.add('on'); selTmpl = '직' + this.getAttribute('data-type');
+    });
+  });
+  function openTmplModal(f) {
+    document.getElementById('td-A').style.display = (!f||f==='A') ? 'block' : 'none';
+    document.getElementById('td-B').style.display = (!f||f==='B') ? 'block' : 'none';
+    document.getElementById('tmplModal').classList.add('show');
+  }
+  document.getElementById('tmplHelp').addEventListener('click', function(e){ e.preventDefault(); openTmplModal(null); });
+  document.querySelectorAll('.tmpl-card-eg').forEach(function(b){ b.addEventListener('click', function(e){ e.stopPropagation(); openTmplModal(this.getAttribute('data-type')); }); });
+  document.getElementById('tmplClose').addEventListener('click', function(){ document.getElementById('tmplModal').classList.remove('show'); });
+
+  document.getElementById('privacyHead').addEventListener('click', function() {
+    var d = document.getElementById('privacyDetail'); var open = d.style.display !== 'none';
+    d.style.display = open ? 'none' : 'block';
+    document.getElementById('privacyArrow').textContent = open ? '내용 보기' : '접기';
+  });
+  document.getElementById('privacyLabel').addEventListener('click', function(e){ e.stopPropagation(); setTimeout(function(){
+    var ok = document.getElementById('privacyAgree').checked;
+    document.getElementById('confirmOk').disabled = !ok; document.getElementById('confirmOk').style.opacity = ok ? '1' : '.4';
+  }, 0); });
+
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  document.getElementById('applyForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var rows = [
+      { l:'이름',      v: document.getElementById('name').value.trim() },
+      { l:'전화번호',  v: document.getElementById('phone').value.trim() },
+      { l:'지점 URL',  v: document.getElementById('placeUrl').value.trim() },
+      { l:'키워드',    v: [document.getElementById('kw1').value.trim(), document.getElementById('kw2').value.trim(), document.getElementById('kw3').value.trim()].filter(Boolean).join(' / ') },
+      { l:'작성 스타일', v: selTmpl === '직A' ? '설명형' : '후기형' },
+    ];
+    document.getElementById('confirmSum').innerHTML = rows.map(function(r){ return '<div class="sum-row"><span class="sum-lbl">'+r.l+'</span><span class="sum-val">'+esc(r.v)+'</span></div>'; }).join('');
+    document.getElementById('privacyAgree').checked = false;
+    document.getElementById('confirmOk').disabled = true; document.getElementById('confirmOk').style.opacity = '.4';
+    document.getElementById('privacyDetail').style.display = 'none';
+    document.getElementById('privacyArrow').textContent = '내용 보기';
+    document.getElementById('confirmModal').classList.add('show');
+  });
+  document.getElementById('confirmCancel').addEventListener('click', function(){ document.getElementById('confirmModal').classList.remove('show'); });
+
+  document.getElementById('confirmOk').addEventListener('click', function() {
+    document.getElementById('confirmModal').classList.remove('show');
+    var btn = document.getElementById('submitBtn'); btn.disabled = true; btn.textContent = '제출 중이에요';
+    callAPI('submitForm', {
+      name:         document.getElementById('name').value.trim(),
+      phone:        document.getElementById('phone').value.trim(),
+      placeUrl:     document.getElementById('placeUrl').value.trim(),
+      keyword1:     document.getElementById('kw1').value.trim(),
+      keyword2:     document.getElementById('kw2').value.trim(),
+      keyword3:     document.getElementById('kw3').value.trim(),
+      description:  document.getElementById('description').value.trim(),
+      deposit:      document.getElementById('deposit').value.trim(),
+      monthly:      document.getElementById('monthly').value.trim(),
+      walking:      document.getElementById('walking').value.trim(),
+      templateType: selTmpl,
+      from:         LINK_FROM,
+      sig:          LINK_SIG,
+      source:       'direct-pay'
+    }).then(function(r) {
+      if (r.success) { document.getElementById('formArea').style.display = 'none'; document.getElementById('successScreen').style.display = 'flex'; window.scrollTo(0,0); }
+      else {
+        btn.disabled = false; btn.textContent = '신청서 제출하기';
+        var msg = r.reason === 'duplicate_url' ? '방금 같은 지점으로 제출된 내용이 있어요. 잠시 후 다시 확인해 주세요.'
+                : r.reason === 'keyword_taken' ? '입력한 키워드를 지금은 쓸 수 없어요. 다른 키워드로 바꿔 주세요.'
+                : (r.reason && /링크|마감|기간/.test(r.reason)) ? r.reason
+                : '오류가 났어요. 잠시 후 다시 시도해 주세요.';
+        alert(msg);
+      }
+    }).catch(function(){ btn.disabled = false; btn.textContent = '신청서 제출하기'; alert('오류가 났어요. 잠시 후 다시 시도해 주세요.'); });
+  });
+</script>
+</body>
+</html>
