@@ -47,6 +47,13 @@
     .res li.skip { background: var(--bg); color: var(--g600); }
     .res li.bad { background: var(--err-bg); color: var(--err-str); }
     .res li.bad b, .res li.added b, .res li.skip b { color: inherit; }
+    .res li.ask { background: var(--sur); border: 1.5px solid var(--pri); color: var(--g900); }
+    .res li.ask .why { font-size: 14px; color: var(--g600); line-height: 1.6; margin: 4px 0 12px; }
+    .res li.ask a { display: inline-block; font-size: 14px; font-weight: 700; color: var(--pri); text-decoration: none; margin-bottom: 12px; }
+    .res li.ask .msg { font-size: 14px; line-height: 1.6; margin-top: 10px; }
+    .res li.ask .msg.bad { color: var(--err-str); }
+    .res li.done { background: var(--ok-bg); color: var(--ok-ink); }
+    .res li.done b { color: inherit; }
     .err { font-size: 14px; color: var(--err-str); line-height: 1.6; margin-top: 12px; }
   </style>
 </head>
@@ -100,7 +107,6 @@
   var LABEL = {
     added:            { cls: 'added', msg: '등록했어요 (직-일반 70,000원)' },
     duplicate:        { cls: 'skip',  msg: '이미 등록된 건이라 건너뛰었어요' },
-    premium_use_form: { cls: 'skip',  msg: '고급형이에요. 원장님이 폼을 제출하면 행이 생겨서 건너뛰었어요' },
     no_blog:          { cls: 'skip',  msg: '블로그 상품이 없어서 건너뛰었어요' },
     parse_error:      { cls: 'bad',   msg: '지점이나 결제일시를 읽지 못했어요. 시트에 직접 입력해 주세요' },
     error:            { cls: 'bad',   msg: '등록 중 오류가 났어요. 시트에 직접 입력해 주세요' }
@@ -124,13 +130,66 @@
 
   function fail(msg) { err.textContent = msg; err.hidden = false; check(); }
 
+  // U사장님 지점 검색 화면 주소. 비워 두면 링크를 보여 주지 않는다.
+  var USABOSS_URL = '';
+
+  var SEND_LABEL = {
+    sent:           { ok: true,  msg: '저장했고 알림톡을 보냈어요. 사장님이 폼을 제출하면 이 행이 채워져요.' },
+    already_sent:   { ok: true,  msg: '이미 알림톡을 보낸 건이에요.' },
+    saved_not_sent: { ok: true,  msg: '시트에는 저장했어요. 알림톡 템플릿이 아직 연결되지 않아 발송은 하지 않았어요.' },
+    send_failed:    { ok: false, msg: '시트에는 저장했지만 알림톡 발송에 실패했어요. 같은 번호로 다시 눌러 주세요.' },
+    bad_phone:      { ok: false, msg: '전화번호 형식을 확인해 주세요.' },
+    unauthorized:   { ok: false, msg: '접근 코드가 맞지 않아요.' },
+    bad_request:    { ok: false, msg: '알림에서 읽은 값에 문제가 있어요. 시트에 직접 입력해 주세요.' }
+  };
+
+  function askCard(r) {
+    var li = document.createElement('li'); li.className = 'ask';
+    var b = document.createElement('b'); b.textContent = r.branch + '(' + r.branchNo + ') · ' + r.paidAt;
+    var why = document.createElement('p'); why.className = 'why';
+    why.textContent = '고급형이에요. 사장님 전화번호를 넣으면 시트에 저장하고 키워드 폼 알림톡을 보내요.';
+    li.appendChild(b); li.appendChild(why);
+    if (USABOSS_URL) {
+      var a = document.createElement('a'); a.href = USABOSS_URL; a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = 'U사장님에서 지점 찾기 →'; li.appendChild(a); li.appendChild(document.createElement('br'));
+    }
+    var inp = document.createElement('input'); inp.type = 'tel'; inp.placeholder = '사장님 전화번호 010-0000-0000';
+    inp.maxLength = 13; inp.setAttribute('autocomplete', 'off');
+    var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'cta';
+    var msg = document.createElement('p'); msg.className = 'msg'; msg.hidden = true;
+    function valid() { return /^01[016789]\d{7,8}$/.test(inp.value.replace(/\D/g, '')); }
+    function sync() { btn.textContent = valid() ? '저장하고 알림톡 발송하기' : '사장님 전화번호를 입력해 주세요'; btn.disabled = !valid(); }
+    inp.addEventListener('input', sync); sync();
+    btn.addEventListener('click', function () {
+      btn.disabled = true; btn.textContent = '저장하는 중이에요'; msg.hidden = true;
+      fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'registerPremium', token: token.value.trim(),
+        branch: r.branch, branchNo: r.branchNo, paidAt: r.paidAt, phone: inp.value }) })
+        .then(function (res) { return res.json(); })
+        .then(function (d) {
+          var s = SEND_LABEL[d.status || d.reason] || { ok: false, msg: '오류가 났어요. 시트를 확인해 주세요.' };
+          if (d.success && s.ok) {
+            li.className = 'done'; li.innerHTML = '';
+            var t = document.createElement('b'); t.textContent = r.branch + '(' + r.branchNo + ')';
+            li.appendChild(t); li.appendChild(document.createTextNode(s.msg)); return;
+          }
+          msg.className = 'msg bad'; msg.textContent = s.msg + (d.msg ? ' (' + d.msg + ')' : ''); msg.hidden = false; sync();
+        })
+        .catch(function () { msg.className = 'msg bad'; msg.textContent = '연결에 실패했어요. 잠시 뒤 다시 시도해 주세요.'; msg.hidden = false; sync(); });
+    });
+    li.appendChild(inp); li.appendChild(btn); li.appendChild(msg);
+    return li;
+  }
+
   function render(results) {
     var added = results.filter(function (r) { return r.status === 'added'; }).length;
+    var asks = results.filter(function (r) { return r.status === 'premium_need_phone'; }).length;
     var bad = results.filter(function (r) { return LABEL[r.status] && LABEL[r.status].cls === 'bad'; }).length;
     $('resTitle').textContent = '등록 ' + added + '건';
-    $('resSum').textContent = '확인 ' + results.length + '건 중 ' + (results.length - added - bad) + '건은 건너뛰었고 ' + bad + '건은 직접 입력이 필요해요.';
+    $('resSum').textContent = '확인 ' + results.length + '건 중 ' + (results.length - added - bad - asks) + '건은 건너뛰었고 '
+      + asks + '건은 전화번호 입력이 필요하고 ' + bad + '건은 직접 입력이 필요해요.';
     var ul = $('resList'); ul.innerHTML = '';
     results.forEach(function (r) {
+      if (r.status === 'premium_need_phone') { ul.appendChild(askCard(r)); return; }
       var l = LABEL[r.status] || LABEL.error;
       var li = document.createElement('li'); li.className = l.cls;
       var b = document.createElement('b'); b.textContent = (r.branch || '지점 미확인') + (r.paidAt ? ' · ' + r.paidAt : '');

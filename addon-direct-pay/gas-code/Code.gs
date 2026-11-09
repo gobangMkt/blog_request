@@ -46,6 +46,8 @@ function doPost(e) {
       result = submitForm(payload);
     } else if (action === 'registerPayment') {
       result = registerPayment(payload.text, payload.token);
+    } else if (action === 'registerPremium') {
+      result = registerPremium(payload);
     } else {
       result = { error: 'Unknown action: ' + action };
     }
@@ -148,12 +150,25 @@ function submitForm(formData) {
   if (!kw.available) return { success: false, reason: 'keyword_taken', remainingDays: kw.remainingDays };
 
   var now = new Date();
-  // 신청일시, 결제완료일(=신청일: 결제는 이미 끝났고 D-day는 작성 시작일 기준), 신청자, 전화번호, 지점URL,
-  // 키워드1~3, 강조내용, 보증금, 월세, 도보, 작성타입, 상태
-  sheet.appendRow([now, now, formData.name, formData.phone, formData.placeUrl,
-    formData.keyword1, formData.keyword2 || '', formData.keyword3 || '', formData.description,
-    formData.deposit || '', formData.monthly || '', formData.walking || '', tmplType, '신청완료']);
-  var newRow = sheet.getLastRow();
+  // 알림톡 링크(?b=지점번호)로 들어온 제출이면 붙여넣기로 만든 '직-고급' 대기 행을 채운다(새 행을 만들지 않는다).
+  var branchNo = String(formData.branchNo || '').replace(/\D/g, '');
+  var pendingRow = branchNo ? findPendingPremiumRow_(sheet, branchNo, null) : 0;
+  var newRow;
+  if (pendingRow) {
+    // 신청일시(A)·결제완료일(B)=제출일(D-day는 작성 시작일 기준), 신청자(C)는 지점명(지점번호) 그대로 둔다.
+    sheet.getRange(pendingRow, 1, 1, 2).setValues([[now, now]]);
+    sheet.getRange(pendingRow, 4, 1, 10).setValues([[formData.phone, formData.placeUrl,
+      formData.keyword1, formData.keyword2 || '', formData.keyword3 || '', formData.description,
+      formData.deposit || '', formData.monthly || '', formData.walking || '', tmplType]]);
+    newRow = pendingRow;
+  } else {
+    // 신청일시, 결제완료일(=신청일: 결제는 이미 끝났고 D-day는 작성 시작일 기준), 신청자, 전화번호, 지점URL,
+    // 키워드1~3, 강조내용, 보증금, 월세, 도보, 작성타입, 상태
+    sheet.appendRow([now, now, formData.name, formData.phone, formData.placeUrl,
+      formData.keyword1, formData.keyword2 || '', formData.keyword3 || '', formData.description,
+      formData.deposit || '', formData.monthly || '', formData.walking || '', tmplType, '신청완료']);
+    newRow = sheet.getLastRow();
+  }
   setPriceByType_(sheet, newRow, tmplType); // P열(16) 단가
   sheet.getRange(newRow, 1, 1, sheet.getLastColumn()).setBackground(ROW_BG_PAID);
 
@@ -214,7 +229,13 @@ function registerOnePayment_(sheet, block) {
   var label = p.branch + '(' + p.branchNo + ')';
   var tag = { branch: label, paidAt: Utilities.formatDate(p.paidAt, 'Asia/Seoul', 'yyyy-MM-dd HH:mm') };
   if (!p.blog) return { status: 'no_blog', branch: tag.branch, paidAt: tag.paidAt };
-  if (p.blog === '고급형') return { status: 'premium_use_form', branch: tag.branch, paidAt: tag.paidAt };
+  if (p.blog === '고급형') {
+    // 이미 알림톡을 보낸 건이면 다시 묻지 않는다. 아니면 담당자가 전화번호를 넣어 저장·발송한다.
+    if (PropertiesService.getScriptProperties().getProperty(premiumKey_(p.branchNo, p.paidAt))) {
+      return { status: 'duplicate', branch: tag.branch, paidAt: tag.paidAt };
+    }
+    return { status: 'premium_need_phone', branch: p.branch, branchNo: p.branchNo, paidAt: tag.paidAt };
+  }
 
   // 같은 지점·같은 결제일시가 이미 있으면 중복 붙여넣기로 본다.
   var lastRow = sheet.getLastRow();
@@ -239,6 +260,115 @@ function registerOnePayment_(sheet, block) {
   cell.setNumberFormat('₩#,##0');
   sheet.getRange(row, 1, 1, sheet.getLastColumn()).setBackground(ROW_BG_PAID);
   return { status: 'added', branch: tag.branch, paidAt: tag.paidAt, row: row };
+}
+
+// ── 고급형: 알림 붙여넣기 → 담당자가 사장님 전화번호 입력 → 시트 저장 + 키워드 폼 링크 알림톡 ──
+// 행은 작성 타입 '직-고급'(대기)으로 만들고, 사장님이 폼(?b=지점번호)을 제출하면 그 행이 직A/직B로 채워진다.
+// 알림톡 템플릿 ID는 스크립트 속성 TEMPLATE_PREMIUM_FORM. 없으면 저장만 하고 발송하지 않는다.
+// 발송 기록은 스크립트 속성 PF_<지점번호>_<결제일시>. 같은 건에 알림톡이 두 번 나가지 않게 한다.
+function premiumKey_(branchNo, paidAt) {
+  return 'PF_' + String(branchNo) + '_' + Utilities.formatDate(paidAt, 'Asia/Seoul', 'yyyyMMddHHmm');
+}
+
+// '직-고급' 대기 행을 아래에서부터 찾는다. paidAt이 있으면 결제일시까지 같아야 한다.
+function findPendingPremiumRow_(sheet, branchNo, paidAt) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 0;
+  var from = Math.max(2, lastRow - 199);
+  var data = sheet.getRange(from, 1, lastRow - from + 1, 13).getValues();
+  var want = paidAt ? Utilities.formatDate(paidAt, 'Asia/Seoul', 'yyyy-MM-dd HH:mm') : '';
+  for (var i = data.length - 1; i >= 0; i--) {
+    if (String(data[i][12] || '').trim() !== '직-고급') continue;
+    var m = String(data[i][2] || '').match(/\((\d+)\)\s*$/);
+    if (!m || m[1] !== String(branchNo)) continue;
+    if (want && (!data[i][0] || Utilities.formatDate(new Date(data[i][0]), 'Asia/Seoul', 'yyyy-MM-dd HH:mm') !== want)) continue;
+    return from + i;
+  }
+  return 0;
+}
+
+function registerPremium(payload) {
+  var props = PropertiesService.getScriptProperties();
+  var saved = props.getProperty('INBOX_TOKEN');
+  if (!saved || String(payload.token || '') !== saved) return { success: false, reason: 'unauthorized' };
+
+  var branchNo = String(payload.branchNo || '').replace(/\D/g, '');
+  var branch = String(payload.branch || '').trim();
+  var m = String(payload.paidAt || '').match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/);
+  if (!branchNo || !branch || !m) return { success: false, reason: 'bad_request' };
+  var digits = String(payload.phone || '').replace(/\D/g, '');
+  if (!/^01[016789]\d{7,8}$/.test(digits)) return { success: false, reason: 'bad_phone' };
+  var phone = digits.length === 11 ? digits.replace(/^(\d{3})(\d{4})(\d{4})$/, '$1-$2-$3')
+                                   : digits.replace(/^(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3');
+  var paidAt = new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10), parseInt(m[4], 10), parseInt(m[5], 10));
+  var key = premiumKey_(branchNo, paidAt);
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    if (props.getProperty(key)) return { success: true, status: 'already_sent' };
+    var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('신청 내역');
+    var label = branch + '(' + branchNo + ')';
+    var row = findPendingPremiumRow_(sheet, branchNo, paidAt);
+    if (row) {
+      sheet.getRange(row, 4).setValue(phone);
+    } else {
+      sheet.appendRow([paidAt, paidAt, label, phone, '', '', '', '', '', '', '', '', '직-고급', '신청완료']);
+      row = sheet.getLastRow();
+      if (!sheet.getRange(1, 16).getValue()) sheet.getRange(1, 16).setValue('단가');
+      var cell = sheet.getRange(row, 16);
+      cell.setValue(PRICE_DIRECT_PREMIUM);
+      cell.setNumberFormat('₩#,##0');
+      sheet.getRange(row, 1, 1, sheet.getLastColumn()).setBackground(ROW_BG_PAID);
+    }
+
+    var tmpl = props.getProperty('TEMPLATE_PREMIUM_FORM');
+    if (!tmpl) return { success: true, status: 'saved_not_sent', row: row };
+    var sent = sendAlimtalk(digits, tmpl, { '#{지점명}': branch, '#{지점번호}': branchNo });
+    if (!sent.ok) return { success: true, status: 'send_failed', row: row, msg: sent.msg };
+    props.setProperty(key, Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'));
+    return { success: true, status: 'sent', row: row };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// SOLAPI 알림톡 발송 (기존 10만원·15만원 GAS와 같은 방식). SOLAPI_API_KEY·SOLAPI_API_SECRET·SOLAPI_PF_ID 스크립트 속성 필요.
+function sendAlimtalk(to, templateId, variables) {
+  var props = PropertiesService.getScriptProperties();
+  var apiKey = props.getProperty('SOLAPI_API_KEY');
+  var apiSecret = props.getProperty('SOLAPI_API_SECRET');
+  var pfId = props.getProperty('SOLAPI_PF_ID');
+  if (!apiKey || !apiSecret || !pfId) return { ok: false, msg: 'SOLAPI 스크립트 속성이 없어요' };
+  var date = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
+  var salt = Utilities.getUuid();
+  var signature = Utilities.computeHmacSha256Signature(date + salt, apiSecret)
+    .map(function (b) { return ('0' + (b & 0xFF).toString(16)).slice(-2); }).join('');
+  var res = UrlFetchApp.fetch('https://api.solapi.com/messages/v4/send', {
+    method: 'post',
+    contentType: 'application/json',
+    headers: { Authorization: 'HMAC-SHA256 apiKey=' + apiKey + ', date=' + date + ', salt=' + salt + ', signature=' + signature },
+    payload: JSON.stringify({ message: {
+      to: String(to).replace(/[^0-9]/g, ''),
+      kakaoOptions: { pfId: pfId, templateId: templateId, variables: variables }
+    } }),
+    muteHttpExceptions: true
+  });
+  var body = res.getContentText();
+  Logger.log('알림톡 응답: ' + body);
+  var code = res.getResponseCode();
+  var j = {};
+  try { j = JSON.parse(body); } catch (e) {}
+  if (code >= 200 && code < 300 && !j.errorCode) return { ok: true };
+  return { ok: false, msg: String(j.errorMessage || j.errorCode || ('HTTP ' + code)).slice(0, 120) };
+}
+
+// SOLAPI 스크립트 속성 점검 — 값 노출 없이 존재 여부만 로그 (편집기에서 직접 실행)
+function checkSolapiProps() {
+  var props = PropertiesService.getScriptProperties();
+  ['SOLAPI_API_KEY', 'SOLAPI_API_SECRET', 'SOLAPI_PF_ID', 'TEMPLATE_PREMIUM_FORM', 'INBOX_TOKEN'].forEach(function (k) {
+    Logger.log(k + ': ' + (props.getProperty(k) ? '있음' : '없음'));
+  });
 }
 
 // P열(16) 단가 — 직A/직B(부가상품 고급형, 부가세 포함) = 150,000
