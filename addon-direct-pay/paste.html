@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>결제 알림 등록 | 고방 블로그 (마케팅팀용)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+  <style>
+    :root {
+      --pri: #3182F6; --pri-h: #1B6CF2;
+      --teal: #00A0B0; --teal-ink: #00707C;
+      --g900: #191F28; --g600: #4E5968; --g500: #8B95A1; --g300: #C4CBD4;
+      --bg: #F2F4F6; --sur: #FFFFFF; --bdr: #E5E8EB;
+      --ok-bg: #E8FBF0; --ok-ink: #00812A;
+      --err-bg: #FFF0F2; --err-str: #D92B2B;
+      --f: 'Pretendard', -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--f); background: var(--bg); color: var(--g900); min-height: 100vh; padding-bottom: 40px; word-break: keep-all; }
+    .wrap { max-width: 480px; margin: 0 auto; padding: 0 12px; }
+    h1 { font-size: 24px; font-weight: 800; line-height: 1.35; padding: 28px 6px 8px; }
+    .lead { font-size: 14px; color: var(--g600); line-height: 1.6; padding: 0 6px 16px; }
+    .card { background: var(--sur); border: 1px solid var(--bdr); border-radius: 18px; padding: 22px 18px 20px; margin-top: 12px; }
+    label { display: block; font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    input, textarea {
+      width: 100%; border: 1.5px solid var(--bdr); border-radius: 10px; padding: 14px 15px;
+      font-size: 16px; font-family: var(--f); color: var(--g900); background: var(--sur); outline: none;
+    }
+    input { height: 50px; padding-top: 0; padding-bottom: 0; }
+    textarea { min-height: 200px; line-height: 1.6; resize: vertical; }
+    input:focus, textarea:focus { border-color: var(--pri); }
+    .field + .field { margin-top: 18px; }
+    .hint { font-size: 13px; color: var(--g600); line-height: 1.6; margin-top: 8px; }
+    .cta {
+      width: 100%; height: 52px; margin-top: 16px; border: 0; border-radius: 12px; cursor: pointer;
+      background: var(--pri); color: var(--sur); font-size: 16px; font-weight: 700; font-family: var(--f);
+    }
+    .cta:hover { background: var(--pri-h); }
+    .cta:disabled { background: var(--g300); cursor: not-allowed; }
+    .res-title { font-size: 18px; font-weight: 800; line-height: 1.35; margin-bottom: 4px; }
+    .res-sum { font-size: 14px; color: var(--g600); line-height: 1.6; margin-bottom: 12px; }
+    .res { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .res li { border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.6; }
+    .res li b { font-size: 15px; font-weight: 700; display: block; }
+    .res li.added { background: var(--ok-bg); color: var(--ok-ink); }
+    .res li.skip { background: var(--bg); color: var(--g600); }
+    .res li.bad { background: var(--err-bg); color: var(--err-str); }
+    .res li.bad b, .res li.added b, .res li.skip b { color: inherit; }
+    .err { font-size: 14px; color: var(--err-str); line-height: 1.6; margin-top: 12px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>결제 알림 등록</h1>
+  <p class="lead">U사장님 운영팀의 "[상품 결제완료]" 메시지를 그대로 붙여 넣으면 블로그 일반형 건이 신청 내역에 직-일반 행으로 등록돼요. 여러 건을 한 번에 붙여 넣어도 돼요.</p>
+
+  <div class="card">
+    <div class="field">
+      <label for="text">결제 알림 메시지</label>
+      <textarea id="text" placeholder="[Web발신]&#10;[상품 결제완료]&#10;..."></textarea>
+    </div>
+    <div class="field">
+      <label for="token">접근 코드</label>
+      <input id="token" type="password" autocomplete="off" placeholder="마케팅팀 접근 코드">
+      <p class="hint">한 번 입력하면 이 브라우저에 저장돼요.</p>
+    </div>
+    <button class="cta" id="go" type="button" disabled>결제 알림을 붙여 넣어 주세요</button>
+    <p class="err" id="err" hidden></p>
+  </div>
+
+  <div class="card" id="out" hidden>
+    <p class="res-title" id="resTitle"></p>
+    <p class="res-sum" id="resSum"></p>
+    <ul class="res" id="resList"></ul>
+  </div>
+</div>
+
+<script>
+(function () {
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbysJEvbkNX8PU7C5zcdfGqtw5xbfejQmDOIONr9PwssxwPyv2-HIQPI6uZtV2AChYS7/exec';
+  var $ = function (id) { return document.getElementById(id); };
+  var text = $('text'), token = $('token'), go = $('go'), err = $('err'), out = $('out');
+
+  try { token.value = localStorage.getItem('payPasteToken') || ''; } catch (e) {}
+
+  function check() {
+    var hasAlert = /상품\s*결제완료/.test(text.value);
+    var label = !text.value.trim() ? '결제 알림을 붙여 넣어 주세요'
+      : !hasAlert ? '"[상품 결제완료]" 알림이 아니에요'
+      : !token.value.trim() ? '접근 코드를 입력해 주세요'
+      : '시트에 등록하기';
+    go.textContent = label;
+    go.disabled = !(hasAlert && token.value.trim());
+  }
+  text.addEventListener('input', check);
+  token.addEventListener('input', check);
+  check();
+
+  var LABEL = {
+    added:            { cls: 'added', msg: '등록했어요 (직-일반 70,000원)' },
+    duplicate:        { cls: 'skip',  msg: '이미 등록된 건이라 건너뛰었어요' },
+    premium_use_form: { cls: 'skip',  msg: '고급형이에요. 원장님이 폼을 제출하면 행이 생겨서 건너뛰었어요' },
+    no_blog:          { cls: 'skip',  msg: '블로그 상품이 없어서 건너뛰었어요' },
+    parse_error:      { cls: 'bad',   msg: '지점이나 결제일시를 읽지 못했어요. 시트에 직접 입력해 주세요' },
+    error:            { cls: 'bad',   msg: '등록 중 오류가 났어요. 시트에 직접 입력해 주세요' }
+  };
+
+  go.addEventListener('click', function () {
+    err.hidden = true; out.hidden = true;
+    go.disabled = true; go.textContent = '등록하는 중이에요';
+    fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'registerPayment', text: text.value, token: token.value.trim() }) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.reason === 'unauthorized') { fail('접근 코드가 맞지 않아요.'); return; }
+        if (!d.success) { fail('결제 알림을 찾지 못했어요.'); return; }
+        try { localStorage.setItem('payPasteToken', token.value.trim()); } catch (e) {}
+        render(d.results || []);
+        text.value = '';
+        check();
+      })
+      .catch(function () { fail('연결에 실패했어요. 잠시 뒤 다시 시도해 주세요.'); });
+  });
+
+  function fail(msg) { err.textContent = msg; err.hidden = false; check(); }
+
+  function render(results) {
+    var added = results.filter(function (r) { return r.status === 'added'; }).length;
+    var bad = results.filter(function (r) { return LABEL[r.status] && LABEL[r.status].cls === 'bad'; }).length;
+    $('resTitle').textContent = '등록 ' + added + '건';
+    $('resSum').textContent = '확인 ' + results.length + '건 중 ' + (results.length - added - bad) + '건은 건너뛰었고 ' + bad + '건은 직접 입력이 필요해요.';
+    var ul = $('resList'); ul.innerHTML = '';
+    results.forEach(function (r) {
+      var l = LABEL[r.status] || LABEL.error;
+      var li = document.createElement('li'); li.className = l.cls;
+      var b = document.createElement('b'); b.textContent = (r.branch || '지점 미확인') + (r.paidAt ? ' · ' + r.paidAt : '');
+      li.appendChild(b); li.appendChild(document.createTextNode(l.msg));
+      ul.appendChild(li);
+    });
+    out.hidden = false;
+  }
+})();
+</script>
+</body>
+</html>

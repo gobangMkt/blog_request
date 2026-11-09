@@ -44,6 +44,8 @@ function doPost(e) {
       result = fetchPlaceInfo(payload.url);
     } else if (action === 'submitForm') {
       result = submitForm(payload);
+    } else if (action === 'registerPayment') {
+      result = registerPayment(payload.text, payload.token);
     } else {
       result = { error: 'Unknown action: ' + action };
     }
@@ -170,6 +172,73 @@ function submitForm(formData) {
   }
 
   return { success: true };
+}
+
+// ── 결제 알림(U사장님 운영팀 "[상품 결제완료]" 문자) 붙여넣기 → 직-일반 행 자동 등록 ──
+// 마케팅팀 전용 페이지(paste.html)에서 호출한다. 스크립트 속성 INBOX_TOKEN과 같은 값을 보내야 한다.
+// 블로그 일반형만 행을 만든다. 고급형은 원장님이 폼을 제출할 때 행이 생기므로 건너뛴다.
+// 완료 내역 행은 만들지 않는다(원장님 완료 알림톡이 나갈 수 없게). 팀 알림메일도 없다(붙여넣은 사람이 곧 마케팅팀).
+var PRICE_DIRECT_BASIC = 70000; // 직-일반 — 부가세 포함
+
+function registerPayment(text, token) {
+  var saved = PropertiesService.getScriptProperties().getProperty('INBOX_TOKEN');
+  if (!saved || String(token || '') !== saved) return { success: false, reason: 'unauthorized' };
+  var blocks = String(text || '').split(/\[Web발신\]/).filter(function (b) { return /상품\s*결제완료/.test(b); });
+  if (!blocks.length) return { success: false, reason: 'no_alert' };
+  var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('신청 내역');
+  var results = blocks.map(function (b) {
+    try { return registerOnePayment_(sheet, b); }
+    catch (err) { return { status: 'error', msg: String(err) }; }
+  });
+  return { success: true, results: results };
+}
+
+function parsePaymentAlert_(block) {
+  var br = block.match(/상품\s*결제완료\]\s*\r?\n\s*(.+)\((\d+)\)[ \t]*\r?\n/);
+  var dt = block.match(/결제일시:\s*(\d{2})\.(\d{2})\.(\d{2})\s+(\d{1,2}):(\d{2})/);
+  // 붙여넣은 글에 뒤따르는 대화가 섞일 수 있으니 결제상품~결제금액 사이에서만 상품을 찾는다.
+  var items = block.match(/결제상품:([\s\S]*?)결제금액:/);
+  var bl = items ? items[1].match(/블로그\s*(일반형|고급형)/) : null;
+  return {
+    branch: br ? br[1].trim() : '',
+    branchNo: br ? br[2] : '',
+    paidAt: dt ? new Date(2000 + parseInt(dt[1], 10), parseInt(dt[2], 10) - 1, parseInt(dt[3], 10),
+      parseInt(dt[4], 10), parseInt(dt[5], 10)) : null,
+    blog: bl ? bl[1] : ''
+  };
+}
+
+function registerOnePayment_(sheet, block) {
+  var p = parsePaymentAlert_(block);
+  if (!p.branch || !p.paidAt) return { status: 'parse_error', branch: p.branch };
+  var label = p.branch + '(' + p.branchNo + ')';
+  var tag = { branch: label, paidAt: Utilities.formatDate(p.paidAt, 'Asia/Seoul', 'yyyy-MM-dd HH:mm') };
+  if (!p.blog) return { status: 'no_blog', branch: tag.branch, paidAt: tag.paidAt };
+  if (p.blog === '고급형') return { status: 'premium_use_form', branch: tag.branch, paidAt: tag.paidAt };
+
+  // 같은 지점·같은 결제일시가 이미 있으면 중복 붙여넣기로 본다.
+  var lastRow = sheet.getLastRow();
+  if (lastRow >= 2) {
+    var from = Math.max(2, lastRow - 199);
+    var data = sheet.getRange(from, 1, lastRow - from + 1, 13).getValues();
+    for (var i = 0; i < data.length; i++) {
+      if (String(data[i][12] || '').trim() !== '직-일반') continue;
+      if (String(data[i][2] || '').trim() !== label) continue;
+      if (data[i][1] && Utilities.formatDate(new Date(data[i][1]), 'Asia/Seoul', 'yyyy-MM-dd HH:mm') === tag.paidAt) {
+        return { status: 'duplicate', branch: tag.branch, paidAt: tag.paidAt };
+      }
+    }
+  }
+  // 신청일시, 결제완료일(=결제일시), 신청자(지점명+번호), 전화번호(알림에 없음), 지점URL, 키워드1~3, 강조내용,
+  // 보증금, 월세, 도보, 작성타입, 상태
+  sheet.appendRow([p.paidAt, p.paidAt, label, '', '', '', '', '', '', '', '', '', '직-일반', '신청완료']);
+  var row = sheet.getLastRow();
+  if (!sheet.getRange(1, 16).getValue()) sheet.getRange(1, 16).setValue('단가');
+  var cell = sheet.getRange(row, 16);
+  cell.setValue(PRICE_DIRECT_BASIC);
+  cell.setNumberFormat('₩#,##0');
+  sheet.getRange(row, 1, 1, sheet.getLastColumn()).setBackground(ROW_BG_PAID);
+  return { status: 'added', branch: tag.branch, paidAt: tag.paidAt, row: row };
 }
 
 // P열(16) 단가 — 직A/직B(부가상품 고급형, 부가세 포함) = 150,000
