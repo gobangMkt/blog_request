@@ -38,7 +38,7 @@
     /* 섹션 */
     .sec { background: var(--sur); margin: 12px 12px 0; padding: 22px 18px 20px; border: 1px solid var(--bdr); border-radius: 18px; }
     .sec-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-    .sec-no { width: 26px; height: 26px; border-radius: 50%; background: var(--teal); color: #fff; font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .sec-no { width: 26px; height: 26px; border-radius: 50%; background: var(--teal); color: var(--sur); font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .sec-title { font-size: 18px; font-weight: 800; letter-spacing: -.3px; }
     .sec-sub { font-size: 14px; color: var(--g600); line-height: 1.6; margin: -6px 0 16px; word-break: keep-all; }
     .field { margin-bottom: 18px; }
@@ -113,14 +113,14 @@
     .agree-text strong { color: var(--g900); }
     .toggle { position: relative; width: 22px; height: 22px; flex-shrink: 0; }
     .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
-    .toggle-s { position: absolute; inset: 0; background: #fff; border: 2px solid var(--g300); border-radius: 5px; cursor: pointer; transition: background .15s, border-color .15s; }
+    .toggle-s { position: absolute; inset: 0; background: var(--sur); border: 2px solid var(--g300); border-radius: 5px; cursor: pointer; transition: background .15s, border-color .15s; }
     .toggle-s::before { content: ''; position: absolute; width: 5px; height: 10px; left: 6px; top: 2px; border-right: 2.5px solid transparent; border-bottom: 2.5px solid transparent; transform: rotate(45deg); }
     .toggle input:checked + .toggle-s { background: var(--pri); border-color: var(--pri); }
-    .toggle input:checked + .toggle-s::before { border-color: #fff; }
+    .toggle input:checked + .toggle-s::before { border-color: var(--sur); }
 
     /* 하단 버튼 */
     .bottom-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; padding: 12px 20px 16px; background: var(--sur); border-top: 1px solid var(--bdr); z-index: 100; }
-    button[type="submit"] { width: 100%; padding: 16px; background: var(--pri); color: #fff; border: none; border-radius: 10px; font-size: 17px; font-weight: 700; font-family: var(--f); cursor: pointer; }
+    button[type="submit"] { width: 100%; padding: 16px; background: var(--pri); color: var(--sur); border: none; border-radius: 10px; font-size: 17px; font-weight: 700; font-family: var(--f); cursor: pointer; }
     button[type="submit"]:disabled { background: var(--bdr); color: var(--g400); cursor: not-allowed; }
 
     /* 완료 */
@@ -142,7 +142,7 @@
     .sum-lbl { font-size: 14px; color: var(--g500); font-weight: 500; min-width: 76px; flex-shrink: 0; }
     .sum-val { font-size: 14px; font-weight: 600; word-break: break-all; flex: 1; }
     .modal-btns { display: flex; flex-direction: column; gap: 8px; }
-    .btn-ok { width: 100%; padding: 16px; background: var(--pri); color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; font-family: var(--f); cursor: pointer; }
+    .btn-ok { width: 100%; padding: 16px; background: var(--pri); color: var(--sur); border: none; border-radius: 10px; font-size: 16px; font-weight: 700; font-family: var(--f); cursor: pointer; }
     .btn-no { width: 100%; padding: 16px; background: var(--bg); color: var(--g600); border: none; border-radius: 10px; font-size: 16px; font-weight: 600; font-family: var(--f); cursor: pointer; }
     .tmpl-desc-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
     .tmpl-desc-item { border: 1.5px solid var(--bdr); border-radius: 10px; overflow: hidden; }
