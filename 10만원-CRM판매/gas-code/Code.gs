@@ -10,6 +10,18 @@ var PAYMENT_REMINDER_DAYS_DEFAULT = 5; // 설정 시트 7행에 값 있으면 �
 var ROW_BG_PAID = '#FFE599';
 var ROW_BG_NONE = '#FFFFFF';
 var ROW_BG_DONE = '#ff9900'; // 완료 내역 발송완료 → highlightRequestRowByUrl과 동일 색
+// 직-일반(부가상품 일반형) 결제완료는 연파랑 — addon-direct-pay GAS와 같은 값. N열 작성완료면 주황(현황 탭 체크).
+var ROW_BG_BASIC = '#CFE2F3';
+function paidBg_(type, status) {
+  if (String(type || '').trim() !== '직-일반') return ROW_BG_PAID;
+  return String(status || '').trim() === '작성완료' ? ROW_BG_DONE : ROW_BG_BASIC;
+}
+// 직-일반 행만 다시 칠한다(B 결제완료일이 있을 때). 다른 타입은 기존 색(주황 작성완료 등)을 건드리지 않는다.
+function repaintPaidRow_(sheet, row) {
+  var v = sheet.getRange(row, 1, 1, 14).getValues()[0];
+  if (String(v[12] || '').trim() !== '직-일반' || !v[1]) return;
+  sheet.getRange(row, 1, 1, sheet.getLastColumn()).setBackground(paidBg_(v[12], v[13]));
+}
 
 // ── 서명 링크 (URL 위조 방지) ───────────────────────────────────────
 // 비밀키는 스크립트 속성에 1회 자동 생성·보관 → 코드/깃에 노출되지 않음.
@@ -685,17 +697,21 @@ function onSheetEdit(e) {
   if (sheetName === '신청 내역' && col === 2 && row >= 2) {
     var paymentDate = e.range.getValue();
     // 행 배경: 결제완료일 있으면 노랑, 비우면 흰색 복귀
-    sheet.getRange(row, 1, 1, sheet.getLastColumn()).setBackground(paymentDate ? ROW_BG_PAID : ROW_BG_NONE);
+    var mn = sheet.getRange(row, 13, 1, 2).getValues()[0]; // M 작성 타입, N 상태
+    sheet.getRange(row, 1, 1, sheet.getLastColumn()).setBackground(paymentDate ? paidBg_(mn[0], mn[1]) : ROW_BG_NONE);
     if (!paymentDate) return;
     applyBlogPaymentComplete_(e.source, sheet, row, paymentDate);
   }
+
+  // 신청 내역 N열(상태)을 손으로 바꾸면 직-일반 행 색을 다시 맞춘다(작성완료 주황 / 결제완료 연파랑)
+  if (sheetName === '신청 내역' && col === 14 && row >= 2) { repaintPaidRow_(sheet, row); return; }
 
   // 신청 내역 M열(작성 타입) 입력 → 10-A/10-B면 결제 요청 알림톡 자동발송
   // (폼 제출 건은 submitForm에서 발송·O열 기록 — 여기는 시트 직접 입력 건 커버)
   if (sheetName === '신청 내역' && col === 13 && row >= 2) {
     var tmpl = String(e.range.getValue()).trim();
     // 직접결제 건(직A/직B/직-일반)은 이미 결제된 건 — 단가만 기입하고 결제요청 알림톡은 절대 보내지 않는다.
-    if (tmpl.indexOf('직') === 0) { setDirectPrice_(sheet, row, tmpl); return; }
+    if (tmpl.indexOf('직') === 0) { setDirectPrice_(sheet, row, tmpl); repaintPaidRow_(sheet, row); return; }
     if (tmpl !== '10-A' && tmpl !== '10-B') return;
     if (sheet.getRange(row, 15).getValue()) return; // O열 발송시간 있으면 재발송 방지
     var reqName  = sheet.getRange(row, 3).getValue();
@@ -785,7 +801,7 @@ function recolorApplySheet() {
     var placeUrl = String(data[i][4] || '').trim().toLowerCase(); // E: 지점 URL
     var bg;
     if (placeUrl && doneUrls[placeUrl]) bg = ROW_BG_DONE;   // 작성완료(주황) 우선
-    else if (data[i][1])                bg = ROW_BG_PAID;   // B: 결제완료일(노랑)
+    else if (data[i][1])                bg = paidBg_(data[i][12], data[i][13]); // B: 결제완료일(노랑, 직-일반은 연파랑·작성완료 주황)
     else                                 bg = ROW_BG_NONE;
     sheet.getRange(i + 2, 1, 1, totalCol).setBackground(bg);
   }

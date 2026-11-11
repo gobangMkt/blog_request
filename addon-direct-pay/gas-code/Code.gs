@@ -14,8 +14,11 @@ var DIRECT_TYPES   = ['직A', '직B'];
 // 고급형 키워드 폼 안내 알림톡 템플릿(솔라피, 변수 #{지점명}). 스크립트 속성 TEMPLATE_PREMIUM_FORM이 있으면 그 값이 우선한다.
 var TEMPLATE_PREMIUM_FORM = 'KA01TP2611091218516116IoNk3cbXeW';
 
-// 신청 내역 행 배경색 — 결제완료일 있으면 노랑(기존 폼과 동일 규칙)
-var ROW_BG_PAID = '#FFE599';
+// 신청 내역 행 배경색 — 결제완료일 있으면 노랑(기존 폼과 동일 규칙), 작성완료 주황(10만원 GAS ROW_BG_DONE과 동일).
+// 직-일반만 결제완료를 연파랑으로 칠해 직A/직B(노랑)와 구분한다(토미 11.11). 10만원 GAS onSheetEdit도 같은 예외를 둔다.
+var ROW_BG_PAID  = '#FFE599';
+var ROW_BG_BASIC = '#CFE2F3';
+var ROW_BG_DONE  = '#ff9900';
 
 function getSettings() {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -50,6 +53,14 @@ function doPost(e) {
       result = registerPayment(payload.text, payload.token);
     } else if (action === 'registerPremium') {
       result = registerPremium(payload);
+    } else if (action === 'listStatus') {
+      result = listStatus(payload.token);
+    } else if (action === 'markBasic') {
+      result = markBasic(payload);
+    } else if (action === 'checkToken') {
+      // paste.html 입장 시 접근 코드 한 번 확인(시트는 읽지 않는다)
+      var saved = PropertiesService.getScriptProperties().getProperty('INBOX_TOKEN');
+      result = { success: !!saved && String(payload.token || '') === saved };
     } else {
       result = { error: 'Unknown action: ' + action };
     }
@@ -247,7 +258,7 @@ function registerOnePayment_(sheet, block) {
   var cell = sheet.getRange(row, 16);
   cell.setValue(PRICE_DIRECT_BASIC);
   cell.setNumberFormat('₩#,##0');
-  sheet.getRange(row, 1, 1, sheet.getLastColumn()).setBackground(ROW_BG_PAID);
+  sheet.getRange(row, 1, 1, sheet.getLastColumn()).setBackground(ROW_BG_BASIC);
   return { status: 'added', branch: tag.branch, paidAt: tag.paidAt, row: row };
 }
 
@@ -281,8 +292,132 @@ function registerPremium(payload) {
     if (!tmpl) return { success: true, status: 'no_template' };
     var sent = sendAlimtalk(digits, tmpl, { '#{지점명}': branch });
     if (!sent.ok) return { success: true, status: 'send_failed', msg: sent.msg };
-    props.setProperty(key, Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'));
+    // 값 = 발송시각|지점명 (지점명은 현황 탭 표기용. 옛 건은 발송시각만 있다)
+    props.setProperty(key, Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm') + '|' + branch);
     return { success: true, status: 'sent' };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ── 현황 탭: 부가상품 직접결제 건을 시트처럼 결제 시간순으로 (읽기 전용, paste.html 현황 탭) ──
+// 상태(stage):
+//   notified   = 고급형 알림 붙여넣기 → 사장님께 키워드 폼 알림톡을 보냄(스크립트 속성 PF_ 기록, 최근 30일). 사실만 보여 준다.
+//                폼은 지점번호를 받지 않아 어느 제출이 이 건인지 알 수 없으므로 짝짓지 않는다(11.11 개발팀장 리뷰).
+//   writing    = 작성 전(직A/직B는 완료 내역 완료일 없음, 직-일반은 N열 신청완료)
+//   sendwait   = 고급형 작성 완료, 사장님 완료 알림톡 전(완료 내역 H 발송대기)
+//   sent       = 고급형 완료 알림톡 보냄(완료 내역 H 발송완료)
+//   basic_done = 직-일반 N열 작성완료(현황 탭 체크로 바꾼다)
+function listStatus(token) {
+  var props = PropertiesService.getScriptProperties();
+  var saved = props.getProperty('INBOX_TOKEN');
+  if (!saved || String(token || '') !== saved) return { success: false, reason: 'unauthorized' };
+
+  var TZ = 'Asia/Seoul';
+  var DAY = 24 * 60 * 60 * 1000;
+  var now = new Date().getTime();
+  function fmt(d) { return Utilities.formatDate(d, TZ, 'yyyy-MM-dd HH:mm'); }
+  function ymd(d) { return Utilities.formatDate(d, TZ, 'yyyy-MM-dd'); }
+  function asDate(v) { var d = v ? new Date(v) : null; return d && !isNaN(d.getTime()) ? d : null; }
+
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('신청 내역');
+  var lastRow = sheet.getLastRow();
+  var firstRow = Math.max(2, lastRow - 499);
+  var rows = lastRow >= 2 ? sheet.getRange(firstRow, 1, lastRow - firstRow + 1, 14).getValues() : [];
+
+  // 완료 내역: 지점 URL → 행 목록(위에서 아래 순). 직A/직B 건은 D-day(A열 = 결제완료일 + 7일)가 같은 행으로 대조하고,
+  // 없으면 그 URL의 가장 아래 행을 쓴다(같은 URL로 다른 폼이 들어와 빈 행이 붙어도 끝난 건이 되돌아가지 않게).
+  var done = {};
+  var doneSheet = ss.getSheetByName('완료 내역');
+  if (doneSheet && doneSheet.getLastRow() >= 2) {
+    doneSheet.getRange(2, 1, doneSheet.getLastRow() - 1, 8).getValues().forEach(function (r) {
+      var u = String(r[3] || '').trim().toLowerCase();
+      if (!u) return;
+      var dd = asDate(r[0]);
+      (done[u] = done[u] || []).push({ dDay: dd ? ymd(dd) : '', doneAt: r[6], sent: String(r[7] || '').trim() });
+    });
+  }
+  function premiumStage(url, paid) {
+    var list = done[String(url || '').trim().toLowerCase()];
+    if (!list || !list.length) return 'writing';
+    var want = ymd(new Date(paid.getTime() + 7 * DAY));
+    var hit = null;
+    for (var i = list.length - 1; i >= 0; i--) { if (list[i].dDay === want) { hit = list[i]; break; } }
+    if (!hit) hit = list[list.length - 1];
+    if (!hit.doneAt) return 'writing';
+    return hit.sent === '발송완료' ? 'sent' : 'sendwait';
+  }
+
+  var items = [];
+  rows.forEach(function (r, idx) {
+    var type = String(r[12] || '').trim();
+    if (type !== '직-일반' && DIRECT_TYPES.indexOf(type) < 0) return;
+    var paidB = asDate(r[1]);
+    var paid = paidB || asDate(r[0]);
+    if (!paid) return;
+    var name = String(r[2] || '').trim();
+    var item = { kind: '', label: name || '(이름 없음)', paidAt: fmt(paid), ts: paid.getTime(), stage: '' };
+    if (type === '직-일반') {
+      item.kind = '일반형';
+      var st = String(r[13] || '').trim();
+      item.stage = st === '작성완료' ? 'basic_done' : 'writing';
+      // 체크는 markBasic이 다시 대조할 수 있는 행에만 준다(B 결제완료일·C 신청자가 있고 N이 신청완료/작성완료)
+      if (paidB && name && (st === '신청완료' || st === '작성완료')) item.row = firstRow + idx;
+    } else {
+      item.kind = '고급형';
+      item.stage = premiumStage(r[4], paid);
+    }
+    items.push(item);
+  });
+
+  // 고급형 키워드 폼 알림톡 보낸 기록 (스크립트 속성 PF_<지점번호>_<결제일시>, 값 = 발송시각|지점명)
+  var all = props.getProperties();
+  Object.keys(all).forEach(function (k) {
+    var m = k.match(/^PF_(\d+)_(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})$/);
+    if (!m) return;
+    var paid = new Date(+m[2], +m[3] - 1, +m[4], +m[5], +m[6]);
+    if (now - paid.getTime() > 30 * DAY) return;
+    var name = String(all[k]).split('|').slice(1).join('|').trim();
+    items.push({
+      kind: '고급형', label: name ? name + '(' + m[1] + ')' : '지점번호 ' + m[1],
+      paidAt: fmt(paid), ts: paid.getTime(), stage: 'notified'
+    });
+  });
+
+  items.sort(function (a, b) { return b.ts - a.ts; });
+  items.forEach(function (it) { delete it.ts; });
+  return { success: true, items: items };
+}
+
+// 현황 탭 체크: 직-일반 행 N열을 작성완료 ↔ 신청완료로 바꾸고 행 색도 맞춘다(작성완료 주황 / 결제완료 연파랑).
+// 행이 밀렸을 수 있어 행 번호만 믿지 않고 작성 타입·신청자·결제일시가 그대로인지 확인한다.
+// N열이 신청완료·작성완료가 아니면(보류·취소 등 다른 값) 덮어쓰지 않는다.
+function markBasic(payload) {
+  var saved = PropertiesService.getScriptProperties().getProperty('INBOX_TOKEN');
+  if (!saved || String(payload.token || '') !== saved) return { success: false, reason: 'unauthorized' };
+  var row = parseInt(payload.row, 10);
+  if (!(row >= 2)) return { success: false, reason: 'bad_request' };
+  var done = payload.done === true;
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('신청 내역');
+    if (row > sheet.getLastRow()) return { success: false, reason: 'stale' };
+    var v = sheet.getRange(row, 1, 1, 14).getValues()[0];
+    var paid = v[1] ? new Date(v[1]) : null;
+    var st = String(v[13] || '').trim();
+    if (String(v[12] || '').trim() !== '직-일반'
+        || String(v[2] || '').trim() !== String(payload.label || '').trim()
+        || !paid || isNaN(paid.getTime())
+        || Utilities.formatDate(paid, 'Asia/Seoul', 'yyyy-MM-dd HH:mm') !== String(payload.paidAt || '')
+        || (st !== '신청완료' && st !== '작성완료')) {
+      return { success: false, reason: 'stale' };
+    }
+    sheet.getRange(row, 14).setValue(done ? '작성완료' : '신청완료');
+    sheet.getRange(row, 1, 1, sheet.getLastColumn()).setBackground(done ? ROW_BG_DONE : ROW_BG_BASIC);
+    return { success: true, stage: done ? 'basic_done' : 'writing' };
   } finally {
     lock.releaseLock();
   }

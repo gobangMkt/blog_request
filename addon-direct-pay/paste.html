@@ -9,41 +9,68 @@
   <style>
     :root {
       --pri: #3182F6; --pri-h: #1B6CF2;
-      --teal: #00A0B0; --teal-ink: #00707C;
       --g900: #191F28; --g600: #4E5968; --g500: #8B95A1; --g300: #C4CBD4;
       --bg: #F2F4F6; --sur: #FFFFFF; --bdr: #E5E8EB;
       --ok-bg: #E8FBF0; --ok-ink: #00812A;
       --err-bg: #FFF0F2; --err-str: #D92B2B;
+      --dim: rgba(25, 31, 40, 0.45);
       --f: 'Pretendard', -apple-system, sans-serif;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scrollbar-gutter: stable; }
     body { font-family: var(--f); background: var(--bg); color: var(--g900); min-height: 100vh; padding-bottom: 40px; word-break: keep-all; }
-    .wrap { max-width: 480px; margin: 0 auto; padding: 0 12px; }
-    h1 { font-size: 24px; font-weight: 800; line-height: 1.35; padding: 28px 6px 8px; }
-    .lead { font-size: 14px; color: var(--g600); line-height: 1.6; padding: 0 6px 16px; }
-    .sheet-link { display: inline-block; font-size: 14px; font-weight: 700; color: var(--pri); text-decoration: none; margin: 0 6px 12px; }
+    /* 마케팅팀 데스크톱 도구: 넓게 쓰고, 좁은 화면에서만 줄바꿈 */
+    .wrap { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 28px 0 12px; }
+    h1 { font-size: 24px; font-weight: 800; line-height: 1.35; }
+    .quick { display: flex; gap: 16px; flex: none; }
+    .quick a {
+      display: inline-flex; align-items: center; gap: 2px; font-size: 14px; font-weight: 700; color: var(--pri);
+      text-decoration: none; line-height: 1.4; padding: 12px 0; margin: -12px 0;
+    }
+    .quick svg { width: 14px; height: 14px; }
+    .tabs { display: flex; border-bottom: 1.5px solid var(--bdr); }
+    .tab {
+      width: 120px; height: 46px; border: 0; background: none; cursor: pointer; font-family: var(--f);
+      font-size: 16px; font-weight: 700; color: var(--g500); border-bottom: 3px solid transparent; margin-bottom: -1.5px;
+    }
+    .tab.on { color: var(--g900); border-bottom-color: var(--pri); }
     .card { background: var(--sur); border: 1px solid var(--bdr); border-radius: 18px; padding: 22px 18px 20px; margin-top: 12px; }
-    label { display: block; font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    .gate { max-width: 420px; margin: 12px auto 0; }
+    label { display: inline-flex; align-items: center; gap: 4px; font-size: 15px; font-weight: 700; margin-bottom: 8px; }
     input, textarea {
       width: 100%; border: 1.5px solid var(--bdr); border-radius: 10px; padding: 14px 15px;
       font-size: 16px; font-family: var(--f); color: var(--g900); background: var(--sur); outline: none;
     }
     input { height: 50px; padding-top: 0; padding-bottom: 0; }
-    textarea { min-height: 200px; line-height: 1.6; resize: vertical; }
+    textarea { min-height: 220px; line-height: 1.6; resize: vertical; }
     input:focus, textarea:focus { border-color: var(--pri); }
-    .field + .field { margin-top: 18px; }
-    .hint { font-size: 13px; color: var(--g600); line-height: 1.6; margin-top: 8px; }
     .cta {
       width: 100%; height: 52px; margin-top: 16px; border: 0; border-radius: 12px; cursor: pointer;
       background: var(--pri); color: var(--sur); font-size: 16px; font-weight: 700; font-family: var(--f);
     }
     .cta:hover { background: var(--pri-h); }
     .cta:disabled { background: var(--g300); cursor: not-allowed; }
+    .err { font-size: 14px; color: var(--err-str); line-height: 1.6; margin-top: 12px; }
+
+    /* 툴팁: 설명 문장은 화면에 깔지 않고 ⓘ에 둔다 */
+    .tip { position: relative; display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center;
+      border: 0; background: none; color: var(--g500); cursor: help; margin: -6px 0; }
+    .tip svg { width: 16px; height: 16px; }
+    .tip .tip-box {
+      visibility: hidden; opacity: 0; position: absolute; left: 0; top: calc(100% + 6px);
+      width: 300px; max-width: calc(100vw - 48px); padding: 10px 12px; border-radius: 10px; background: var(--g900); color: var(--sur);
+      font-size: 13px; font-weight: 400; line-height: 1.6; text-align: left; z-index: 10; transition: opacity .12s;
+    }
+    .tip:hover .tip-box, .tip:focus .tip-box { visibility: visible; opacity: 1; }
+
+    /* 등록 결과 */
     .res-title { font-size: 18px; font-weight: 800; line-height: 1.35; margin-bottom: 4px; }
     .res-sum { font-size: 14px; color: var(--g600); line-height: 1.6; margin-bottom: 12px; }
     .res { list-style: none; display: flex; flex-direction: column; gap: 8px; }
     .res li { border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.6; }
     .res li b { font-size: 15px; font-weight: 700; display: block; }
+    .res li b .when { white-space: nowrap; }
     .res li.added { background: var(--ok-bg); color: var(--ok-ink); }
     .res li.skip { background: var(--bg); color: var(--g600); }
     .res li.bad { background: var(--err-bg); color: var(--err-str); }
@@ -51,59 +78,220 @@
     .res li.ask { background: var(--sur); border: 1.5px solid var(--pri); color: var(--g900); }
     .res li.ask .why { font-size: 14px; color: var(--g600); line-height: 1.6; margin: 4px 0 12px; }
     .res li.ask a { display: inline-block; font-size: 14px; font-weight: 700; color: var(--pri); text-decoration: none; margin-bottom: 12px; }
+    .res li.ask .ask-row { display: flex; gap: 8px; }
+    .res li.ask .ask-row input { flex: 1; }
+    .res li.ask .ask-row .cta { width: auto; padding: 0 18px; margin-top: 0; height: 50px; flex: none; }
     .res li.ask .msg { font-size: 14px; line-height: 1.6; margin-top: 10px; }
     .res li.ask .msg.bad { color: var(--err-str); }
     .res li.done { background: var(--ok-bg); color: var(--ok-ink); }
     .res li.done b { color: inherit; }
-    .err { font-size: 14px; color: var(--err-str); line-height: 1.6; margin-top: 12px; }
+
+    /* 현황: 시트처럼 시간순 한 목록 */
+    .stat-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .stat-head .res-sum { margin-bottom: 0; }
+    .refresh {
+      flex: none; width: 44px; height: 44px; border: 0; border-radius: 12px; background: none;
+      cursor: pointer; color: var(--g600); display: inline-flex; align-items: center; justify-content: center;
+    }
+    .refresh svg { width: 20px; height: 20px; }
+    .refresh:disabled { color: var(--g300); cursor: not-allowed; }
+    .tr {
+      display: grid; grid-template-columns: 104px minmax(0, 1fr) 64px 112px 56px; gap: 12px; align-items: center;
+      padding: 6px 0; border-bottom: 1px solid var(--bdr); font-size: 14px; line-height: 1.4;
+    }
+    .tr.th { font-size: 13px; font-weight: 700; color: var(--g500); padding: 0 0 8px; }
+    .tr.th span:last-child { text-align: center; }
+    .tr.th .c-kind { color: inherit; }
+    .c-date { color: var(--g600); font-variant-numeric: tabular-nums; }
+    .c-who { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .c-kind { color: var(--g600); }
+    .c-st { font-weight: 700; color: var(--g900); }
+    .c-st.done { font-weight: 400; color: var(--g600); }
+    .c-st .row-err { display: block; font-size: 13px; font-weight: 400; color: var(--err-str); }
+    .c-ck { text-align: center; }
+    .ck {
+      width: 44px; height: 44px; border: 0; background: none; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .ck .box {
+      width: 22px; height: 22px; border: 1.5px solid var(--g300); border-radius: 6px; background: var(--sur);
+      display: inline-flex; align-items: center; justify-content: center; color: var(--sur);
+    }
+    .ck .box svg { width: 14px; height: 14px; visibility: hidden; }
+    .ck[aria-checked="true"] .box { background: var(--pri); border-color: var(--pri); }
+    .ck[aria-checked="true"] .box svg { visibility: visible; }
+    .ck:disabled { cursor: default; }
+    .ck:disabled .box { border-color: var(--bdr); background: var(--bg); }
+    .ck:disabled[aria-checked="true"] .box { background: var(--g300); border-color: var(--g300); }
+    .ck.busy .box { opacity: 0.4; }
+    .empty { font-size: 14px; color: var(--g600); line-height: 1.6; padding: 6px 0; }
+    @media (max-width: 640px) {
+      .tr { grid-template-columns: 44px minmax(0, 1fr) 72px 44px; gap: 8px; }
+      .tr .c-kind { display: none; }
+      .c-who { white-space: normal; }
+      .c-who::after { content: ' · ' attr(data-kind); font-size: 13px; font-weight: 400; color: var(--g600); }
+    }
+
+    /* 확인 팝업 */
+    .modal { position: fixed; inset: 0; background: var(--dim); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+    .modal[hidden] { display: none; }
+    .sheet { width: 100%; max-width: 420px; background: var(--sur); border-radius: 20px; padding: 24px 20px 20px; }
+    .sheet h2 { font-size: 20px; font-weight: 800; line-height: 1.35; }
+    .sheet ul { list-style: none; margin-top: 10px; font-size: 15px; line-height: 1.6; color: var(--g600); }
+    .sheet .btns { display: flex; gap: 8px; margin-top: 20px; }
+    .sheet .btns button { flex: 1; height: 52px; border-radius: 12px; font-size: 16px; font-weight: 700; font-family: var(--f); cursor: pointer; }
+    .sheet .no { border: 1.5px solid var(--bdr); background: var(--sur); color: var(--g600); }
+    .sheet .yes { border: 0; background: var(--pri); color: var(--sur); }
   </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>결제 알림 등록</h1>
-  <p class="lead">U사장님 운영팀의 "[상품 결제완료]" 메시지를 그대로 붙여 넣으면 블로그 일반형 건이 신청 내역에 직-일반 행으로 등록돼요. 여러 건을 한 번에 붙여 넣어도 돼요.</p>
-  <a class="sheet-link" href="https://docs.google.com/spreadsheets/d/1lgAsrtoeqv1-g3Nh3D21zTyuGLdAZuP5jSXxftlIxh0/edit" target="_blank" rel="noopener">신청 내역 시트 열기 →</a>
-
-  <div class="card">
-    <div class="field">
-      <label for="text">결제 알림 메시지</label>
-      <textarea id="text" placeholder="[Web발신]&#10;[상품 결제완료]&#10;..."></textarea>
+  <div class="top">
+    <h1>결제 알림 등록</h1>
+    <div class="quick">
+      <a href="https://docs.google.com/spreadsheets/d/1lgAsrtoeqv1-g3Nh3D21zTyuGLdAZuP5jSXxftlIxh0/edit" target="_blank" rel="noopener" title="신청 내역 시트 열기">시트<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12"/></svg></a>
+      <a id="uceo" href="https://u-ceo.kr" target="_blank" rel="noopener" title="U사장님 열기">U사장님<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12"/></svg></a>
     </div>
-    <div class="field">
-      <label for="token">접근 코드</label>
-      <input id="token" type="password" autocomplete="off" placeholder="마케팅팀 접근 코드">
-      <p class="hint">한 번 입력하면 이 브라우저에 저장돼요.</p>
-    </div>
-    <button class="cta" id="go" type="button" disabled>결제 알림을 붙여 넣어 주세요</button>
-    <p class="err" id="err" hidden></p>
   </div>
 
-  <div class="card" id="out" hidden>
-    <p class="res-title" id="resTitle"></p>
-    <p class="res-sum" id="resSum"></p>
-    <ul class="res" id="resList"></ul>
+  <!-- 입장: 접근 코드 한 번 -->
+  <div id="gatePanel" hidden>
+    <div class="card gate">
+      <label for="token">접근 코드</label>
+      <input id="token" type="password" autocomplete="off" placeholder="마케팅팀 접근 코드">
+      <button class="cta" id="enter" type="button" disabled>접근 코드를 입력해 주세요</button>
+      <p class="err" id="gateErr" hidden></p>
+    </div>
+  </div>
+
+  <div id="app" hidden>
+    <div class="tabs" role="tablist">
+      <button class="tab on" type="button" role="tab" data-tab="reg" aria-selected="true">등록</button>
+      <button class="tab" type="button" role="tab" data-tab="stat" aria-selected="false">현황</button>
+    </div>
+
+    <div id="regPanel">
+      <div class="card">
+        <label for="text">결제 알림 메시지
+          <span class="tip" tabindex="0" aria-label="도움말"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v3.8M8 5v.1" stroke-linecap="round"/></svg>
+            <span class="tip-box" role="tooltip">U사장님 운영팀 "[상품 결제완료]" 메시지를 그대로 붙여 넣어요. 여러 건 한 번에 돼요. 일반형은 시트에 직-일반 행으로 들어가고, 고급형은 사장님 번호를 넣어 키워드 폼 알림톡을 보내요.</span>
+          </span>
+        </label>
+        <textarea id="text" placeholder="[Web발신]&#10;[상품 결제완료]&#10;..."></textarea>
+        <button class="cta" id="go" type="button" disabled>결제 알림을 붙여 넣어 주세요</button>
+        <p class="err" id="err" hidden></p>
+      </div>
+
+      <div class="card" id="out" hidden>
+        <p class="res-title" id="resTitle"></p>
+        <p class="res-sum" id="resSum"></p>
+        <ul class="res" id="resList"></ul>
+      </div>
+    </div>
+
+    <div id="statPanel" hidden>
+      <div class="card">
+        <div class="stat-head">
+          <div>
+            <p class="res-title" id="statTitle">현황</p>
+            <p class="res-sum" id="statSum"></p>
+          </div>
+          <button class="refresh" id="refresh" type="button" aria-label="새로고침" title="새로고침">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 10a6.5 6.5 0 1 1-1.9-4.6"/><path d="M16.5 3.5v3.6h-3.6"/></svg>
+          </button>
+        </div>
+        <div id="statList"></div>
+        <p class="err" id="statErr" hidden></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <h2 id="mTitle"></h2>
+    <ul id="mBody"></ul>
+    <div class="btns">
+      <button class="no" id="mNo" type="button">취소</button>
+      <button class="yes" id="mYes" type="button"></button>
+    </div>
   </div>
 </div>
 
 <script>
 (function () {
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbysJEvbkNX8PU7C5zcdfGqtw5xbfejQmDOIONr9PwssxwPyv2-HIQPI6uZtV2AChYS7/exec';
+  var KEY = 'payPasteToken';
   var $ = function (id) { return document.getElementById(id); };
-  var text = $('text'), token = $('token'), go = $('go'), err = $('err'), out = $('out');
+  var text = $('text'), go = $('go'), err = $('err'), out = $('out');
 
-  try { token.value = localStorage.getItem('payPasteToken') || ''; } catch (e) {}
+  // U사장님 지점 검색 화면 주소. 비워 두면 링크를 보여 주지 않는다.
+  var USABOSS_URL = 'https://u-ceo.kr';
+  if (USABOSS_URL) $('uceo').href = USABOSS_URL; else $('uceo').hidden = true;
 
+  function post(body) {
+    body.token = TOKEN;
+    return fetch(GAS_URL, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); });
+  }
+
+  // ── 입장: 접근 코드는 처음 한 번만. 서버가 거절하면 지우고 다시 묻는다 ──
+  var TOKEN = '';
+  try { TOKEN = localStorage.getItem(KEY) || ''; } catch (e) {}
+  function showGate(msg) {
+    TOKEN = ''; try { localStorage.removeItem(KEY); } catch (e) {}
+    $('app').hidden = true; $('gatePanel').hidden = false;
+    $('gateErr').hidden = !msg; $('gateErr').textContent = msg || '';
+    $('token').value = ''; syncEnter(); $('token').focus();
+  }
+  function syncEnter() {
+    var ok = !!$('token').value.trim();
+    $('enter').disabled = !ok; $('enter').textContent = ok ? '들어가기' : '접근 코드를 입력해 주세요';
+  }
+  $('token').addEventListener('input', syncEnter);
+  $('token').addEventListener('keydown', function (e) { if (e.key === 'Enter' && !$('enter').disabled) $('enter').click(); });
+  $('enter').addEventListener('click', function () {
+    var t = $('token').value.trim();
+    $('enter').disabled = true; $('enter').textContent = '확인하는 중이에요';
+    fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'checkToken', token: t }) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.success) { $('gateErr').textContent = '접근 코드가 맞지 않아요.'; $('gateErr').hidden = false; syncEnter(); return; }
+        TOKEN = t; try { localStorage.setItem(KEY, t); } catch (e) {}
+        $('gatePanel').hidden = true; $('app').hidden = false;
+      })
+      .catch(function () { $('gateErr').textContent = '연결에 실패했어요. 잠시 뒤 다시 시도해 주세요.'; $('gateErr').hidden = false; syncEnter(); });
+  });
+  if (TOKEN) $('app').hidden = false; else showGate('');
+
+  // ── 확인 팝업 ──
+  function confirmBox(title, lines, yesLabel) {
+    return new Promise(function (resolve) {
+      $('mTitle').textContent = title;
+      var ul = $('mBody'); ul.innerHTML = '';
+      lines.forEach(function (l) { var li = document.createElement('li'); li.textContent = l; ul.appendChild(li); });
+      $('mYes').textContent = yesLabel;
+      $('modal').hidden = false; $('mNo').focus(); // Enter 한 번에 되돌릴 수 없는 일이 나가지 않게 기본은 취소
+      function close(v) {
+        $('modal').hidden = true;
+        $('mYes').onclick = $('mNo').onclick = null; document.onkeydown = null;
+        resolve(v);
+      }
+      $('mYes').onclick = function () { close(true); };
+      $('mNo').onclick = function () { close(false); };
+      document.onkeydown = function (e) { if (e.key === 'Escape') close(false); };
+    });
+  }
+
+  // ── 등록 ──
+  function alertCount() { return (text.value.match(/상품\s*결제완료/g) || []).length; }
   function check() {
-    var hasAlert = /상품\s*결제완료/.test(text.value);
-    var label = !text.value.trim() ? '결제 알림을 붙여 넣어 주세요'
-      : !hasAlert ? '"[상품 결제완료]" 알림이 아니에요'
-      : !token.value.trim() ? '접근 코드를 입력해 주세요'
-      : '시트에 등록하기';
-    go.textContent = label;
-    go.disabled = !(hasAlert && token.value.trim());
+    var n = alertCount();
+    go.textContent = !text.value.trim() ? '결제 알림을 붙여 넣어 주세요'
+      : !n ? '"[상품 결제완료]" 알림이 아니에요'
+      : '시트에 등록하기 (' + n + '건)';
+    go.disabled = !n;
   }
   text.addEventListener('input', check);
-  token.addEventListener('input', check);
   check();
 
   var LABEL = {
@@ -115,25 +303,26 @@
   };
 
   go.addEventListener('click', function () {
-    err.hidden = true; out.hidden = true;
-    go.disabled = true; go.textContent = '등록하는 중이에요';
-    fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'registerPayment', text: text.value, token: token.value.trim() }) })
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        if (d.reason === 'unauthorized') { fail('접근 코드가 맞지 않아요.'); return; }
-        if (!d.success) { fail('결제 알림을 찾지 못했어요.'); return; }
-        try { localStorage.setItem('payPasteToken', token.value.trim()); } catch (e) {}
-        render(d.results || []);
-        text.value = '';
-        check();
-      })
-      .catch(function () { fail('연결에 실패했어요. 잠시 뒤 다시 시도해 주세요.'); });
+    var n = alertCount();
+    confirmBox('결제 알림 ' + n + '건을 시트에 넣을까요?',
+      ['일반형은 신청 내역에 직-일반 행으로 들어가요.', '고급형은 다음 화면에서 사장님 번호를 넣어요.'], '넣기')
+      .then(function (ok) {
+        if (!ok) return;
+        err.hidden = true; out.hidden = true;
+        go.disabled = true; go.textContent = '등록하는 중이에요';
+        post({ action: 'registerPayment', text: text.value })
+          .then(function (d) {
+            if (d.reason === 'unauthorized') { showGate('접근 코드가 바뀌었어요. 다시 입력해 주세요.'); return; }
+            if (!d.success) { fail('결제 알림을 찾지 못했어요.'); return; }
+            render(d.results || []);
+            text.value = '';
+            check();
+          })
+          .catch(function () { fail('연결에 실패했어요. 잠시 뒤 다시 시도해 주세요.'); });
+      });
   });
 
   function fail(msg) { err.textContent = msg; err.hidden = false; check(); }
-
-  // U사장님 지점 검색 화면 주소. 비워 두면 링크를 보여 주지 않는다.
-  var USABOSS_URL = 'https://u-ceo.kr';
 
   var SEND_LABEL = {
     sent:           { ok: true,  msg: '알림톡을 보냈어요. 사장님이 폼을 제출하면 신청 내역에 행이 생겨요.' },
@@ -149,36 +338,42 @@
     var li = document.createElement('li'); li.className = 'ask';
     var b = document.createElement('b'); b.textContent = r.branch + '(' + r.branchNo + ') · ' + r.paidAt;
     var why = document.createElement('p'); why.className = 'why';
-    why.textContent = '고급형이에요. 사장님 전화번호를 넣으면 키워드 폼 알림톡을 보내요.';
+    why.textContent = '고급형이에요. 사장님 번호를 넣으면 키워드 폼 알림톡을 보내요.';
     li.appendChild(b); li.appendChild(why);
     if (USABOSS_URL) {
       var a = document.createElement('a'); a.href = USABOSS_URL; a.target = '_blank'; a.rel = 'noopener';
-      a.textContent = 'U사장님에서 지점 찾기 →'; li.appendChild(a); li.appendChild(document.createElement('br'));
+      a.textContent = 'U사장님에서 지점 찾기 →'; li.appendChild(a);
     }
+    var rowEl = document.createElement('div'); rowEl.className = 'ask-row';
     var inp = document.createElement('input'); inp.type = 'tel'; inp.placeholder = '사장님 전화번호 010-0000-0000';
     inp.maxLength = 13; inp.setAttribute('autocomplete', 'off');
     var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'cta';
     var msg = document.createElement('p'); msg.className = 'msg'; msg.hidden = true;
     function valid() { return /^01[016789]\d{7,8}$/.test(inp.value.replace(/\D/g, '')); }
-    function sync() { btn.textContent = valid() ? '알림톡 발송하기' : '사장님 전화번호를 입력해 주세요'; btn.disabled = !valid(); }
+    function sync() { btn.textContent = valid() ? '알림톡 보내기' : '번호를 입력해 주세요'; btn.disabled = !valid(); }
     inp.addEventListener('input', sync); sync();
     btn.addEventListener('click', function () {
-      btn.disabled = true; btn.textContent = '보내는 중이에요'; msg.hidden = true;
-      fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'registerPremium', token: token.value.trim(),
-        branch: r.branch, branchNo: r.branchNo, paidAt: r.paidAt, phone: inp.value }) })
-        .then(function (res) { return res.json(); })
-        .then(function (d) {
-          var s = SEND_LABEL[d.status || d.reason] || { ok: false, msg: '오류가 났어요. 잠시 뒤 다시 시도해 주세요.' };
-          if (d.success && s.ok) {
-            li.className = 'done'; li.innerHTML = '';
-            var t = document.createElement('b'); t.textContent = r.branch + '(' + r.branchNo + ')';
-            li.appendChild(t); li.appendChild(document.createTextNode(s.msg)); return;
-          }
-          msg.className = 'msg bad'; msg.textContent = s.msg + (d.msg ? ' (' + d.msg + ')' : ''); msg.hidden = false; sync();
-        })
-        .catch(function () { msg.className = 'msg bad'; msg.textContent = '연결에 실패했어요. 잠시 뒤 다시 시도해 주세요.'; msg.hidden = false; sync(); });
+      confirmBox(r.branch + '(' + r.branchNo + ') 사장님께 알림톡을 보낼까요?',
+        ['받는 번호: ' + inp.value.replace(/\D/g, '').replace(/^(\d{3})(\d{3,4})(\d{4})$/, '$1-$2-$3'),'키워드 폼 링크가 나가요. 보낸 뒤엔 되돌릴 수 없어요.'], '보내기')
+        .then(function (ok) {
+          if (!ok) return;
+          btn.disabled = true; btn.textContent = '보내는 중이에요'; msg.hidden = true;
+          post({ action: 'registerPremium', branch: r.branch, branchNo: r.branchNo, paidAt: r.paidAt, phone: inp.value })
+            .then(function (d) {
+              if (d.reason === 'unauthorized') { showGate('접근 코드가 바뀌었어요. 다시 입력해 주세요.'); return; }
+              var s = SEND_LABEL[d.status || d.reason] || { ok: false, msg: '오류가 났어요. 잠시 뒤 다시 시도해 주세요.' };
+              if (d.success && s.ok) {
+                li.className = 'done'; li.innerHTML = '';
+                var t = document.createElement('b'); t.textContent = r.branch + '(' + r.branchNo + ')';
+                li.appendChild(t); li.appendChild(document.createTextNode(s.msg)); return;
+              }
+              msg.className = 'msg bad'; msg.textContent = s.msg + (d.msg ? ' (' + d.msg + ')' : ''); msg.hidden = false; sync();
+            })
+            .catch(function () { msg.className = 'msg bad'; msg.textContent = '연결에 실패했어요. 잠시 뒤 다시 시도해 주세요.'; msg.hidden = false; sync(); });
+        });
     });
-    li.appendChild(inp); li.appendChild(btn); li.appendChild(msg);
+    rowEl.appendChild(inp); rowEl.appendChild(btn);
+    li.appendChild(rowEl); li.appendChild(msg);
     return li;
   }
 
@@ -187,18 +382,145 @@
     var asks = results.filter(function (r) { return r.status === 'premium_need_phone'; }).length;
     var bad = results.filter(function (r) { return LABEL[r.status] && LABEL[r.status].cls === 'bad'; }).length;
     $('resTitle').textContent = '등록 ' + added + '건';
-    $('resSum').textContent = '확인 ' + results.length + '건 중 ' + (results.length - added - bad - asks) + '건은 건너뛰었고 '
-      + asks + '건은 전화번호 입력이 필요하고 ' + bad + '건은 직접 입력이 필요해요.';
+    $('resSum').textContent = '확인 ' + results.length + '건 · 건너뜀 ' + (results.length - added - bad - asks)
+      + ' · 번호 입력 필요 ' + asks + ' · 직접 입력 필요 ' + bad;
     var ul = $('resList'); ul.innerHTML = '';
     results.forEach(function (r) {
       if (r.status === 'premium_need_phone') { ul.appendChild(askCard(r)); return; }
       var l = LABEL[r.status] || LABEL.error;
       var li = document.createElement('li'); li.className = l.cls;
-      var b = document.createElement('b'); b.textContent = (r.branch || '지점 미확인') + (r.paidAt ? ' · ' + r.paidAt : '');
+      var b = document.createElement('b'); b.textContent = (r.branch || '지점 미확인');
+      if (r.paidAt) {
+        b.appendChild(document.createTextNode(' · '));
+        var w = document.createElement('span'); w.className = 'when'; w.textContent = r.paidAt; b.appendChild(w);
+      }
       li.appendChild(b); li.appendChild(document.createTextNode(l.msg));
       ul.appendChild(li);
     });
     out.hidden = false;
+  }
+
+  // ── 탭 ──
+  var tabBtns = document.querySelectorAll('.tab');
+  function showTab(name) {
+    Array.prototype.forEach.call(tabBtns, function (b) {
+      var on = b.getAttribute('data-tab') === name;
+      b.className = on ? 'tab on' : 'tab';
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    $('regPanel').hidden = name !== 'reg';
+    $('statPanel').hidden = name !== 'stat';
+    if (name === 'stat') loadStatus();
+  }
+  Array.prototype.forEach.call(tabBtns, function (b) {
+    b.addEventListener('click', function () { showTab(b.getAttribute('data-tab')); });
+  });
+
+  // ── 현황: 신청 내역의 부가상품 건을 결제 시간순으로. 일반형은 작성 체크로 시트 상태(작성완료)를 바꾼다 ──
+  var ST_TEXT = {
+    notified: '폼 안내함',
+    writing: '작성 전',
+    sendwait: '완료 알림 전',
+    sent: '완료 알림 보냄',
+    basic_done: '작성 완료'
+  };
+  var DONE = { sent: true, basic_done: true };
+  var WRITTEN = { sendwait: true, sent: true, basic_done: true };
+  var CHECK_SVG = '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 5.5 10.5 11.5 3.5"/></svg>';
+  var lastData = null;
+  var reqSeq = 0; // 겹친 요청 중 마지막 응답만 화면에 반영한다
+  var statErr = $('statErr'), refresh = $('refresh');
+  refresh.addEventListener('click', function () { loadStatus(); });
+
+  function loadStatus(notice) {
+    var my = ++reqSeq;
+    statErr.hidden = true;
+    refresh.disabled = true; $('statSum').textContent = '불러오는 중이에요';
+    post({ action: 'listStatus' })
+      .then(function (d) {
+        if (my !== reqSeq) return;
+        refresh.disabled = false;
+        if (d.reason === 'unauthorized') { showGate('접근 코드가 바뀌었어요. 다시 입력해 주세요.'); return; }
+        if (!d.success) { showStatErr('현황을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.'); return; }
+        renderStatus(d);
+        if (notice) { statErr.textContent = notice; statErr.hidden = false; }
+      })
+      .catch(function () { if (my !== reqSeq) return; refresh.disabled = false; showStatErr('연결에 실패했어요. 잠시 뒤 다시 시도해 주세요.'); });
+  }
+
+  function showStatErr(msg) { $('statSum').textContent = ''; statErr.textContent = msg; statErr.hidden = false; }
+
+  function count(items, st) { return items.filter(function (it) { return it.stage === st; }).length; }
+
+  function renderStatus(d) {
+    lastData = d;
+    var items = d.items || [];
+    $('statTitle').textContent = '작성 전 ' + count(items, 'writing') + '건';
+    $('statSum').textContent = '고급형 완료 알림 전 ' + count(items, 'sendwait') + '건';
+    var box = $('statList'); box.innerHTML = '';
+    if (!items.length) {
+      var e = document.createElement('p'); e.className = 'empty'; e.textContent = '아직 등록된 건이 없어요.'; box.appendChild(e); return;
+    }
+    var th = document.createElement('div'); th.className = 'tr th';
+    [['결제', ''], ['지점', ''], ['유형', 'c-kind'], ['상태', ''], ['작성', '']].forEach(function (t) {
+      var s = document.createElement('span'); s.textContent = t[0]; if (t[1]) s.className = t[1]; th.appendChild(s);
+    });
+    box.appendChild(th);
+    items.forEach(function (it) { box.appendChild(statusRow(it)); });
+  }
+
+  function statusRow(it) {
+    var row = document.createElement('div'); row.className = 'tr';
+    var m = String(it.paidAt || '').match(/^\d{4}-(\d{2})-(\d{2}) (\d{2}:\d{2})$/);
+    var date = document.createElement('span'); date.className = 'c-date';
+    date.textContent = m ? m[1] + '.' + m[2] + ' ' + m[3] : it.paidAt;
+    var who = document.createElement('span'); who.className = 'c-who'; who.textContent = it.label; who.title = it.label;
+    who.setAttribute('data-kind', it.kind); // 좁은 화면에서 유형 열 대신 지점명 뒤에 붙는다
+    var kind = document.createElement('span'); kind.className = 'c-kind'; kind.textContent = it.kind;
+    var st = document.createElement('span'); st.className = 'c-st' + (DONE[it.stage] ? ' done' : '');
+    st.textContent = ST_TEXT[it.stage] || it.stage;
+    var cell = document.createElement('span'); cell.className = 'c-ck';
+    cell.appendChild(checkBtn(it, st));
+    row.appendChild(date); row.appendChild(who); row.appendChild(kind); row.appendChild(st); row.appendChild(cell);
+    return row;
+  }
+
+  // 작성 체크: 일반형만 누를 수 있다(시트 N열 신청완료 ↔ 작성완료, 되돌릴 수 있어 팝업 없음). 고급형은 완료 내역 값을 보여 주기만 한다.
+  function checkBtn(it, stCell) {
+    var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'ck';
+    btn.setAttribute('role', 'checkbox');
+    btn.setAttribute('aria-checked', WRITTEN[it.stage] ? 'true' : 'false');
+    btn.innerHTML = '<span class="box">' + CHECK_SVG + '</span>';
+    var editable = it.kind === '일반형' && it.row;
+    btn.disabled = !editable;
+    btn.title = editable ? (it.stage === 'basic_done' ? '작성 전으로 되돌리기' : '작성 완료로 표시') : '고급형은 완료 내역 값이에요';
+    btn.setAttribute('aria-label', btn.title);
+    if (!editable) return btn;
+    btn.addEventListener('click', function () {
+      var done = it.stage !== 'basic_done';
+      var base = lastData;
+      btn.disabled = true; btn.className = 'ck busy';
+      post({ action: 'markBasic', row: it.row, label: it.label, paidAt: it.paidAt, done: done })
+        .then(function (d) {
+          if (d.success) {
+            it.stage = d.stage;
+            if (lastData === base) renderStatus(lastData); else loadStatus();
+            return;
+          }
+          if (d.reason === 'unauthorized') { showGate('접근 코드가 바뀌었어요. 다시 입력해 주세요.'); return; }
+          if (d.reason === 'stale') { loadStatus('시트가 바뀌어서 다시 불러왔어요. 다시 체크해 주세요.'); return; }
+          ckFail(btn, stCell);
+        })
+        .catch(function () { ckFail(btn, stCell); });
+    });
+    return btn;
+  }
+
+  function ckFail(btn, stCell) {
+    btn.disabled = false; btn.className = 'ck';
+    var p = stCell.querySelector('.row-err');
+    if (!p) { p = document.createElement('span'); p.className = 'row-err'; stCell.appendChild(p); }
+    p.textContent = '바꾸지 못했어요. 다시 눌러 주세요';
   }
 })();
 </script>
