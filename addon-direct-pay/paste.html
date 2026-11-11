@@ -20,7 +20,7 @@
     html { scrollbar-gutter: stable; }
     body { font-family: var(--f); background: var(--bg); color: var(--g900); min-height: 100vh; padding-bottom: 40px; word-break: keep-all; }
     /* 마케팅팀 데스크톱 도구: 넓게 쓰고, 좁은 화면에서만 줄바꿈 */
-    .wrap { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+    .wrap { max-width: 1360px; margin: 0 auto; padding: 0 16px; }
     .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 28px 0 12px; }
     h1 { font-size: 24px; font-weight: 800; line-height: 1.35; }
     .quick { display: flex; gap: 16px; flex: none; }
@@ -29,12 +29,14 @@
       text-decoration: none; line-height: 1.4; padding: 12px 0; margin: -12px 0;
     }
     .quick svg { width: 14px; height: 14px; }
-    .tabs { display: flex; border-bottom: 1.5px solid var(--bdr); }
-    .tab {
-      width: 120px; height: 46px; border: 0; background: none; cursor: pointer; font-family: var(--f);
-      font-size: 16px; font-weight: 700; color: var(--g500); border-bottom: 3px solid transparent; margin-bottom: -1.5px;
+    /* 한 판: 왼쪽 현황 표, 오른쪽 등록. 1100px 이하는 위아래로 쌓는다(등록이 위) */
+    .cols { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 16px; align-items: start; margin-top: 12px; }
+    .col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+    .cols .card { margin-top: 0; }
+    @media (max-width: 1100px) {
+      .cols { grid-template-columns: minmax(0, 1fr); }
+      .col-reg { order: -1; }
     }
-    .tab.on { color: var(--g900); border-bottom-color: var(--pri); }
     .card { background: var(--sur); border: 1px solid var(--bdr); border-radius: 18px; padding: 22px 18px 20px; margin-top: 12px; }
     .gate { max-width: 420px; margin: 12px auto 0; }
     label { display: inline-flex; align-items: center; gap: 4px; font-size: 15px; font-weight: 700; margin-bottom: 8px; }
@@ -58,11 +60,11 @@
       border: 0; background: none; color: var(--g500); cursor: help; margin: -6px 0; }
     .tip svg { width: 16px; height: 16px; }
     .tip .tip-box {
-      visibility: hidden; opacity: 0; position: absolute; left: 0; top: calc(100% + 6px);
+      display: none; position: absolute; left: 0; top: calc(100% + 6px);
       width: 300px; max-width: calc(100vw - 48px); padding: 10px 12px; border-radius: 10px; background: var(--g900); color: var(--sur);
-      font-size: 13px; font-weight: 400; line-height: 1.6; text-align: left; z-index: 10; transition: opacity .12s;
+      font-size: 13px; font-weight: 400; line-height: 1.6; text-align: left; z-index: 10;
     }
-    .tip:hover .tip-box, .tip:focus .tip-box { visibility: visible; opacity: 1; }
+    .tip:hover .tip-box, .tip:focus .tip-box { display: block; }
 
     /* 등록 결과 */
     .res-title { font-size: 18px; font-weight: 800; line-height: 1.35; margin-bottom: 4px; }
@@ -96,7 +98,7 @@
     .refresh svg { width: 20px; height: 20px; }
     .refresh:disabled { color: var(--g300); cursor: not-allowed; }
     .tr {
-      display: grid; grid-template-columns: 104px minmax(0, 1fr) 64px 112px 56px; gap: 12px; align-items: center;
+      display: grid; grid-template-columns: 104px minmax(0, 1fr) 84px 124px 56px; gap: 12px; align-items: center;
       padding: 6px 0; border-bottom: 1px solid var(--bdr); font-size: 14px; line-height: 1.4;
     }
     .tr.th { font-size: 13px; font-weight: 700; color: var(--g500); padding: 0 0 8px; }
@@ -104,9 +106,15 @@
     .tr.th .c-kind { color: inherit; }
     .c-date { color: var(--g600); font-variant-numeric: tabular-nums; }
     .c-who { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .c-kind { color: var(--g600); }
-    .c-st { font-weight: 700; color: var(--g900); }
-    .c-st.done { font-weight: 400; color: var(--g600); }
+    .c-kind { color: var(--g600); display: inline-flex; align-items: center; gap: 6px; }
+    .c-kind svg { width: 20px; height: 20px; flex: none; }
+    .tr.fin .c-who { color: var(--g600); font-weight: 600; }
+    /* 상태 칩: 할 일(노랑·주황)이 먼저 눈에 띄고 끝난 건은 차분하다. 색만이 아니라 글자로도 구분한다 */
+    .chip { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; line-height: 1.4; }
+    .chip.notified { background: var(--bg); color: var(--g600); }
+    .chip.writing { background: #FFF1BF; color: #7A5200; }
+    .chip.sendwait { background: #FFE3CC; color: #9A4300; }
+    .chip.sent, .chip.basic_done { background: var(--ok-bg); color: var(--ok-ink); }
     .c-st .row-err { display: block; font-size: 13px; font-weight: 400; color: var(--err-str); }
     .c-ck { text-align: center; }
     .ck {
@@ -126,10 +134,9 @@
     .ck.busy .box { opacity: 0.4; }
     .empty { font-size: 14px; color: var(--g600); line-height: 1.6; padding: 6px 0; }
     @media (max-width: 640px) {
-      .tr { grid-template-columns: 44px minmax(0, 1fr) 72px 44px; gap: 8px; }
-      .tr .c-kind { display: none; }
+      .tr { grid-template-columns: 44px minmax(0, 1fr) 20px 88px 44px; gap: 8px; }
+      .c-kind .kt { display: none; }
       .c-who { white-space: normal; }
-      .c-who::after { content: ' · ' attr(data-kind); font-size: 13px; font-weight: 400; color: var(--g600); }
     }
 
     /* 확인 팝업 */
@@ -165,43 +172,40 @@
   </div>
 
   <div id="app" hidden>
-    <div class="tabs" role="tablist">
-      <button class="tab on" type="button" role="tab" data-tab="reg" aria-selected="true">등록</button>
-      <button class="tab" type="button" role="tab" data-tab="stat" aria-selected="false">현황</button>
-    </div>
-
-    <div id="regPanel">
-      <div class="card">
-        <label for="text">결제 알림 메시지
-          <span class="tip" tabindex="0" aria-label="도움말"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v3.8M8 5v.1" stroke-linecap="round"/></svg>
-            <span class="tip-box" role="tooltip">U사장님 운영팀 "[상품 결제완료]" 메시지를 그대로 붙여 넣어요. 여러 건 한 번에 돼요. 일반형은 시트에 직-일반 행으로 들어가고, 고급형은 사장님 번호를 넣어 키워드 폼 알림톡을 보내요.</span>
-          </span>
-        </label>
-        <textarea id="text" placeholder="[Web발신]&#10;[상품 결제완료]&#10;..."></textarea>
-        <button class="cta" id="go" type="button" disabled>결제 알림을 붙여 넣어 주세요</button>
-        <p class="err" id="err" hidden></p>
-      </div>
-
-      <div class="card" id="out" hidden>
-        <p class="res-title" id="resTitle"></p>
-        <p class="res-sum" id="resSum"></p>
-        <ul class="res" id="resList"></ul>
-      </div>
-    </div>
-
-    <div id="statPanel" hidden>
-      <div class="card">
-        <div class="stat-head">
-          <div>
-            <p class="res-title" id="statTitle">현황</p>
-            <p class="res-sum" id="statSum"></p>
+    <div class="cols">
+      <div class="col col-stat">
+        <div class="card">
+          <div class="stat-head">
+            <div>
+              <p class="res-title" id="statTitle">현황</p>
+              <p class="res-sum" id="statSum"></p>
+            </div>
+            <button class="refresh" id="refresh" type="button" aria-label="새로고침" title="새로고침">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 10a6.5 6.5 0 1 1-1.9-4.6"/><path d="M16.5 3.5v3.6h-3.6"/></svg>
+            </button>
           </div>
-          <button class="refresh" id="refresh" type="button" aria-label="새로고침" title="새로고침">
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 10a6.5 6.5 0 1 1-1.9-4.6"/><path d="M16.5 3.5v3.6h-3.6"/></svg>
-          </button>
+          <div id="statList"></div>
+          <p class="err" id="statErr" hidden></p>
         </div>
-        <div id="statList"></div>
-        <p class="err" id="statErr" hidden></p>
+      </div>
+
+      <div class="col col-reg">
+        <div class="card">
+          <label for="text">결제 알림 메시지
+            <span class="tip" tabindex="0" aria-label="도움말"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v3.8M8 5v.1" stroke-linecap="round"/></svg>
+              <span class="tip-box" role="tooltip">U사장님 운영팀 "[상품 결제완료]" 메시지를 그대로 붙여 넣어요. 여러 건 한 번에 돼요. 일반형은 시트에 직-일반 행으로 들어가고, 고급형은 사장님 번호를 넣어 키워드 폼 알림톡을 보내요.</span>
+            </span>
+          </label>
+          <textarea id="text" placeholder="[Web발신]&#10;[상품 결제완료]&#10;..."></textarea>
+          <button class="cta" id="go" type="button" disabled>결제 알림을 붙여 넣어 주세요</button>
+          <p class="err" id="err" hidden></p>
+        </div>
+
+        <div class="card" id="out" hidden>
+          <p class="res-title" id="resTitle"></p>
+          <p class="res-sum" id="resSum"></p>
+          <ul class="res" id="resList"></ul>
+        </div>
       </div>
     </div>
   </div>
@@ -257,11 +261,10 @@
       .then(function (d) {
         if (!d.success) { $('gateErr').textContent = '접근 코드가 맞지 않아요.'; $('gateErr').hidden = false; syncEnter(); return; }
         TOKEN = t; try { localStorage.setItem(KEY, t); } catch (e) {}
-        $('gatePanel').hidden = true; $('app').hidden = false;
+        $('gatePanel').hidden = true; $('app').hidden = false; loadStatus();
       })
       .catch(function () { $('gateErr').textContent = '연결에 실패했어요. 잠시 뒤 다시 시도해 주세요.'; $('gateErr').hidden = false; syncEnter(); });
   });
-  if (TOKEN) $('app').hidden = false; else showGate('');
 
   // ── 확인 팝업 ──
   function confirmBox(title, lines, yesLabel) {
@@ -315,6 +318,7 @@
             if (d.reason === 'unauthorized') { showGate('접근 코드가 바뀌었어요. 다시 입력해 주세요.'); return; }
             if (!d.success) { fail('결제 알림을 찾지 못했어요.'); return; }
             render(d.results || []);
+            loadStatus(); // 등록한 건이 왼쪽 현황에 바로 보이게
             text.value = '';
             check();
           })
@@ -400,23 +404,11 @@
     out.hidden = false;
   }
 
-  // ── 탭 ──
-  var tabBtns = document.querySelectorAll('.tab');
-  function showTab(name) {
-    Array.prototype.forEach.call(tabBtns, function (b) {
-      var on = b.getAttribute('data-tab') === name;
-      b.className = on ? 'tab on' : 'tab';
-      b.setAttribute('aria-selected', on ? 'true' : 'false');
-    });
-    $('regPanel').hidden = name !== 'reg';
-    $('statPanel').hidden = name !== 'stat';
-    if (name === 'stat') loadStatus();
-  }
-  Array.prototype.forEach.call(tabBtns, function (b) {
-    b.addEventListener('click', function () { showTab(b.getAttribute('data-tab')); });
-  });
-
   // ── 현황: 신청 내역의 부가상품 건을 결제 시간순으로. 일반형은 작성 체크로 시트 상태(작성완료)를 바꾼다 ──
+  var KIND_SVG = {
+    '일반형': '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="3.5" y="1.5" width="13" height="17" rx="3" fill="#64A7FF"/><rect x="6.5" y="6" width="7" height="2" rx="1" fill="#FFFFFF"/><rect x="6.5" y="10" width="7" height="2" rx="1" fill="#FFFFFF"/><rect x="6.5" y="14" width="4" height="2" rx="1" fill="#FFFFFF"/></svg>',
+    '고급형': '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M2 15.5 1 5.8 6.2 9.6 10 3.5 13.8 9.6 19 5.8 18 15.5Z" fill="#FFC84D"/><rect x="2" y="15.5" width="16" height="3" rx="1.5" fill="#313D4C"/><circle cx="10" cy="11.5" r="1.6" fill="#EF4452"/></svg>'
+  };
   var ST_TEXT = {
     notified: '폼 안내함',
     writing: '작성 전',
@@ -455,8 +447,9 @@
   function renderStatus(d) {
     lastData = d;
     var items = d.items || [];
-    $('statTitle').textContent = '작성 전 ' + count(items, 'writing') + '건';
-    $('statSum').textContent = '고급형 완료 알림 전 ' + count(items, 'sendwait') + '건';
+    var w = count(items, 'writing'), sw = count(items, 'sendwait');
+    $('statTitle').textContent = '할 일 ' + (w + sw) + '건';
+    $('statSum').textContent = '작성 전 ' + w + ' · 완료 알림 전 ' + sw;
     var box = $('statList'); box.innerHTML = '';
     if (!items.length) {
       var e = document.createElement('p'); e.className = 'empty'; e.textContent = '아직 등록된 건이 없어요.'; box.appendChild(e); return;
@@ -475,10 +468,13 @@
     var date = document.createElement('span'); date.className = 'c-date';
     date.textContent = m ? m[1] + '.' + m[2] + ' ' + m[3] : it.paidAt;
     var who = document.createElement('span'); who.className = 'c-who'; who.textContent = it.label; who.title = it.label;
-    who.setAttribute('data-kind', it.kind); // 좁은 화면에서 유형 열 대신 지점명 뒤에 붙는다
-    var kind = document.createElement('span'); kind.className = 'c-kind'; kind.textContent = it.kind;
-    var st = document.createElement('span'); st.className = 'c-st' + (DONE[it.stage] ? ' done' : '');
-    st.textContent = ST_TEXT[it.stage] || it.stage;
+    var kind = document.createElement('span'); kind.className = 'c-kind'; kind.title = it.kind;
+    kind.innerHTML = (KIND_SVG[it.kind] || '') + '<span class="kt"></span>';
+    kind.lastChild.textContent = it.kind;
+    var st = document.createElement('span'); st.className = 'c-st';
+    var chip = document.createElement('span'); chip.className = 'chip ' + it.stage; chip.textContent = ST_TEXT[it.stage] || it.stage;
+    st.appendChild(chip);
+    if (DONE[it.stage]) row.className = 'tr fin';
     var cell = document.createElement('span'); cell.className = 'c-ck';
     cell.appendChild(checkBtn(it, st));
     row.appendChild(date); row.appendChild(who); row.appendChild(kind); row.appendChild(st); row.appendChild(cell);
@@ -522,6 +518,9 @@
     if (!p) { p = document.createElement('span'); p.className = 'row-err'; stCell.appendChild(p); }
     p.textContent = '바꾸지 못했어요. 다시 눌러 주세요';
   }
+
+  // 시작: 저장된 코드가 있으면 바로 들어가 현황을 불러온다
+  if (TOKEN) { $('app').hidden = false; loadStatus(); } else showGate('');
 })();
 </script>
 </body>
