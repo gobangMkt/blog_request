@@ -37,6 +37,12 @@
       font-family: var(--f); font-size: 14px; font-weight: 700; padding: 0 10px; cursor: pointer; outline: none;
     }
     .sel:focus { border-color: var(--pri); }
+    .reset { height: 40px; border: 0; background: none; padding: 0 4px; cursor: pointer; font-family: var(--f); font-size: 14px; font-weight: 700; color: var(--g600); }
+    .reset.off { visibility: hidden; }
+    .guide { background: none; border: 0; padding: 4px 4px 0; margin-top: 0; }
+    .guide h2 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    .guide ol { padding-left: 20px; font-size: 14px; line-height: 1.7; color: var(--g600); display: flex; flex-direction: column; gap: 6px; }
+    .guide li b { color: var(--g900); font-weight: 700; }
     .sel.on { border-color: var(--pri); }
     .sort {
       display: inline-flex; align-items: center; gap: 4px; height: 32px; border: 0; background: none; cursor: pointer;
@@ -211,6 +217,7 @@
                 <option value="일반형">유형 · 일반형</option>
                 <option value="고급형">유형 · 고급형</option>
               </select>
+              <button class="reset off" id="reset" type="button" disabled>초기화</button>
               <span class="quick"><a href="https://docs.google.com/spreadsheets/d/1lgAsrtoeqv1-g3Nh3D21zTyuGLdAZuP5jSXxftlIxh0/edit" target="_blank" rel="noopener" title="신청 내역 시트 열기">시트<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12"/></svg></a></span>
               <button class="refresh" id="refresh" type="button" aria-label="새로고침" title="새로고침">
                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 10a6.5 6.5 0 1 1-1.9-4.6"/><path d="M16.5 3.5v3.6h-3.6"/></svg>
@@ -246,6 +253,16 @@
           <p class="res-sum" id="resSum"></p>
           <ul class="res" id="resList"></ul>
         </div>
+
+        <section class="guide" aria-labelledby="gTitle">
+          <h2 id="gTitle">사용 방법</h2>
+          <ol>
+            <li>U사장님 운영팀의 <b>"[상품 결제완료]" 메시지를 통째로 복사</b>해 위 칸에 붙여 넣어요. 여러 건도 한 번에 돼요.</li>
+            <li><b>시트에 등록하기</b>를 누르고, 확인 창에서 <b>넣기</b>를 눌러요.</li>
+            <li><b>일반형</b>은 시트에 직-일반 행(연파랑)으로 바로 들어가요. <b>고급형</b>은 결과에 번호 칸이 떠요. U사장님에서 사장님 번호를 찾아 넣고 <b>알림톡 보내기</b>를 누르면 키워드 폼 링크가 나가요. 사장님이 폼을 내면 시트에 행이 생겨요.</li>
+            <li>오른쪽 <b>시트 DB</b>에서 진행을 봐요. 일반형은 글을 다 쓰면 <b>작성</b> 칸을 체크해요. 고급형 상태는 시트 값이 자동으로 따라와요.</li>
+          </ol>
+        </section>
       </div>
     </div>
   </div>
@@ -509,13 +526,24 @@
     });
     return arr;
   }
+  // 같은 열을 누를 때마다 오름 → 내림 → 기본(결제 최신순)으로 돌아간다. 결제 열은 기본이 내림이라 오름 ↔ 내림만 오간다
   function setSort(key) {
-    if (sortKey === key) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
-    else { sortKey = key; sortDir = key === 'paid' ? 'desc' : 'asc'; }
+    if (sortKey === key) {
+      if (sortDir === 'asc') sortDir = 'desc';
+      else if (key === 'paid') sortDir = 'asc';
+      else { sortKey = 'paid'; sortDir = 'desc'; }
+    } else { sortKey = key; sortDir = key === 'paid' ? 'desc' : 'asc'; }
     if (lastData) renderStatus(lastData);
   }
-  $('fState').addEventListener('change', function () { fState = this.value; this.className = 'sel' + (fState === 'all' ? '' : ' on'); if (lastData) renderStatus(lastData); });
-  $('fKind').addEventListener('change', function () { fKind = this.value; this.className = 'sel' + (fKind === 'all' ? '' : ' on'); if (lastData) renderStatus(lastData); });
+  function isDefault() { return sortKey === 'paid' && sortDir === 'desc' && fState === 'all' && fKind === 'all'; }
+  function syncReset() { var off = isDefault(); $('reset').className = off ? 'reset off' : 'reset'; $('reset').disabled = off; }
+  $('fState').addEventListener('change', function () { fState = this.value; this.className = 'sel' + (fState === 'all' ? '' : ' on'); if (lastData) renderStatus(lastData); else syncReset(); });
+  $('fKind').addEventListener('change', function () { fKind = this.value; this.className = 'sel' + (fKind === 'all' ? '' : ' on'); if (lastData) renderStatus(lastData); else syncReset(); });
+  $('reset').addEventListener('click', function () {
+    sortKey = 'paid'; sortDir = 'desc'; fState = 'all'; fKind = 'all';
+    $('fState').value = 'all'; $('fState').className = 'sel'; $('fKind').value = 'all'; $('fKind').className = 'sel';
+    if (lastData) renderStatus(lastData); else syncReset();
+  });
 
   function renderStatus(d) {
     lastData = d;
@@ -523,6 +551,7 @@
     var w = count(items, 'writing'), sw = count(items, 'sendwait');
     $('statTitle').textContent = '시트 DB';
     $('statSum').textContent = '할 일 ' + (w + sw) + '건 · 작성 전 ' + w + ' · 완료 알림 전 ' + sw;
+    syncReset();
     var box = $('statList'); box.innerHTML = '';
     if (!items.length) {
       var e = document.createElement('p'); e.className = 'empty'; e.textContent = '아직 등록된 건이 없어요.'; box.appendChild(e); return;
