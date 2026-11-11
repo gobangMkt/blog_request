@@ -6,6 +6,7 @@
   <meta name="robots" content="noindex">
   <title>결제 알림 등록 | 고방 블로그 (마케팅팀용)</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="css/voc-widget.css">
   <style>
     :root {
       --pri: #3182F6; --pri-h: #1B6CF2;
@@ -197,6 +198,7 @@
 <div class="wrap">
   <div class="top">
     <h1>결제 알림 등록</h1>
+    <button class="voc-open" id="vocOpen" type="button">불편 신고</button>
   </div>
 
   <!-- 입장: 접근 코드 한 번 -->
@@ -775,5 +777,6 @@
   if (TOKEN) { $('app').hidden = false; loadStatus(); } else showGate('');
 })();
 </script>
+<script type="module" src="js/voc-widget.js"></script>
 </body>
 </html>

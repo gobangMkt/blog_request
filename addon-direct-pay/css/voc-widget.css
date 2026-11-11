@@ -1,0 +1,13 @@
+/* 불편 신고 위젯 — paste.html 토큰(--g900 등)과 팝업 그릇(.modal/.sheet)을 그대로 쓴다 */
+.voc-open {
+  height: 40px; padding: 0 14px; border: 1.5px solid var(--bdr); border-radius: 10px; background: var(--sur);
+  font-family: var(--f); font-size: 14px; font-weight: 700; color: var(--g600); cursor: pointer;
+}
+.voc-open:hover { color: var(--g900); }
+.voc-sel { width: 100%; height: 50px; font-weight: 400; font-size: 16px; }
+.voc-msg { min-height: 140px; }
+.voc-toast {
+  position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%); z-index: 60;
+  max-width: calc(100vw - 32px); padding: 12px 18px; border-radius: 12px;
+  background: var(--g900); color: var(--sur); font-size: 14px; font-weight: 700; line-height: 1.5;
+}
