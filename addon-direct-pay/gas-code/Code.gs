@@ -61,6 +61,8 @@ function doPost(e) {
       result = markBasic(payload);
     } else if (action === 'completePremium') {
       result = completePremium(payload);
+    } else if (action === 'hideNotified') {
+      result = hideNotified(payload);
     } else if (action === 'checkToken') {
       // paste.html 입장 시 접근 코드 한 번 확인(시트는 읽지 않는다)
       var saved = PropertiesService.getScriptProperties().getProperty('INBOX_TOKEN');
@@ -402,7 +404,8 @@ function listStatus(token) {
     if (!m) return;
     var paid = new Date(+m[2], +m[3] - 1, +m[4], +m[5], +m[6]);
     if (now - paid.getTime() > 30 * DAY) return;
-    pfs.push({ no: m[1], ts: paid.getTime(), name: String(all[k]).split('|').slice(1).join('|').trim() });
+    var pfId = m[1] + '_' + m[2] + m[3] + m[4] + m[5] + m[6];
+    pfs.push({ no: m[1], ts: paid.getTime(), name: String(all[k]).split('|').slice(1).join('|').trim(), id: pfId, hidden: !!all['PFX_' + pfId] });
   });
   pfs.sort(function (a, b) { return b.ts - a.ts; });
   var forms = items.filter(function (it) { return it.kind === '고급형' && it.no; })
@@ -417,9 +420,10 @@ function listStatus(token) {
       if (pf.name) form.label = pf.name + '(' + pf.no + ')';
       return;
     }
+    if (pf.hidden) return; // 시트 DB에서 지운 응답 대기 건
     items.push({
       kind: '고급형', label: pf.name ? pf.name + '(' + pf.no + ')' : '지점번호 ' + pf.no,
-      paidAt: fmt(new Date(pf.ts)), ts: pf.ts, stage: 'notified'
+      paidAt: fmt(new Date(pf.ts)), ts: pf.ts, stage: 'notified', pf: pf.id
     });
   });
 
@@ -459,6 +463,18 @@ function markBasic(payload) {
   } finally {
     lock.releaseLock();
   }
+}
+
+// 응답 대기 지우기: 사장님이 응답하지 않거나 취소된 건을 시트 DB 목록에서 뺀다.
+// 발송 기록(PF_)은 지우지 않는다(같은 건으로 키워드 폼 알림톡이 다시 나가지 않게 막는 기록이라). 숨김 표시 PFX_만 단다.
+function hideNotified(payload) {
+  var props = PropertiesService.getScriptProperties();
+  var saved = props.getProperty('INBOX_TOKEN');
+  if (!saved || String(payload.token || '') !== saved) return { success: false, reason: 'unauthorized' };
+  var id = String(payload.pf || '');
+  if (!/^\d+_\d{12}$/.test(id) || !props.getProperty('PF_' + id)) return { success: false, reason: 'stale' };
+  props.setProperty('PFX_' + id, Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'));
+  return { success: true };
 }
 
 // 고급형 작성 완료 → 사장님 작업완료 알림톡 (paste.html 시트 DB 체크 → 팝업).

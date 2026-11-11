@@ -159,6 +159,11 @@
     .ck:disabled .box { border-color: var(--bdr); background: var(--bg); }
     .ck:disabled[aria-checked="true"] .box { background: var(--g300); border-color: var(--g300); }
     .ck.busy .box { opacity: 0.4; }
+    /* 응답 대기 지우기: 부수 동작이라 아이콘만(fill 전용) */
+    .del { width: 44px; height: 44px; border: 0; border-radius: 12px; background: none; cursor: pointer; color: var(--g500); display: inline-flex; align-items: center; justify-content: center; }
+    .del:hover { color: var(--err-str); }
+    .del svg { width: 18px; height: 18px; }
+    .del:disabled { color: var(--g300); cursor: not-allowed; }
     .empty { font-size: 14px; color: var(--g600); line-height: 1.6; padding: 6px 0; }
     @media (max-width: 640px) {
       .tr { grid-template-columns: 44px minmax(0, 1fr) 32px 88px 44px; gap: 8px; }
@@ -641,7 +646,7 @@
     st.appendChild(chip);
     if (DONE[it.stage]) row.className = 'tr fin';
     var cell = document.createElement('span'); cell.className = 'c-ck';
-    cell.appendChild(checkBtn(it, st));
+    cell.appendChild(it.stage === 'notified' && it.pf ? delBtn(it, st) : checkBtn(it, st));
     row.appendChild(date); row.appendChild(who); row.appendChild(kind); row.appendChild(st); row.appendChild(cell);
     return row;
   }
@@ -729,6 +734,34 @@
         })
         .catch(function () { cErr.textContent = '연결에 실패했어요. 잠시 뒤 다시 시도해 주세요.'; cErr.hidden = false; sync(); });
     };
+  }
+
+  // 응답 대기 지우기: 시트에 없는 발송 기록이라 목록에서만 뺀다. 되돌리는 버튼이 없어 확인 팝업을 거친다.
+  var TRASH_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="14" height="2.5" rx="1.25" fill="currentColor"/><rect x="7.5" y="2" width="5" height="2.5" rx="1" fill="currentColor"/><path d="M4.8 8h10.4l-.9 9.1A1.6 1.6 0 0 1 12.7 18.5H7.3a1.6 1.6 0 0 1-1.6-1.4Z" fill="currentColor"/></svg>';
+  function delBtn(it, stCell) {
+    var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'del';
+    btn.title = '응답 대기에서 지우기'; btn.setAttribute('aria-label', btn.title);
+    btn.innerHTML = TRASH_SVG;
+    btn.addEventListener('click', function () {
+      confirmBox(it.label + ' 응답 대기에서 지울까요?',
+        ['사장님이 응답하지 않았거나 취소된 건을 정리할 때 써요.', '시트에는 원래 없는 기록이라 시트는 그대로예요.', '같은 건으로 알림톡이 다시 나가지 않게 막는 기록은 남겨요.'], '지우기')
+        .then(function (ok) {
+          if (!ok) return;
+          btn.disabled = true;
+          post({ action: 'hideNotified', pf: it.pf })
+            .then(function (d) {
+              if (d.reason === 'unauthorized') { showGate('접근 코드가 바뀌었어요. 다시 입력해 주세요.'); return; }
+              if (d.success || d.reason === 'stale') {
+                if (lastData) lastData.items = (lastData.items || []).filter(function (x) { return x !== it; });
+                if (lastData) renderStatus(lastData);
+                return;
+              }
+              ckFail(btn, stCell);
+            })
+            .catch(function () { ckFail(btn, stCell); });
+        });
+    });
+    return btn;
   }
 
   function ckFail(btn, stCell) {
