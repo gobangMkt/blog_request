@@ -175,6 +175,15 @@
     .sheet .btns button { flex: 1; height: 52px; border-radius: 12px; font-size: 16px; font-weight: 700; font-family: var(--f); cursor: pointer; }
     .sheet .no { border: 1.5px solid var(--bdr); background: var(--sur); color: var(--g600); }
     .sheet .yes { border: 0; background: var(--pri); color: var(--sur); }
+    .sheet .yes:disabled { background: var(--g300); cursor: not-allowed; }
+    .sheet .fld { margin-top: 16px; }
+    .sheet .fld label { display: block; }
+    /* 시트 DB 페이지 넘김: 같은 화면 동작이라 테두리 버튼 */
+    .pager { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 12px; }
+    .pager[hidden] { display: none; }
+    .pg { height: 40px; padding: 0 14px; border: 1.5px solid var(--bdr); border-radius: 10px; background: var(--sur); font-family: var(--f); font-size: 14px; font-weight: 700; color: var(--g900); cursor: pointer; }
+    .pg:disabled { color: var(--g300); cursor: not-allowed; }
+    .pg-now { font-size: 14px; color: var(--g600); font-variant-numeric: tabular-nums; }
   </style>
 </head>
 <body>
@@ -203,12 +212,13 @@
               <p class="res-sum" id="statSum"></p>
             </div>
             <div class="tools">
+              <button class="reset off" id="reset" type="button" disabled>초기화</button>
               <select class="sel" id="fState" aria-label="상태 조건">
                 <option value="all">상태 · 전체</option>
                 <option value="todo">상태 · 할 일</option>
                 <option value="writing">상태 · 작성 전</option>
                 <option value="sendwait">상태 · 완료 알림 전</option>
-                <option value="notified">상태 · 폼 안내함</option>
+                <option value="notified">상태 · 응답 대기</option>
                 <option value="sent">상태 · 완료 알림 보냄</option>
                 <option value="basic_done">상태 · 작성 완료</option>
               </select>
@@ -217,7 +227,6 @@
                 <option value="일반형">유형 · 일반형</option>
                 <option value="고급형">유형 · 고급형</option>
               </select>
-              <button class="reset off" id="reset" type="button" disabled>초기화</button>
               <span class="quick"><a href="https://docs.google.com/spreadsheets/d/1lgAsrtoeqv1-g3Nh3D21zTyuGLdAZuP5jSXxftlIxh0/edit" target="_blank" rel="noopener" title="신청 내역 시트 열기">시트<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12"/></svg></a></span>
               <button class="refresh" id="refresh" type="button" aria-label="새로고침" title="새로고침">
                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 10a6.5 6.5 0 1 1-1.9-4.6"/><path d="M16.5 3.5v3.6h-3.6"/></svg>
@@ -225,6 +234,11 @@
             </div>
           </div>
           <div id="statList"></div>
+          <div class="pager" id="pager" hidden>
+            <button class="pg" id="pgPrev" type="button">이전</button>
+            <span class="pg-now" id="pgNow"></span>
+            <button class="pg" id="pgNext" type="button">다음</button>
+          </div>
           <p class="err" id="statErr" hidden></p>
         </div>
       </div>
@@ -257,10 +271,9 @@
         <section class="guide" aria-labelledby="gTitle">
           <h2 id="gTitle">사용 방법</h2>
           <ol>
-            <li>U사장님 운영팀의 <b>"[상품 결제완료]" 메시지를 통째로 복사</b>해 위 칸에 붙여 넣어요. 여러 건도 한 번에 돼요.</li>
-            <li><b>시트에 등록하기</b>를 누르고, 확인 창에서 <b>넣기</b>를 눌러요.</li>
-            <li><b>일반형</b>은 시트에 직-일반 행(연파랑)으로 바로 들어가요. <b>고급형</b>은 결과에 번호 칸이 떠요. U사장님에서 사장님 번호를 찾아 넣고 <b>알림톡 보내기</b>를 누르면 키워드 폼 링크가 나가요. 사장님이 폼을 내면 시트에 행이 생겨요.</li>
-            <li>오른쪽 <b>시트 DB</b>에서 진행을 봐요. 일반형은 글을 다 쓰면 <b>작성</b> 칸을 체크해요. 고급형 상태는 시트 값이 자동으로 따라와요.</li>
+            <li>결제완료 메시지를 붙여 넣고 <b>시트에 등록하기</b></li>
+            <li>고급형은 사장님 번호를 넣고 <b>알림톡 보내기</b></li>
+            <li>글을 다 쓰면 시트 DB의 <b>작성</b> 체크 (고급형은 완료 알림톡까지)</li>
           </ol>
         </section>
       </div>
@@ -275,6 +288,27 @@
     <div class="btns">
       <button class="no" id="mNo" type="button">취소</button>
       <button class="yes" id="mYes" type="button"></button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="cModal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cTitle">
+    <h2 id="cTitle"></h2>
+    <ul id="cInfo"></ul>
+    <div class="fld">
+      <label for="cKw">장악 키워드</label>
+      <input id="cKw" type="text" list="cKwList" autocomplete="off" maxlength="60">
+      <datalist id="cKwList"></datalist>
+    </div>
+    <div class="fld">
+      <label for="cUrl">블로그 글 주소</label>
+      <input id="cUrl" type="url" autocomplete="off" placeholder="https://blog.naver.com/...">
+    </div>
+    <p class="err" id="cErr" hidden></p>
+    <div class="btns">
+      <button class="no" id="cNo" type="button">취소</button>
+      <button class="yes" id="cYes" type="button" disabled></button>
     </div>
   </div>
 </div>
@@ -467,17 +501,18 @@
     '고급형': '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M2 15.5 1 5.8 6.2 9.6 10 3.5 13.8 9.6 19 5.8 18 15.5Z" fill="#FFC84D"/><rect x="2" y="15.5" width="16" height="3" rx="1.5" fill="#313D4C"/><circle cx="10" cy="11.5" r="1.6" fill="#EF4452"/></svg>'
   };
   var ST_TEXT = {
-    notified: '폼 안내함',
+    notified: '응답 대기',
     writing: '작성 전',
     sendwait: '완료 알림 전',
     sent: '완료 알림 보냄',
     basic_done: '작성 완료'
   };
   var DONE = { sent: true, basic_done: true };
-  var WRITTEN = { sendwait: true, sent: true, basic_done: true };
+  var WRITTEN = { sent: true, basic_done: true }; // 체크 표시: 일반형 작성 완료, 고급형 완료 알림 보냄
   var CHECK_SVG = '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 5.5 10.5 11.5 3.5"/></svg>';
   var lastData = null;
   var sortKey = 'paid', sortDir = 'desc', fState = 'all', fKind = 'all';
+  var PAGE = 10, page = 1;
   var RANK = { writing: 0, sendwait: 1, notified: 2, sent: 3, basic_done: 3 }; // 할 일이 먼저
   var reqSeq = 0; // 겹친 요청 중 마지막 응답만 화면에 반영한다
   var statErr = $('statErr'), refresh = $('refresh');
@@ -533,14 +568,15 @@
       else if (key === 'paid') sortDir = 'asc';
       else { sortKey = 'paid'; sortDir = 'desc'; }
     } else { sortKey = key; sortDir = key === 'paid' ? 'desc' : 'asc'; }
+    page = 1;
     if (lastData) renderStatus(lastData);
   }
   function isDefault() { return sortKey === 'paid' && sortDir === 'desc' && fState === 'all' && fKind === 'all'; }
   function syncReset() { var off = isDefault(); $('reset').className = off ? 'reset off' : 'reset'; $('reset').disabled = off; }
-  $('fState').addEventListener('change', function () { fState = this.value; this.className = 'sel' + (fState === 'all' ? '' : ' on'); if (lastData) renderStatus(lastData); else syncReset(); });
-  $('fKind').addEventListener('change', function () { fKind = this.value; this.className = 'sel' + (fKind === 'all' ? '' : ' on'); if (lastData) renderStatus(lastData); else syncReset(); });
+  $('fState').addEventListener('change', function () { page = 1; fState = this.value; this.className = 'sel' + (fState === 'all' ? '' : ' on'); if (lastData) renderStatus(lastData); else syncReset(); });
+  $('fKind').addEventListener('change', function () { page = 1; fKind = this.value; this.className = 'sel' + (fKind === 'all' ? '' : ' on'); if (lastData) renderStatus(lastData); else syncReset(); });
   $('reset').addEventListener('click', function () {
-    sortKey = 'paid'; sortDir = 'desc'; fState = 'all'; fKind = 'all';
+    sortKey = 'paid'; sortDir = 'desc'; fState = 'all'; fKind = 'all'; page = 1;
     $('fState').value = 'all'; $('fState').className = 'sel'; $('fKind').value = 'all'; $('fKind').className = 'sel';
     if (lastData) renderStatus(lastData); else syncReset();
   });
@@ -554,6 +590,7 @@
     syncReset();
     var box = $('statList'); box.innerHTML = '';
     if (!items.length) {
+      $('pager').hidden = true;
       var e = document.createElement('p'); e.className = 'empty'; e.textContent = '아직 등록된 건이 없어요.'; box.appendChild(e); return;
     }
     var th = document.createElement('div'); th.className = 'tr th';
@@ -572,10 +609,18 @@
     box.appendChild(th);
     var view = viewOf(items);
     if (!view.length) {
+      $('pager').hidden = true;
       var e2 = document.createElement('p'); e2.className = 'empty'; e2.textContent = '조건에 맞는 건이 없어요.'; box.appendChild(e2); return;
     }
-    view.forEach(function (it) { box.appendChild(statusRow(it)); });
+    var pages = Math.max(1, Math.ceil(view.length / PAGE));
+    if (page > pages) page = pages;
+    view.slice((page - 1) * PAGE, page * PAGE).forEach(function (it) { box.appendChild(statusRow(it)); });
+    $('pager').hidden = pages < 2;
+    $('pgNow').textContent = page + ' / ' + pages;
+    $('pgPrev').disabled = page <= 1; $('pgNext').disabled = page >= pages;
   }
+  $('pgPrev').addEventListener('click', function () { if (page > 1) { page--; renderStatus(lastData); } });
+  $('pgNext').addEventListener('click', function () { page++; renderStatus(lastData); });
 
   function statusRow(it) {
     var row = document.createElement('div'); row.className = 'tr';
@@ -596,17 +641,24 @@
     return row;
   }
 
-  // 작성 체크: 일반형만 누를 수 있다(시트 N열 신청완료 ↔ 작성완료, 되돌릴 수 있어 팝업 없음). 고급형은 완료 내역 값을 보여 주기만 한다.
+  // 작성 체크: 일반형은 시트 N열 신청완료 ↔ 작성완료(되돌릴 수 있어 팝업 없음).
+  // 고급형은 완료 알림 팝업(장악 키워드·블로그 주소 → 작업완료 알림톡). 보내면 완료 알림 보냄으로 자동 체크된다.
   function checkBtn(it, stCell) {
     var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'ck';
     btn.setAttribute('role', 'checkbox');
     btn.setAttribute('aria-checked', WRITTEN[it.stage] ? 'true' : 'false');
     btn.innerHTML = '<span class="box">' + CHECK_SVG + '</span>';
-    var editable = it.kind === '일반형' && it.row;
-    btn.disabled = !editable;
-    btn.title = editable ? (it.stage === 'basic_done' ? '작성 전으로 되돌리기' : '작성 완료로 표시') : '고급형은 완료 내역 값이에요';
+    var basic = it.kind === '일반형' && it.row;
+    var premium = it.kind === '고급형' && it.doneRow && (it.stage === 'writing' || it.stage === 'sendwait');
+    btn.disabled = !(basic || premium);
+    btn.title = basic ? (it.stage === 'basic_done' ? '작성 전으로 되돌리기' : '작성 완료로 표시')
+      : premium ? '작성 완료 알림 보내기'
+      : it.stage === 'notified' ? '사장님 폼 제출을 기다리는 중이에요'
+      : it.stage === 'sent' ? '완료 알림을 보냈어요'
+      : it.kind === '고급형' ? '완료 내역 행이 없어요. 시트에서 확인해 주세요' : '시트 상태가 신청완료·작성완료가 아니에요';
     btn.setAttribute('aria-label', btn.title);
-    if (!editable) return btn;
+    if (premium) { btn.addEventListener('click', function () { completeBox(it); }); return btn; }
+    if (!basic) return btn;
     btn.addEventListener('click', function () {
       var done = it.stage !== 'basic_done';
       var base = lastData;
@@ -625,6 +677,53 @@
         .catch(function () { ckFail(btn, stCell); });
     });
     return btn;
+  }
+
+  // ── 고급형 완료 알림 팝업: 되돌릴 수 없는 외부 발송이라 보내기 전 값 확인 + 기본 포커스는 입력 칸 ──
+  var C_MSG = {
+    no_phone: '완료 내역에 사장님 번호가 없어요. 시트에서 번호를 넣어 주세요.',
+    send_failed: '알림톡 발송에 실패했어요. 다시 눌러 주세요.',
+    bad_url: '블로그 주소를 확인해 주세요.',
+    bad_keyword: '장악 키워드를 확인해 주세요.',
+    bad_request: '시트 행을 찾지 못했어요. 새로고침 뒤 다시 해 주세요.'
+  };
+  function completeBox(it) {
+    var kw = $('cKw'), url = $('cUrl'), yes = $('cYes'), cErr = $('cErr');
+    $('cTitle').textContent = it.label + ' 완료 알림을 보낼까요?';
+    var info = $('cInfo'); info.innerHTML = '';
+    ['받는 분: 사장님' + (it.tail ? ' (번호 끝 ' + it.tail + ')' : ''), '완료일은 오늘로 적혀요. 보낸 뒤엔 되돌릴 수 없어요.'].forEach(function (l) {
+      var li = document.createElement('li'); li.textContent = l; info.appendChild(li);
+    });
+    var list = $('cKwList'); list.innerHTML = '';
+    (it.kws || []).forEach(function (k) { var o = document.createElement('option'); o.value = k; list.appendChild(o); });
+    kw.value = it.kw || (it.kws && it.kws[0]) || '';
+    url.value = it.blog || '';
+    cErr.hidden = true;
+    function valid() { return !!kw.value.trim() && /^https?:\/\/\S+$/.test(url.value.trim()); }
+    function sync() {
+      yes.disabled = !valid();
+      yes.textContent = !kw.value.trim() ? '장악 키워드를 넣어 주세요' : !valid() ? '블로그 주소를 넣어 주세요' : '알림톡 보내기';
+    }
+    kw.oninput = url.oninput = sync; sync();
+    $('cModal').hidden = false; (url.value ? $('cNo') : url).focus();
+    function close() { $('cModal').hidden = true; yes.onclick = $('cNo').onclick = null; document.onkeydown = null; }
+    $('cNo').onclick = close;
+    document.onkeydown = function (e) { if (e.key === 'Escape') close(); };
+    yes.onclick = function () {
+      yes.disabled = true; yes.textContent = '보내는 중이에요'; cErr.hidden = true;
+      post({ action: 'completePremium', reqRow: it.reqRow, doneRow: it.doneRow, paidAt: it.paidAt, keyword: kw.value.trim(), blogUrl: url.value.trim() })
+        .then(function (d) {
+          if (d.reason === 'unauthorized') { close(); showGate('접근 코드가 바뀌었어요. 다시 입력해 주세요.'); return; }
+          if (d.reason === 'stale') { close(); loadStatus('시트가 바뀌어서 다시 불러왔어요. 다시 체크해 주세요.'); return; }
+          if (d.success && (d.status === 'sent' || d.status === 'already_sent')) {
+            close(); it.stage = 'sent'; delete it.doneRow; if (lastData) renderStatus(lastData); return;
+          }
+          it.kw = kw.value.trim(); it.blog = url.value.trim(); // 실패해도 시트에 적혔으니 다시 열면 그대로
+          cErr.textContent = (C_MSG[d.status || d.reason] || '오류가 났어요. 잠시 뒤 다시 시도해 주세요.') + (d.msg ? ' (' + d.msg + ')' : '');
+          cErr.hidden = false; sync();
+        })
+        .catch(function () { cErr.textContent = '연결에 실패했어요. 잠시 뒤 다시 시도해 주세요.'; cErr.hidden = false; sync(); });
+    };
   }
 
   function ckFail(btn, stCell) {

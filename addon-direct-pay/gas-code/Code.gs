@@ -13,6 +13,8 @@ var PRICE_DIRECT_PREMIUM = 150000; // 직A/직B — 고급형, 부가세 포함 
 var DIRECT_TYPES   = ['직A', '직B'];
 // 고급형 키워드 폼 안내 알림톡 템플릿(솔라피, 변수 #{지점명}). 스크립트 속성 TEMPLATE_PREMIUM_FORM이 있으면 그 값이 우선한다.
 var TEMPLATE_PREMIUM_FORM = 'KA01TP2611091218516116IoNk3cbXeW';
+// 작업완료 알림톡(기존 15만원·10만원 GAS의 TEMPLATE_COMPLETE와 같은 템플릿, 변수 #{지점URL}·#{장악키워드}·#{블로그URL})
+var TEMPLATE_COMPLETE = 'KA01TP2605150533203936iNKdKqNSyV';
 
 // 신청 내역 행 배경색 — 결제완료일 있으면 노랑(기존 폼과 동일 규칙), 작성완료 주황(10만원 GAS ROW_BG_DONE과 동일).
 // 직-일반만 결제완료를 연파랑으로 칠해 직A/직B(노랑)와 구분한다(토미 11.11). 10만원 GAS onSheetEdit도 같은 예외를 둔다.
@@ -57,6 +59,8 @@ function doPost(e) {
       result = listStatus(payload.token);
     } else if (action === 'markBasic') {
       result = markBasic(payload);
+    } else if (action === 'completePremium') {
+      result = completePremium(payload);
     } else if (action === 'checkToken') {
       // paste.html 입장 시 접근 코드 한 번 확인(시트는 읽지 않는다)
       var saved = PropertiesService.getScriptProperties().getProperty('INBOX_TOKEN');
@@ -331,22 +335,25 @@ function listStatus(token) {
   var done = {};
   var doneSheet = ss.getSheetByName('완료 내역');
   if (doneSheet && doneSheet.getLastRow() >= 2) {
-    doneSheet.getRange(2, 1, doneSheet.getLastRow() - 1, 8).getValues().forEach(function (r) {
+    doneSheet.getRange(2, 1, doneSheet.getLastRow() - 1, 9).getValues().forEach(function (r, di) {
       var u = String(r[3] || '').trim().toLowerCase();
       if (!u) return;
       var dd = asDate(r[0]);
-      (done[u] = done[u] || []).push({ dDay: dd ? ymd(dd) : '', doneAt: r[6], sent: String(r[7] || '').trim() });
+      (done[u] = done[u] || []).push({
+        row: di + 2, dDay: dd ? ymd(dd) : '', doneAt: r[6], sent: String(r[7] || '').trim(), sentAt: r[8],
+        kw: String(r[4] || '').trim(), blog: String(r[5] || '').trim(), tail: String(r[2] || '').replace(/\D/g, '').slice(-4)
+      });
     });
   }
   function premiumStage(url, paid) {
     var list = done[String(url || '').trim().toLowerCase()];
-    if (!list || !list.length) return 'writing';
+    if (!list || !list.length) return { stage: 'writing', hit: null };
     var want = ymd(new Date(paid.getTime() + 7 * DAY));
     var hit = null;
     for (var i = list.length - 1; i >= 0; i--) { if (list[i].dDay === want) { hit = list[i]; break; } }
     if (!hit) hit = list[list.length - 1];
-    if (!hit.doneAt) return 'writing';
-    return hit.sent === '발송완료' ? 'sent' : 'sendwait';
+    if (hit.sent === '발송완료' || hit.sentAt) return { stage: 'sent', hit: hit };
+    return { stage: hit.doneAt ? 'sendwait' : 'writing', hit: hit };
   }
 
   var items = [];
@@ -366,27 +373,58 @@ function listStatus(token) {
       if (paidB && name && (st === '신청완료' || st === '작성완료')) item.row = firstRow + idx;
     } else {
       item.kind = '고급형';
-      item.stage = premiumStage(r[4], paid);
+      // 폼의 지점 URL(gobang.kr/place/<지점번호>)에서 지점번호를 읽어 알림톡 발송 기록과 짝짓는다
+      var pm = String(r[4] || '').match(/\/place\/(\d+)/);
+      item.no = pm ? pm[1] : '';
+      if (item.no) item.label = item.label + '(' + item.no + ')';
+      var ps = premiumStage(r[4], paid);
+      item.stage = ps.stage;
+      // 완료 알림 팝업에 필요한 값: 완료 내역 행이 있고 아직 안 보낸 건에만 준다(completePremium이 다시 대조)
+      if (ps.hit && ps.stage !== 'sent' && paidB) {
+        item.reqRow = firstRow + idx;
+        item.doneRow = ps.hit.row;
+        item.kws = [r[5], r[6], r[7]].map(function (x) { return String(x || '').trim(); }).filter(function (x) { return x; });
+        item.kw = ps.hit.kw;
+        item.blog = ps.hit.blog;
+        item.tail = ps.hit.tail;
+      }
     }
     items.push(item);
   });
 
-  // 고급형 키워드 폼 알림톡 보낸 기록 (스크립트 속성 PF_<지점번호>_<결제일시>, 값 = 발송시각|지점명)
+  // 고급형 키워드 폼 알림톡 보낸 기록 (스크립트 속성 PF_<지점번호>_<결제일시>, 값 = 발송시각|지점명).
+  // 같은 지점번호로 그 결제 뒤에 폼이 들어왔으면 그 폼 행이 이 건이다: 발송 기록 줄은 빼고 지점명만 폼 행에 옮긴다.
+  // 폼 지점 URL에 지점번호가 들어 있어 짝지을 수 있다(11.11 확인, 이전엔 짝짓지 않았다).
+  var pfs = [];
   var all = props.getProperties();
   Object.keys(all).forEach(function (k) {
     var m = k.match(/^PF_(\d+)_(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})$/);
     if (!m) return;
     var paid = new Date(+m[2], +m[3] - 1, +m[4], +m[5], +m[6]);
     if (now - paid.getTime() > 30 * DAY) return;
-    var name = String(all[k]).split('|').slice(1).join('|').trim();
+    pfs.push({ no: m[1], ts: paid.getTime(), name: String(all[k]).split('|').slice(1).join('|').trim() });
+  });
+  pfs.sort(function (a, b) { return b.ts - a.ts; });
+  var forms = items.filter(function (it) { return it.kind === '고급형' && it.no; })
+    .sort(function (a, b) { return a.ts - b.ts; });
+  pfs.forEach(function (pf) {
+    var form = null;
+    for (var i = 0; i < forms.length; i++) {
+      if (!forms[i].paired && forms[i].no === pf.no && forms[i].ts >= pf.ts) { form = forms[i]; break; }
+    }
+    if (form) {
+      form.paired = true;
+      if (pf.name) form.label = pf.name + '(' + pf.no + ')';
+      return;
+    }
     items.push({
-      kind: '고급형', label: name ? name + '(' + m[1] + ')' : '지점번호 ' + m[1],
-      paidAt: fmt(paid), ts: paid.getTime(), stage: 'notified'
+      kind: '고급형', label: pf.name ? pf.name + '(' + pf.no + ')' : '지점번호 ' + pf.no,
+      paidAt: fmt(new Date(pf.ts)), ts: pf.ts, stage: 'notified'
     });
   });
 
   items.sort(function (a, b) { return b.ts - a.ts; });
-  items.forEach(function (it) { delete it.ts; });
+  items.forEach(function (it) { delete it.ts; delete it.paired; });
   return { success: true, items: items };
 }
 
@@ -418,6 +456,56 @@ function markBasic(payload) {
     sheet.getRange(row, 14).setValue(done ? '작성완료' : '신청완료');
     sheet.getRange(row, 1, 1, sheet.getLastColumn()).setBackground(done ? ROW_BG_DONE : ROW_BG_BASIC);
     return { success: true, stage: done ? 'basic_done' : 'writing' };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// 고급형 작성 완료 → 사장님 작업완료 알림톡 (paste.html 시트 DB 체크 → 팝업).
+// 기존 시트 흐름(완료 내역 H열 '발송하기', 10만원·15만원 GAS onSheetEdit)과 같은 템플릿·같은 칸을 쓴다:
+// E 장악키워드 · F 블로그URL · G 완료일 · H 발송완료 · I 발송시각, 신청 내역 행은 주황.
+// 행이 밀렸을 수 있어 신청 내역 행(작성 타입·결제일시·지점 URL)과 완료 내역 행(같은 지점 URL)을 다시 대조한다.
+// 이미 보낸 건(H 발송완료 또는 I 발송시각)은 다시 보내지 않는다.
+function completePremium(payload) {
+  var props = PropertiesService.getScriptProperties();
+  var saved = props.getProperty('INBOX_TOKEN');
+  if (!saved || String(payload.token || '') !== saved) return { success: false, reason: 'unauthorized' };
+  var reqRow = parseInt(payload.reqRow, 10), doneRow = parseInt(payload.doneRow, 10);
+  var kw = String(payload.keyword || '').trim();
+  var blog = String(payload.blogUrl || '').trim();
+  if (!(reqRow >= 2) || !(doneRow >= 2)) return { success: false, reason: 'bad_request' };
+  if (!kw || kw.length > 60) return { success: false, reason: 'bad_keyword' };
+  if (!/^https?:\/\/\S+$/.test(blog)) return { success: false, reason: 'bad_url' };
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    var req = ss.getSheetByName('신청 내역');
+    var doneSheet = ss.getSheetByName('완료 내역');
+    if (!doneSheet || reqRow > req.getLastRow() || doneRow > doneSheet.getLastRow()) return { success: false, reason: 'stale' };
+    var v = req.getRange(reqRow, 1, 1, 14).getValues()[0];
+    var d = doneSheet.getRange(doneRow, 1, 1, 9).getValues()[0];
+    var paid = v[1] ? new Date(v[1]) : null;
+    var url = String(v[4] || '').trim();
+    if (DIRECT_TYPES.indexOf(String(v[12] || '').trim()) < 0
+        || !paid || isNaN(paid.getTime())
+        || Utilities.formatDate(paid, 'Asia/Seoul', 'yyyy-MM-dd HH:mm') !== String(payload.paidAt || '')
+        || !url || String(d[3] || '').trim().toLowerCase() !== url.toLowerCase()) {
+      return { success: false, reason: 'stale' };
+    }
+    if (String(d[7] || '').trim() === '발송완료' || d[8]) return { success: true, status: 'already_sent' };
+    var phone = String(d[2] || '').replace(/\D/g, '');
+    if (!/^01[016789]\d{7,8}$/.test(phone)) return { success: true, status: 'no_phone' };
+
+    // 다시 열었을 때 그대로 보이게 먼저 적는다. 완료일(G)은 보낸 뒤에 적는다(키워드 선점 90일이 완료일 기준).
+    doneSheet.getRange(doneRow, 5, 1, 2).setValues([[kw, blog]]);
+    var sent = sendAlimtalk(phone, TEMPLATE_COMPLETE, { '#{지점URL}': url, '#{장악키워드}': kw, '#{블로그URL}': blog });
+    if (!sent.ok) return { success: true, status: 'send_failed', msg: sent.msg };
+    var now = new Date();
+    doneSheet.getRange(doneRow, 7, 1, 3).setValues([[now, '발송완료', Utilities.formatDate(now, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss')]]);
+    req.getRange(reqRow, 1, 1, req.getLastColumn()).setBackground(ROW_BG_DONE);
+    return { success: true, status: 'sent', stage: 'sent' };
   } finally {
     lock.releaseLock();
   }
