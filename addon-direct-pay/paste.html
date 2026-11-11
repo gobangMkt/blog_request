@@ -29,6 +29,23 @@
       text-decoration: none; line-height: 1.4; padding: 12px 0; margin: -12px 0;
     }
     .quick svg { width: 14px; height: 14px; }
+    .card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; margin-bottom: 8px; }
+    .card-head label { margin-bottom: 0; }
+    .tools { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; }
+    .sel {
+      height: 40px; border: 1.5px solid var(--bdr); border-radius: 10px; background: var(--sur); color: var(--g900);
+      font-family: var(--f); font-size: 14px; font-weight: 700; padding: 0 10px; cursor: pointer; outline: none;
+    }
+    .sel:focus { border-color: var(--pri); }
+    .sel.on { border-color: var(--pri); }
+    .sort {
+      display: inline-flex; align-items: center; gap: 4px; height: 32px; border: 0; background: none; cursor: pointer;
+      font-family: var(--f); font-size: 13px; font-weight: 700; color: var(--g500); padding: 0;
+    }
+    .sort svg { width: 8px; height: 12px; flex: none; }
+    .sort .u, .sort .d { fill: var(--g300); }
+    .sort[aria-sort="ascending"], .sort[aria-sort="descending"] { color: var(--g900); }
+    .sort[aria-sort="ascending"] .u, .sort[aria-sort="descending"] .d { fill: var(--g900); }
     /* 한 판: 왼쪽 등록, 오른쪽 현황 표(더 넓게). 1100px 이하는 위아래로 쌓는다(등록이 위) */
     .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); gap: 16px; align-items: start; margin-top: 12px; }
     .col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
@@ -65,6 +82,10 @@
       font-size: 13px; font-weight: 400; line-height: 1.6; text-align: left; z-index: 10;
     }
     .tip:hover .tip-box, .tip:focus .tip-box { display: block; }
+    .tip-box ul { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .tip-box li { position: relative; padding-left: 12px; }
+    .tip-box li::before { content: ''; position: absolute; left: 0; top: 0.68em; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+    .tip-box li b { font-weight: 700; }
 
     /* 등록 결과 */
     .res-title { font-size: 18px; font-weight: 800; line-height: 1.35; margin-bottom: 4px; }
@@ -89,8 +110,7 @@
     .res li.done b { color: inherit; }
 
     /* 현황: 시트처럼 시간순 한 목록 */
-    .stat-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-    .stat-head .res-sum { margin-bottom: 0; }
+    .card-head .res-sum { margin-bottom: 0; }
     .refresh {
       flex: none; width: 44px; height: 44px; border: 0; border-radius: 12px; background: none;
       cursor: pointer; color: var(--g600); display: inline-flex; align-items: center; justify-content: center;
@@ -101,9 +121,8 @@
       display: grid; grid-template-columns: 104px minmax(0, 1fr) 84px 124px 56px; gap: 12px; align-items: center;
       padding: 6px 0; border-bottom: 1px solid var(--bdr); font-size: 14px; line-height: 1.4;
     }
-    .tr.th { font-size: 13px; font-weight: 700; color: var(--g500); padding: 0 0 8px; }
+    .tr.th { font-size: 13px; font-weight: 700; color: var(--g500); padding: 0 0 4px; }
     .tr.th span:last-child { text-align: center; }
-    .tr.th .c-kind { color: inherit; }
     .c-date { color: var(--g600); font-variant-numeric: tabular-nums; }
     .c-who { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .c-kind { color: var(--g600); display: inline-flex; align-items: center; gap: 6px; }
@@ -134,7 +153,8 @@
     .ck.busy .box { opacity: 0.4; }
     .empty { font-size: 14px; color: var(--g600); line-height: 1.6; padding: 6px 0; }
     @media (max-width: 640px) {
-      .tr { grid-template-columns: 44px minmax(0, 1fr) 20px 88px 44px; gap: 8px; }
+      .tr { grid-template-columns: 44px minmax(0, 1fr) 32px 88px 44px; gap: 8px; }
+      .sort svg { display: none; }
       .c-kind .kt { display: none; }
       .c-who { white-space: normal; }
     }
@@ -155,10 +175,6 @@
 <div class="wrap">
   <div class="top">
     <h1>결제 알림 등록</h1>
-    <div class="quick">
-      <a href="https://docs.google.com/spreadsheets/d/1lgAsrtoeqv1-g3Nh3D21zTyuGLdAZuP5jSXxftlIxh0/edit" target="_blank" rel="noopener" title="신청 내역 시트 열기">시트<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12"/></svg></a>
-      <a id="uceo" href="https://u-ceo.kr" target="_blank" rel="noopener" title="U사장님 열기">U사장님<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12"/></svg></a>
-    </div>
   </div>
 
   <!-- 입장: 접근 코드 한 번 -->
@@ -175,14 +191,31 @@
     <div class="cols">
       <div class="col col-stat">
         <div class="card">
-          <div class="stat-head">
+          <div class="card-head">
             <div>
-              <p class="res-title" id="statTitle">현황</p>
+              <p class="res-title" id="statTitle">시트 DB</p>
               <p class="res-sum" id="statSum"></p>
             </div>
-            <button class="refresh" id="refresh" type="button" aria-label="새로고침" title="새로고침">
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 10a6.5 6.5 0 1 1-1.9-4.6"/><path d="M16.5 3.5v3.6h-3.6"/></svg>
-            </button>
+            <div class="tools">
+              <select class="sel" id="fState" aria-label="상태 조건">
+                <option value="all">상태 · 전체</option>
+                <option value="todo">상태 · 할 일</option>
+                <option value="writing">상태 · 작성 전</option>
+                <option value="sendwait">상태 · 완료 알림 전</option>
+                <option value="notified">상태 · 폼 안내함</option>
+                <option value="sent">상태 · 완료 알림 보냄</option>
+                <option value="basic_done">상태 · 작성 완료</option>
+              </select>
+              <select class="sel" id="fKind" aria-label="유형 조건">
+                <option value="all">유형 · 전체</option>
+                <option value="일반형">유형 · 일반형</option>
+                <option value="고급형">유형 · 고급형</option>
+              </select>
+              <span class="quick"><a href="https://docs.google.com/spreadsheets/d/1lgAsrtoeqv1-g3Nh3D21zTyuGLdAZuP5jSXxftlIxh0/edit" target="_blank" rel="noopener" title="신청 내역 시트 열기">시트<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12"/></svg></a></span>
+              <button class="refresh" id="refresh" type="button" aria-label="새로고침" title="새로고침">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 10a6.5 6.5 0 1 1-1.9-4.6"/><path d="M16.5 3.5v3.6h-3.6"/></svg>
+              </button>
+            </div>
           </div>
           <div id="statList"></div>
           <p class="err" id="statErr" hidden></p>
@@ -191,11 +224,18 @@
 
       <div class="col col-reg">
         <div class="card">
-          <label for="text">결제 알림 메시지
-            <span class="tip" tabindex="0" aria-label="도움말"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v3.8M8 5v.1" stroke-linecap="round"/></svg>
-              <span class="tip-box" role="tooltip">U사장님 운영팀 "[상품 결제완료]" 메시지를 그대로 붙여 넣어요. 여러 건 한 번에 돼요. 일반형은 시트에 직-일반 행으로 들어가고, 고급형은 사장님 번호를 넣어 키워드 폼 알림톡을 보내요.</span>
-            </span>
-          </label>
+          <div class="card-head">
+            <label for="text">결제 알림 메시지
+              <span class="tip" tabindex="0" aria-label="도움말"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v3.8M8 5v.1" stroke-linecap="round"/></svg>
+                <span class="tip-box" role="tooltip"><ul>
+                  <li><b>붙여 넣기:</b> U사장님 운영팀 "[상품 결제완료]" 메시지를 그대로, 여러 건 한 번에</li>
+                  <li><b>일반형:</b> 시트에 직-일반 행으로 등록</li>
+                  <li><b>고급형:</b> 사장님 번호를 넣어 키워드 폼 알림톡 발송</li>
+                </ul></span>
+              </span>
+            </label>
+            <span class="quick"><a id="uceo" href="https://u-ceo.kr" target="_blank" rel="noopener" title="U사장님 열기">U사장님<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12"/></svg></a></span>
+          </div>
           <textarea id="text" placeholder="[Web발신]&#10;[상품 결제완료]&#10;..."></textarea>
           <button class="cta" id="go" type="button" disabled>결제 알림을 붙여 넣어 주세요</button>
           <p class="err" id="err" hidden></p>
@@ -231,7 +271,7 @@
 
   // U사장님 지점 검색 화면 주소. 비워 두면 링크를 보여 주지 않는다.
   var USABOSS_URL = 'https://u-ceo.kr';
-  if (USABOSS_URL) $('uceo').href = USABOSS_URL; else $('uceo').hidden = true;
+  if (USABOSS_URL) $('uceo').href = USABOSS_URL; else $('uceo').parentNode.hidden = true;
 
   function post(body) {
     body.token = TOKEN;
@@ -420,6 +460,8 @@
   var WRITTEN = { sendwait: true, sent: true, basic_done: true };
   var CHECK_SVG = '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 5.5 10.5 11.5 3.5"/></svg>';
   var lastData = null;
+  var sortKey = 'paid', sortDir = 'desc', fState = 'all', fKind = 'all';
+  var RANK = { writing: 0, sendwait: 1, notified: 2, sent: 3, basic_done: 3 }; // 할 일이 먼저
   var reqSeq = 0; // 겹친 요청 중 마지막 응답만 화면에 반영한다
   var statErr = $('statErr'), refresh = $('refresh');
   refresh.addEventListener('click', function () { loadStatus(); });
@@ -444,22 +486,66 @@
 
   function count(items, st) { return items.filter(function (it) { return it.stage === st; }).length; }
 
+  var COLS = [['결제', 'paid'], ['지점', 'who'], ['유형', 'kind'], ['상태', 'stage'], ['작성', '']];
+  var ARROW = '<svg viewBox="0 0 8 12" aria-hidden="true"><path class="u" d="M4 0 8 5H0Z"/><path class="d" d="M4 12 0 7h8Z"/></svg>';
+
+  function primary(a, b) {
+    if (sortKey === 'paid') return a.paidAt < b.paidAt ? -1 : a.paidAt > b.paidAt ? 1 : 0;
+    if (sortKey === 'who') return String(a.label).localeCompare(String(b.label), 'ko');
+    if (sortKey === 'kind') return String(a.kind).localeCompare(String(b.kind), 'ko');
+    return (RANK[a.stage] === undefined ? 9 : RANK[a.stage]) - (RANK[b.stage] === undefined ? 9 : RANK[b.stage]);
+  }
+  function passes(it) {
+    if (fKind !== 'all' && it.kind !== fKind) return false;
+    if (fState === 'all') return true;
+    if (fState === 'todo') return it.stage === 'writing' || it.stage === 'sendwait';
+    return it.stage === fState;
+  }
+  function viewOf(items) {
+    var arr = items.filter(passes);
+    arr.sort(function (a, b) {
+      var r = primary(a, b); if (sortDir === 'desc') r = -r;
+      return r || (a.paidAt < b.paidAt ? 1 : a.paidAt > b.paidAt ? -1 : 0); // 동점은 결제 최신순
+    });
+    return arr;
+  }
+  function setSort(key) {
+    if (sortKey === key) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    else { sortKey = key; sortDir = key === 'paid' ? 'desc' : 'asc'; }
+    if (lastData) renderStatus(lastData);
+  }
+  $('fState').addEventListener('change', function () { fState = this.value; this.className = 'sel' + (fState === 'all' ? '' : ' on'); if (lastData) renderStatus(lastData); });
+  $('fKind').addEventListener('change', function () { fKind = this.value; this.className = 'sel' + (fKind === 'all' ? '' : ' on'); if (lastData) renderStatus(lastData); });
+
   function renderStatus(d) {
     lastData = d;
     var items = d.items || [];
     var w = count(items, 'writing'), sw = count(items, 'sendwait');
-    $('statTitle').textContent = '할 일 ' + (w + sw) + '건';
-    $('statSum').textContent = '작성 전 ' + w + ' · 완료 알림 전 ' + sw;
+    $('statTitle').textContent = '시트 DB';
+    $('statSum').textContent = '할 일 ' + (w + sw) + '건 · 작성 전 ' + w + ' · 완료 알림 전 ' + sw;
     var box = $('statList'); box.innerHTML = '';
     if (!items.length) {
       var e = document.createElement('p'); e.className = 'empty'; e.textContent = '아직 등록된 건이 없어요.'; box.appendChild(e); return;
     }
     var th = document.createElement('div'); th.className = 'tr th';
-    [['결제', ''], ['지점', ''], ['유형', 'c-kind'], ['상태', ''], ['작성', '']].forEach(function (t) {
-      var s = document.createElement('span'); s.textContent = t[0]; if (t[1]) s.className = t[1]; th.appendChild(s);
+    COLS.forEach(function (t) {
+      var s = document.createElement('span');
+      if (t[1]) {
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'sort';
+        b.setAttribute('aria-sort', sortKey === t[1] ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none');
+        b.title = t[0] + ' 순으로 정렬';
+        b.innerHTML = '<span></span>' + ARROW; b.firstChild.textContent = t[0];
+        b.addEventListener('click', function () { setSort(t[1]); });
+        s.appendChild(b);
+      } else s.textContent = t[0];
+      th.appendChild(s);
     });
     box.appendChild(th);
-    items.forEach(function (it) { box.appendChild(statusRow(it)); });
+    var view = viewOf(items);
+    if (!view.length) {
+      var e2 = document.createElement('p'); e2.className = 'empty'; e2.textContent = '조건에 맞는 건이 없어요.'; box.appendChild(e2); return;
+    }
+    view.forEach(function (it) { box.appendChild(statusRow(it)); });
   }
 
   function statusRow(it) {
