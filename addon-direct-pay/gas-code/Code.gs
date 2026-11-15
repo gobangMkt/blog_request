@@ -314,10 +314,12 @@ function registerPremium(payload) {
 //   sendwait   = 고급형 작성 완료, 사장님 완료 알림톡 전(완료 내역 H 발송대기)
 //   sent       = 고급형 완료 알림톡 보냄(완료 내역 H 발송완료)
 //   basic_done = 직-일반 N열 작성완료(현황 탭 체크로 바꾼다)
+// 배포 확인용 표식: 배포 뒤 틀린 토큰으로 listStatus를 불러 이 값이 응답에 오는지 보면 새 코드가 올라간 것(배포.bat이 확인한다)
+var BUILD = '2026-11-15-trend2';
 function listStatus(token) {
   var props = PropertiesService.getScriptProperties();
   var saved = props.getProperty('INBOX_TOKEN');
-  if (!saved || String(token || '') !== saved) return { success: false, reason: 'unauthorized' };
+  if (!saved || String(token || '') !== saved) return { success: false, reason: 'unauthorized', build: BUILD };
 
   var TZ = 'Asia/Seoul';
   var DAY = 24 * 60 * 60 * 1000;
@@ -454,7 +456,7 @@ function listStatus(token) {
   items.sort(function (a, b) { return b.ts - a.ts; });
   items.forEach(function (it) { delete it.ts; delete it.paired; });
   // truncated = 2,000행 상한에 걸려 오래된 행이 빠졌다는 뜻(추이의 기록 시작일·평균이 틀어지므로 화면에 알린다)
-  return { success: true, items: items, truncated: lastRow - 1 > 2000 };
+  return { success: true, items: items, truncated: lastRow - 1 > 2000, build: BUILD };
 }
 
 // 현황 탭 체크: 직-일반 행 N열을 작성완료 ↔ 신청완료로 바꾸고 행 색도 맞춘다(작성완료 주황 / 결제완료 연파랑).

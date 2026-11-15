@@ -68,6 +68,7 @@
 | 폼 | https://gobangmkt.github.io/blog_request/addon-direct-pay/form.html |
 | GAS scriptId | `13UxHBrMESwMtOYWPniqDzfpmukokn6C6P0nJ5aOrOzedUcYigG07YpOs` |
 | GAS 웹앱 | 배포 ID는 `form.html`의 `GAS_URL` 참고 |
+| GAS 배포 한 번에 | `GAS 배포 (딸깍).bat` 더블클릭: 구글 로그인 확인(만료 시 브라우저에서 승인 한 번) → `clasp push` → 같은 배포 ID로 `clasp deploy`(주소 유지) → 틀린 토큰으로 `listStatus`를 불러 응답의 `build` 표식(`Code.gs`의 `BUILD`)으로 새 코드가 올라갔는지 확인 → 페이지 열기. 코드를 고칠 때마다 `BUILD` 값과 이 파일의 `findstr` 값을 같이 바꾼다 |
 | 시트 | 기존 15만원·10만원 폼과 같은 시트(`Code.gs` 상단 `SPREADSHEET_ID`) |
 | 스크립트 속성 | `INBOX_TOKEN`(붙여넣기 접근 코드), `SOLAPI_API_KEY`·`SOLAPI_API_SECRET`·`SOLAPI_PF_ID`·`TEMPLATE_PREMIUM_FORM`(고급형 알림톡). 값은 문서에 적지 않는다 |
 
