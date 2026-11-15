@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex">
-  <title>결제 알림 등록 | 고방 블로그 (마케팅팀용)</title>
+  <title>블로그 부가상품 | 고방 블로그 (마케팅팀용)</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
   <link rel="stylesheet" href="css/voc-widget.css">
   <style>
@@ -304,7 +304,7 @@
 <body>
 <div class="wrap">
   <div class="top">
-    <h1>결제 알림 등록</h1>
+    <h1>블로그 부가상품</h1>
     <button class="voc-open" id="vocOpen" type="button">불편 신고</button>
   </div>
 
@@ -842,7 +842,8 @@
     if (!trHide.n) {
       var pts = cells.map(function (c, i) { return [PL + (i + 0.5) * cw, PT + PH - c.n / nmax * PH]; });
       svg.appendChild(sv('polyline', { points: pts.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ') }, 'pl-line'));
-      if (cells.length <= 16) pts.forEach(function (p) { svg.appendChild(sv('circle', { cx: p[0], cy: p[1], r: 3.5 }, 'pl-dot')); });
+      var dr = cells.length <= 31 ? 3.5 : 2.5; // 점은 칸이 많아도 항상 찍는다(많으면 작게)
+      pts.forEach(function (p) { svg.appendChild(sv('circle', { cx: p[0], cy: p[1], r: dr }, 'pl-dot')); });
     }
     cells.forEach(function (c, i) {
       if ((cells.length - 1 - i) % step !== 0) return;
