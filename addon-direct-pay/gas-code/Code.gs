@@ -384,8 +384,8 @@ function listStatus(token) {
       });
       return;
     }
-    var paidB = asDate(r[1]);
-    var paid = paidB || asDate(r[0]);
+    var paidB = asDateLoose(r[1]); // 글자로 저장된 날짜도 읽는다(조용히 누락되지 않게)
+    var paid = paidB || asDateLoose(r[0]); // 부가상품은 결제 뒤에 등록되는 건이라 결제완료일이 비어도 결제 건이다
     if (!paid) return;
     var name = String(r[2] || '').trim();
     var item = { kind: '', label: name || '(이름 없음)', paidAt: fmt(paid), ts: paid.getTime(), stage: '' };
@@ -453,7 +453,8 @@ function listStatus(token) {
 
   items.sort(function (a, b) { return b.ts - a.ts; });
   items.forEach(function (it) { delete it.ts; delete it.paired; });
-  return { success: true, items: items };
+  // truncated = 2,000행 상한에 걸려 오래된 행이 빠졌다는 뜻(추이의 기록 시작일·평균이 틀어지므로 화면에 알린다)
+  return { success: true, items: items, truncated: lastRow - 1 > 2000 };
 }
 
 // 현황 탭 체크: 직-일반 행 N열을 작성완료 ↔ 신청완료로 바꾸고 행 색도 맞춘다(작성완료 주황 / 결제완료 연파랑).

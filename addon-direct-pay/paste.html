@@ -180,6 +180,8 @@
     .k-label { font-size: 14px; font-weight: 600; color: var(--g600); line-height: 1.5; }
     .k-val { font-size: 20px; font-weight: 700; line-height: 1.35; }
     .k-sub { font-size: 13px; color: var(--g600); line-height: 1.5; }
+    .k-note { font-size: 13px; color: var(--g600); line-height: 1.5; margin-top: -4px; }
+    .cy-val { font-size: 15px; font-weight: 700; line-height: 1.5; font-variant-numeric: tabular-nums; }
     .avg { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.4; }
     .avg th { font-size: 13px; font-weight: 700; color: var(--g500); text-align: right; padding: 0 0 4px; }
     .avg th:first-child, .avg td:first-child { text-align: left; }
@@ -253,10 +255,11 @@
                   <span class="tip-box" role="tooltip"><ul>
                     <li><b>구분:</b> 부가상품 = 일반형·고급형, 기존 폼 = 15만원·10만원 폼. 전체는 둘의 합이고, 기존 폼은 결제완료일이 있는 건만 센다</li>
                     <li><b>집계 기준:</b> 결제일시(기존 폼은 결제완료일). 고급형은 알림톡만 보낸 건(응답 대기)도 포함, 응답 대기에서 지운 건은 제외</li>
-                    <li><b>결제액:</b> 시트 단가(부가세 포함)의 합</li>
-                    <li><b>평균:</b> 기록 시작일부터 오늘까지(오늘 포함). 주평균은 기록 7일 이상, 월평균은 30일 이상일 때만 계산(30일 환산)</li>
-                    <li><b>연한 막대:</b> 오늘이 든 막대라 아직 덜 찬 값</li>
-                    <li><b>범위:</b> 시트 신청 내역 전체(2,000행 상한)</li>
+                    <li><b>매출:</b> 공급가액 = 결제액(시트 단가, 부가세 포함) ÷ 1.1. 결제수수료·작성 정산을 뺀 실제 남는 돈이 아니고, 그 원가 자료가 없어 표시하지 않음</li>
+                    <li><b>평균:</b> 기록 시작일부터 오늘까지(오늘 포함). 주평균은 기록 7일 이상, 월평균은 30일 이상일 때만 계산(30일 환산). 금액은 천 원 단위 반올림</li>
+                    <li><b>결제 주기:</b> 같은 날 여러 건은 하루로 합치고, 결제 있던 날 사이 간격의 중앙값·평균. 결제 있던 날은 기간 안 첫 결제일부터 오늘까지 대비</li>
+                    <li><b>직전 기간:</b> 같은 일수만큼 바로 앞. 연한 막대는 오늘이 든 아직 덜 찬 칸</li>
+                    <li><b>범위:</b> 시트 신청 내역 전체(2,000행 상한). 결제 10건 미만이면 평균·간격은 참고용</li>
                   </ul></span>
                 </span>
               </div>
@@ -279,6 +282,8 @@
           <div class="trend-body" id="trBody" hidden>
             <div class="kpi" id="trKpi"></div>
             <div class="charts" id="trCharts"></div>
+            <div class="kpi" id="trCycle"></div>
+            <div id="trMix"></div>
           </div>
         </div>
 
@@ -394,6 +399,7 @@
   </div>
 </div>
 
+<script src="js/trend-calc.js"></script>
 <script>
 (function () {
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbysJEvbkNX8PU7C5zcdfGqtw5xbfejQmDOIONr9PwssxwPyv2-HIQPI6uZtV2AChYS7/exec';
@@ -668,14 +674,16 @@
     if (lastData) renderStatus(lastData); else syncReset();
   });
 
-  // ── 결제 추이: 현황 items(결제일시·유형·단가)를 일/주/월로 묶는다. 날짜는 문자열 그대로 읽어 시간대에 흔들리지 않는다 ──
+  // ── 결제 추이: 계산은 js/trend-calc.js(순수 함수·테스트 있음), 여기서는 그리기만 한다 ──
+  var TC = window.TrendCalc, DAYMS = TC.DAYMS;
   var PRICE = { '일반형': 70000, '고급형': 150000 }; // GAS가 price를 보내면 그 값을 쓴다(옛 응답 대비 기본값)
+  var SAMPLE_MIN = 10; // 결제가 이 건수보다 적으면 평균·간격은 참고용으로 알린다
   var UNITS = {
     day:   { name: '일', days: 1,  opts: [[7, '7일'], [14, '14일'], [30, '30일'], [90, '90일']], def: 1 },
     week:  { name: '주', days: 7,  opts: [[4, '4주'], [8, '8주'], [12, '12주'], [26, '26주']], def: 1 },
     month: { name: '월', days: 30, opts: [[3, '3개월'], [6, '6개월'], [12, '12개월']], def: 1 }
   };
-  var DAYMS = 86400000, WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'];
+  var WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'];
   var trUnit = 'day', trIdx = UNITS.day.def, trItems = [], trKind = 'all';
   var KIND_NAME = { all: '', addon: '부가상품 ', legacy: '기존 폼 ' };
   function inTrend(it) { // 기존 폼은 결제완료일이 있는 건(결제 완료)만 매출로 센다
@@ -684,35 +692,14 @@
     return trKind === 'all' || (trKind === 'legacy') === legacy;
   }
   function p2(n) { return (n < 10 ? '0' : '') + n; }
-  function parseDay(s) { var m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : NaN; }
   function md(ms) { var d = new Date(ms); return p2(d.getUTCMonth() + 1) + '.' + p2(d.getUTCDate()); }
   function ym(ms) { var d = new Date(ms); return d.getUTCFullYear() + '.' + p2(d.getUTCMonth() + 1); }
-  function todayMs() { var d = new Date(); return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()); }
-  function mondayOf(ms) { return ms - ((new Date(ms).getUTCDay() + 6) % 7) * DAYMS; }
-  function monthStart(ms, add) { var d = new Date(ms); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + add, 1); }
   function won(v) { return Math.round(v).toLocaleString('ko-KR') + '원'; }
   function cnt(v) { return (Math.round(v * 10) / 10).toLocaleString('ko-KR') + '건'; }
   function man(v) { return v >= 10000 ? (Math.round(v / 1000) / 10).toLocaleString('ko-KR') + '만' : String(Math.round(v)); }
+  function gap(v) { return v < 1 ? '1일 미만' : (Math.round(v * 10) / 10) + '일'; }
   function priceOf(it) { return it.price > 0 ? it.price : (PRICE[it.kind] || 0); }
 
-  // 기간 시작일과 칸 목록(칸마다 [s, e] 날짜 범위)
-  function windowOf(unit, n, today) {
-    var start, i, cells = [];
-    if (unit === 'day') start = today - (n - 1) * DAYMS;
-    else if (unit === 'week') start = mondayOf(today) - (n - 1) * 7 * DAYMS;
-    else start = monthStart(today, -(n - 1));
-    for (i = 0; i < n; i++) {
-      if (unit === 'day') cells.push({ s: start + i * DAYMS, e: start + i * DAYMS });
-      else if (unit === 'week') cells.push({ s: start + i * 7 * DAYMS, e: start + i * 7 * DAYMS + 6 * DAYMS });
-      else cells.push({ s: monthStart(start, i), e: monthStart(start, i + 1) - DAYMS });
-    }
-    return { start: start, cells: cells };
-  }
-  function sumRange(rows, s, e) {
-    var n = 0, amt = 0;
-    rows.forEach(function (r) { if (r.day >= s && r.day <= e) { n++; amt += r.price; } });
-    return { n: n, amt: amt };
-  }
   function deltaText(cur, prev, comparable, label) {
     if (!comparable) return '직전 ' + label + ' 기록이 없어요';
     if (prev === 0) return '직전 ' + label + '은 0건';
@@ -766,65 +753,108 @@
   }
 
   function renderTrend() {
-    var u = UNITS[trUnit], opt = u.opts[trIdx], n = opt[0], today = todayMs();
+    var u = UNITS[trUnit], opt = u.opts[trIdx], n = opt[0], today = TC.kstToday(Date.now());
     var rows = [];
     trItems.forEach(function (it) {
       if (!inTrend(it)) return;
-      var day = parseDay(it.paidAt); if (!isNaN(day)) rows.push({ day: day, price: priceOf(it) });
+      var day = TC.parseDay(it.paidAt); if (!isNaN(day)) rows.push({ day: day, price: priceOf(it), kind: it.kind });
     });
     var body = $('trBody'), sum = $('trSum');
     if (!rows.length) { body.hidden = true; sum.textContent = '아직 ' + KIND_NAME[trKind] + '결제 기록이 없어요.'; return; }
     var first = Infinity; rows.forEach(function (r) { if (r.day < first) first = r.day; });
 
-    var w = windowOf(trUnit, n, today);
+    var w = TC.windowOf(trUnit, n, today);
     var cells = w.cells.filter(function (c) { return c.e >= first; }); // 기록 시작 전 칸은 그리지 않는다
-    cells.forEach(function (c, i) {
-      var t = sumRange(rows, c.s, c.e); c.n = t.n; c.amt = t.amt;
+    cells.forEach(function (c) {
+      var t = TC.sumRange(rows, c.s, c.e); c.n = t.n; c.amt = t.amt; c.rev = TC.vat(t.amt);
       c.cur = c.s <= today && today <= c.e;
       if (trUnit === 'day') { c.label = md(c.s); c.tip = md(c.s) + ' (' + WEEKDAY[new Date(c.s).getUTCDay()] + ')'; }
       else if (trUnit === 'week') { c.label = md(c.s); c.tip = md(c.s) + ' ~ ' + md(c.e) + ' 주'; }
       else { c.label = ym(c.s); c.tip = ym(c.s); }
     });
     var eff = Math.max(w.start, first), span = Math.round((today - eff) / DAYMS) + 1;
-    var tot = sumRange(rows, eff, today);
-    var L = Math.round((today - w.start) / DAYMS) + 1;
+    var tot = TC.sumRange(rows, eff, today), rev = TC.vat(tot.amt);
+    var L = Math.round((today - w.start) / DAYMS) + 1; // 직전 기간 = 같은 일수만큼 바로 앞
     var pS = w.start - L * DAYMS, comparable = first <= pS;
-    var prev = sumRange(rows, pS, w.start - DAYMS);
+    var prev = TC.sumRange(rows, pS, w.start - DAYMS);
 
-    sum.textContent = md(eff) + ' ~ ' + md(today) + ' · ' + span + '일' + (eff > w.start ? ' · 기록 시작 ' + md(first) : '');
+    sum.textContent = md(eff) + ' ~ ' + md(today) + ' · ' + span + '일' + (eff > w.start ? ' · 기록 시작 ' + md(first) : '')
+      + (lastData && lastData.truncated ? ' · 시트 2,000행을 넘어 오래된 행이 빠졌어요' : '');
 
-    function per(v, days) { return span >= days ? v / span * days : null; } // 기록이 그 단위보다 짧으면 계산하지 않는다
     var avgs = [['일평균', 1], ['주평균', 7], ['월평균', 30]].map(function (a) {
-      return { name: a[0], n: per(tot.n, a[1]), amt: per(tot.amt, a[1]) };
+      return { name: a[0], n: TC.perUnit(tot.n, span, a[1]), amt: TC.perUnit(tot.amt, span, a[1]) };
     });
+
+    // 합계·평균 (왼쪽 위)
     var kpi = $('trKpi'); kpi.innerHTML = '';
-    function kItem(label, val, sub) {
+    function kItem(label, val, subs) {
       var d = document.createElement('div');
-      [['k-label', label], ['k-val', val], ['k-sub', sub]].forEach(function (p) {
+      [['k-label', label], ['k-val', val]].concat(subs.filter(Boolean).map(function (s) { return ['k-sub', s]; })).forEach(function (p) {
         var e = document.createElement('p'); e.className = p[0]; e.textContent = p[1]; d.appendChild(e);
       });
       kpi.appendChild(d);
     }
-    kItem('결제 건수', tot.n + '건', deltaText(tot.n, prev.n, comparable, opt[1]));
-    kItem('결제액', won(tot.amt), deltaText(tot.amt, prev.amt, comparable, opt[1]));
+    kItem('결제 건수', tot.n + '건', [tot.n ? '건당 평균 매출 ' + won(rev / tot.n) : '', deltaText(tot.n, prev.n, comparable, opt[1])]);
+    kItem('매출 (공급가액)', won(rev), ['결제액 ' + won(tot.amt) + ' · VAT 포함', deltaText(tot.amt, prev.amt, comparable, opt[1])]);
     var tb = document.createElement('table'); tb.className = 'avg';
-    var html = '<thead><tr><th>평균</th><th>건수</th><th>결제액</th></tr></thead><tbody>';
+    var html = '<thead><tr><th>평균</th><th>건수</th><th>매출</th></tr></thead><tbody>';
     avgs.forEach(function (a) {
       html += '<tr><td>' + a.name + '</td>' + (a.n === null
         ? '<td class="na">-</td><td class="na">-</td>'
-        : '<td>' + cnt(a.n) + '</td><td>' + won(Math.round(a.amt / 1000) * 1000) + '</td>') + '</tr>';
+        : '<td>' + cnt(a.n) + '</td><td>' + won(Math.round(TC.vat(a.amt) / 1000) * 1000) + '</td>') + '</tr>';
     });
     tb.innerHTML = html + '</tbody>';
     kpi.appendChild(tb);
+    if (tot.n < SAMPLE_MIN) {
+      var sm = document.createElement('p'); sm.className = 'k-note';
+      sm.textContent = '결제 ' + tot.n + '건뿐이라 평균·간격은 참고용이에요'; kpi.appendChild(sm);
+    }
 
+    // 결제 주기 (왼쪽 아래): 같은 날 여러 건은 하루로 합쳐 센다
+    var cad = TC.cadence(rows, eff, today), lp = TC.lastPay(rows, today);
+    var cy = $('trCycle'); cy.innerHTML = '';
+    function cyItem(label, val) {
+      var d = document.createElement('div');
+      [['k-label', label], ['cy-val', val]].forEach(function (p) {
+        var e = document.createElement('p'); e.className = p[0]; e.textContent = p[1]; d.appendChild(e);
+      });
+      cy.appendChild(d);
+    }
+    var ct = document.createElement('p'); ct.className = 'chart-t'; ct.textContent = '결제 주기'; cy.appendChild(ct);
+    cyItem('결제 간격', cad.gapMedian === null ? '-' : '중앙값 ' + gap(cad.gapMedian) + ' · 평균 ' + gap(cad.gapMean));
+    cyItem('결제 있던 날', cad.payDays ? cad.payDays + '일 / ' + cad.activeSpan + '일' : '-');
+    cyItem('마지막 결제', lp ? (lp.since === 0 ? '오늘' : lp.since + '일 전') + ' (' + md(lp.day) + ')' : '-');
+
+    // 구성 (오른쪽 아래): 유형별 건수·매출·비중
+    var bk = TC.byKind(rows, eff, today);
+    var kinds = trKind === 'all' ? ['일반형', '고급형', '기존 폼'] : trKind === 'addon' ? ['일반형', '고급형'] : ['기존 폼'];
+    var mx = $('trMix'); mx.innerHTML = '';
+    var mt = document.createElement('p'); mt.className = 'chart-t'; mt.textContent = '구성'; mx.appendChild(mt);
+    var mtab = document.createElement('table'); mtab.className = 'avg';
+    var mh = '<thead><tr><th>유형</th><th>건수</th><th>매출</th><th>비중</th></tr></thead><tbody>';
+    kinds.forEach(function (k) {
+      var o = bk[k];
+      mh += '<tr><td>' + k + '</td>' + (o
+        ? '<td>' + o.n + '건</td><td>' + won(TC.vat(o.amt)) + '</td><td>' + (tot.amt > 0 ? Math.round(o.amt / tot.amt * 100) + '%' : '-') + '</td>'
+        : '<td class="na">-</td><td class="na">-</td><td class="na">-</td>') + '</tr>';
+    });
+    mtab.innerHTML = mh + '</tbody>';
+    mx.appendChild(mtab);
+    var firstAddon = Infinity; rows.forEach(function (r) { if (r.kind !== '기존 폼' && r.day < firstAddon) firstAddon = r.day; });
+    [tot.zero ? '단가가 비어 있는 ' + tot.zero + '건은 매출에서 빠졌어요' : '',
+     trKind !== 'legacy' && firstAddon !== Infinity && eff < firstAddon ? '부가상품은 ' + md(firstAddon) + '부터 집계돼요' : ''
+    ].filter(Boolean).forEach(function (t) {
+      var p = document.createElement('p'); p.className = 'bars-note'; p.textContent = t; mx.appendChild(p);
+    });
+
+    // 막대 차트 (오른쪽 위)
     var ch = $('trCharts'); ch.innerHTML = '';
     var cw = ch.clientWidth || 480, need = trUnit === 'month' ? 64 : 48;
     var step = Math.max(1, Math.ceil(cells.length / Math.max(1, Math.floor(cw / need))));
     var line = avgs[trUnit === 'day' ? 0 : trUnit === 'week' ? 1 : 2];
-    // 값 라벨은 칸이 라벨보다 넓을 때만 모두 단다(좁으면 가장 큰 막대 하나)
-    var colW = cw / cells.length;
+    var colW = cw / cells.length; // 값 라벨은 칸이 라벨보다 넓을 때만 모두 단다(좁으면 가장 큰 막대 하나)
     ch.appendChild(barChart('결제 건수', cells, 'n', function (v) { return String(v); }, cnt, line.n, false, step, colW >= 24));
-    ch.appendChild(barChart('결제액', cells, 'amt', man, won, line.amt, true, step, colW >= 44));
+    ch.appendChild(barChart('매출 (공급가액)', cells, 'rev', man, won, line.amt === null ? 0 : TC.vat(line.amt), true, step, colW >= 44));
     var note = document.createElement('p'); note.className = 'bars-note';
     note.textContent = (line.n === null ? '' : '점선은 ' + u.name + '평균 · ') + '연한 막대는 진행 중';
     ch.appendChild(note);
