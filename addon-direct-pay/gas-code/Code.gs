@@ -330,7 +330,9 @@ function listStatus(token) {
   var sheet = ss.getSheetByName('신청 내역');
   var lastRow = sheet.getLastRow();
   var firstRow = Math.max(2, lastRow - 499);
-  var rows = lastRow >= 2 ? sheet.getRange(firstRow, 1, lastRow - firstRow + 1, 14).getValues() : [];
+  var rows = lastRow >= 2 ? sheet.getRange(firstRow, 1, lastRow - firstRow + 1, 16).getValues() : [];
+  // 결제 추이 집계용 단가(P열, 부가세 포함). 비어 있으면 현재 단가 상수를 쓴다
+  function priceOf(v, dflt) { var n = Number(String(v == null ? '' : v).replace(/[^\d.]/g, '')); return n > 0 ? n : dflt; }
 
   // 완료 내역: 지점 URL → 행 목록(위에서 아래 순). 직A/직B 건은 D-day(A열 = 결제완료일 + 7일)가 같은 행으로 대조하고,
   // 없으면 그 URL의 가장 아래 행을 쓴다(같은 URL로 다른 폼이 들어와 빈 행이 붙어도 끝난 건이 되돌아가지 않게).
@@ -369,12 +371,14 @@ function listStatus(token) {
     var item = { kind: '', label: name || '(이름 없음)', paidAt: fmt(paid), ts: paid.getTime(), stage: '' };
     if (type === '직-일반') {
       item.kind = '일반형';
-      var st = String(r[13] || '').trim();
+      item.price = priceOf(r[15], PRICE_DIRECT_BASIC);
+      var st =String(r[13] || '').trim();
       item.stage = st === '작성완료' ? 'basic_done' : 'writing';
       // 체크는 markBasic이 다시 대조할 수 있는 행에만 준다(B 결제완료일·C 신청자가 있고 N이 신청완료/작성완료)
       if (paidB && name && (st === '신청완료' || st === '작성완료')) item.row = firstRow + idx;
     } else {
       item.kind = '고급형';
+      item.price = priceOf(r[15], PRICE_DIRECT_PREMIUM);
       // 폼의 지점 URL(gobang.kr/place/<지점번호>)에서 지점번호를 읽어 알림톡 발송 기록과 짝짓는다
       var pm = String(r[4] || '').match(/\/place\/(\d+)/);
       item.no = pm ? pm[1] : '';
@@ -423,7 +427,7 @@ function listStatus(token) {
     if (pf.hidden) return; // 시트 DB에서 지운 응답 대기 건
     items.push({
       kind: '고급형', label: pf.name ? pf.name + '(' + pf.no + ')' : '지점번호 ' + pf.no,
-      paidAt: fmt(new Date(pf.ts)), ts: pf.ts, stage: 'notified', pf: pf.id
+      paidAt: fmt(new Date(pf.ts)), ts: pf.ts, stage: 'notified', pf: pf.id, price: PRICE_DIRECT_PREMIUM
     });
   });
 

@@ -173,6 +173,37 @@
       .c-who { white-space: normal; }
     }
 
+    /* 결제 추이: 합계·평균(왼쪽) + 막대 차트 두 장(오른쪽). 막대 색은 하나, 증감에 초록·빨강을 쓰지 않는다 */
+    .res-title-row { display: flex; align-items: center; gap: 4px; }
+    .trend-body { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; align-items: start; margin-top: 12px; }
+    .kpi { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+    .k-label { font-size: 14px; font-weight: 600; color: var(--g600); line-height: 1.5; }
+    .k-val { font-size: 20px; font-weight: 700; line-height: 1.35; }
+    .k-sub { font-size: 13px; color: var(--g600); line-height: 1.5; }
+    .avg { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.4; }
+    .avg th { font-size: 13px; font-weight: 700; color: var(--g500); text-align: right; padding: 0 0 4px; }
+    .avg th:first-child, .avg td:first-child { text-align: left; }
+    .avg td { padding: 6px 0; border-bottom: 1px solid var(--bdr); text-align: right; font-variant-numeric: tabular-nums; }
+    .avg td:first-child { color: var(--g600); font-variant-numeric: normal; }
+    .avg td.na { color: var(--g500); }
+    .charts { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+    .chart-t { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .bars { position: relative; display: flex; align-items: flex-end; height: 108px; }
+    .bar-col { flex: 1 1 0; min-width: 0; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+    .bar-val { position: relative; z-index: 1; padding: 0 2px; background: var(--sur); font-size: 13px; font-weight: 700; line-height: 16px; height: 16px; margin-bottom: 4px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .bar-val.zero { font-weight: 400; color: var(--g500); }
+    .bar-val:empty { background: none; }
+    .bar-col { padding: 0 1px; }
+    .bar { width: 100%; max-width: 28px; background: var(--pri); border-radius: 4px 4px 0 0; }
+    .bar.cur { opacity: 0.45; }
+    .avg-line { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--g500); pointer-events: none; }
+    .xrow { display: flex; height: 20px; margin-top: 6px; }
+    .x-col { flex: 1 1 0; min-width: 0; position: relative; }
+    .x-col span { position: absolute; left: 50%; transform: translateX(-50%); font-size: 13px; line-height: 20px; color: var(--g500); white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .xrow.dense .x-col:last-child span { left: auto; right: 0; transform: none; }
+    .bars-note { font-size: 13px; color: var(--g600); line-height: 1.5; }
+    @media (max-width: 640px) { .trend-body { grid-template-columns: minmax(0, 1fr); } }
+
     /* 확인 팝업 */
     .modal { position: fixed; inset: 0; background: var(--dim); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
     .modal[hidden] { display: none; }
@@ -214,6 +245,37 @@
   <div id="app" hidden>
     <div class="cols">
       <div class="col col-stat">
+        <div class="card" id="trendCard">
+          <div class="card-head">
+            <div>
+              <div class="res-title res-title-row">결제 추이
+                <span class="tip" tabindex="0" aria-label="도움말"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v3.8M8 5v.1" stroke-linecap="round"/></svg>
+                  <span class="tip-box" role="tooltip"><ul>
+                    <li><b>집계 기준:</b> 결제일시. 고급형은 알림톡만 보낸 건(응답 대기)도 포함, 응답 대기에서 지운 건은 제외</li>
+                    <li><b>결제액:</b> 시트 단가(부가세 포함)의 합</li>
+                    <li><b>평균:</b> 기록 시작일부터 오늘까지(오늘 포함). 주평균은 기록 7일 이상, 월평균은 30일 이상일 때만 계산(30일 환산)</li>
+                    <li><b>연한 막대:</b> 오늘이 든 막대라 아직 덜 찬 값</li>
+                    <li><b>범위:</b> 시트 신청 내역 최근 500행</li>
+                  </ul></span>
+                </span>
+              </div>
+              <p class="res-sum" id="trSum"></p>
+            </div>
+            <div class="tools">
+              <select class="sel" id="trUnit" aria-label="집계 단위">
+                <option value="day">단위 · 일간</option>
+                <option value="week">단위 · 주간</option>
+                <option value="month">단위 · 월간</option>
+              </select>
+              <select class="sel" id="trPeriod" aria-label="기간"></select>
+            </div>
+          </div>
+          <div class="trend-body" id="trBody" hidden>
+            <div class="kpi" id="trKpi"></div>
+            <div class="charts" id="trCharts"></div>
+          </div>
+        </div>
+
         <div class="card">
           <div class="card-head">
             <div>
@@ -534,6 +596,7 @@
     var my = ++reqSeq;
     statErr.hidden = true;
     refresh.disabled = true; $('statSum').textContent = '불러오는 중이에요';
+    if (!lastData) $('trSum').textContent = '불러오는 중이에요';
     post({ action: 'listStatus' })
       .then(function (d) {
         if (my !== reqSeq) return;
@@ -593,9 +656,165 @@
     if (lastData) renderStatus(lastData); else syncReset();
   });
 
+  // ── 결제 추이: 현황 items(결제일시·유형·단가)를 일/주/월로 묶는다. 날짜는 문자열 그대로 읽어 시간대에 흔들리지 않는다 ──
+  var PRICE = { '일반형': 70000, '고급형': 150000 }; // GAS가 price를 보내면 그 값을 쓴다(옛 응답 대비 기본값)
+  var UNITS = {
+    day:   { name: '일', days: 1,  opts: [[7, '7일'], [14, '14일'], [30, '30일'], [90, '90일']], def: 1 },
+    week:  { name: '주', days: 7,  opts: [[4, '4주'], [8, '8주'], [12, '12주'], [26, '26주']], def: 1 },
+    month: { name: '월', days: 30, opts: [[3, '3개월'], [6, '6개월'], [12, '12개월']], def: 1 }
+  };
+  var DAYMS = 86400000, WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'];
+  var trUnit = 'day', trIdx = UNITS.day.def, trItems = [];
+  function p2(n) { return (n < 10 ? '0' : '') + n; }
+  function parseDay(s) { var m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : NaN; }
+  function md(ms) { var d = new Date(ms); return p2(d.getUTCMonth() + 1) + '.' + p2(d.getUTCDate()); }
+  function ym(ms) { var d = new Date(ms); return d.getUTCFullYear() + '.' + p2(d.getUTCMonth() + 1); }
+  function todayMs() { var d = new Date(); return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function mondayOf(ms) { return ms - ((new Date(ms).getUTCDay() + 6) % 7) * DAYMS; }
+  function monthStart(ms, add) { var d = new Date(ms); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + add, 1); }
+  function won(v) { return Math.round(v).toLocaleString('ko-KR') + '원'; }
+  function cnt(v) { return (Math.round(v * 10) / 10).toLocaleString('ko-KR') + '건'; }
+  function man(v) { return v >= 10000 ? (Math.round(v / 1000) / 10).toLocaleString('ko-KR') + '만' : String(Math.round(v)); }
+  function priceOf(it) { return it.price > 0 ? it.price : (PRICE[it.kind] || 0); }
+
+  // 기간 시작일과 칸 목록(칸마다 [s, e] 날짜 범위)
+  function windowOf(unit, n, today) {
+    var start, i, cells = [];
+    if (unit === 'day') start = today - (n - 1) * DAYMS;
+    else if (unit === 'week') start = mondayOf(today) - (n - 1) * 7 * DAYMS;
+    else start = monthStart(today, -(n - 1));
+    for (i = 0; i < n; i++) {
+      if (unit === 'day') cells.push({ s: start + i * DAYMS, e: start + i * DAYMS });
+      else if (unit === 'week') cells.push({ s: start + i * 7 * DAYMS, e: start + i * 7 * DAYMS + 6 * DAYMS });
+      else cells.push({ s: monthStart(start, i), e: monthStart(start, i + 1) - DAYMS });
+    }
+    return { start: start, cells: cells };
+  }
+  function sumRange(rows, s, e) {
+    var n = 0, amt = 0;
+    rows.forEach(function (r) { if (r.day >= s && r.day <= e) { n++; amt += r.price; } });
+    return { n: n, amt: amt };
+  }
+  function deltaText(cur, prev, comparable, label) {
+    if (!comparable) return '직전 ' + label + ' 기록이 없어요';
+    if (prev === 0) return '직전 ' + label + '은 0건';
+    var pct = Math.round((cur - prev) / prev * 100);
+    return pct === 0 ? '직전 ' + label + '과 같아요' : '직전 ' + label + ' 대비 ' + (pct > 0 ? '▲ ' : '▼ ') + Math.abs(pct) + '%';
+  }
+  function fillPeriod() {
+    var u = UNITS[trUnit], sel = $('trPeriod'); sel.innerHTML = '';
+    u.opts.forEach(function (o, i) {
+      var op = document.createElement('option'); op.value = i; op.textContent = '기간 · 최근 ' + o[1]; sel.appendChild(op);
+    });
+    sel.value = trIdx;
+  }
+  $('trUnit').addEventListener('change', function () { trUnit = this.value; trIdx = UNITS[trUnit].def; fillPeriod(); renderTrend(); });
+  $('trPeriod').addEventListener('change', function () { trIdx = +this.value; renderTrend(); });
+  var rz = 0;
+  window.addEventListener('resize', function () { cancelAnimationFrame(rz); rz = requestAnimationFrame(function () { if (!$('app').hidden) renderTrend(); }); });
+  fillPeriod();
+
+  function barChart(title, cells, key, fmtLabel, fmtTip, avg, withX, step, showAll) {
+    var H = 88, wrap = document.createElement('div');
+    var t = document.createElement('p'); t.className = 'chart-t'; t.textContent = title; wrap.appendChild(t);
+    var max = 0; cells.forEach(function (c) { if (c[key] > max) max = c[key]; });
+    var bars = document.createElement('div'); bars.className = 'bars';
+    cells.forEach(function (c) {
+      var col = document.createElement('div'); col.className = 'bar-col'; col.title = c.tip + ' · ' + fmtTip(c[key]);
+      var val = document.createElement('span'); val.className = 'bar-val' + (c[key] ? '' : ' zero');
+      var show = showAll || (max > 0 && c[key] === max);
+      val.textContent = show ? (c[key] ? fmtLabel(c[key]) : '0') : '';
+      var bar = document.createElement('div'); bar.className = 'bar' + (c.cur ? ' cur' : '');
+      bar.style.height = c[key] > 0 && max > 0 ? Math.max(3, Math.round(c[key] / max * H)) + 'px' : '0px';
+      col.appendChild(val); col.appendChild(bar); bars.appendChild(col);
+    });
+    if (avg > 0 && max > 0) {
+      var ln = document.createElement('div'); ln.className = 'avg-line';
+      ln.style.bottom = Math.min(H, Math.round(avg / max * H)) + 'px'; ln.title = '평균 ' + fmtTip(avg);
+      bars.appendChild(ln);
+    }
+    wrap.appendChild(bars);
+    if (withX) {
+      var xr = document.createElement('div'); xr.className = 'xrow' + (cells.length > 16 ? ' dense' : '');
+      cells.forEach(function (c, i) {
+        var x = document.createElement('div'); x.className = 'x-col';
+        if ((cells.length - 1 - i) % step === 0) { var s = document.createElement('span'); s.textContent = c.label; x.appendChild(s); }
+        xr.appendChild(x);
+      });
+      wrap.appendChild(xr);
+    }
+    return wrap;
+  }
+
+  function renderTrend() {
+    var u = UNITS[trUnit], opt = u.opts[trIdx], n = opt[0], today = todayMs();
+    var rows = [];
+    trItems.forEach(function (it) {
+      var day = parseDay(it.paidAt); if (!isNaN(day)) rows.push({ day: day, price: priceOf(it) });
+    });
+    var body = $('trBody'), sum = $('trSum');
+    if (!rows.length) { body.hidden = true; sum.textContent = trItems.length ? '' : '아직 결제 기록이 없어요.'; return; }
+    var first = Infinity; rows.forEach(function (r) { if (r.day < first) first = r.day; });
+
+    var w = windowOf(trUnit, n, today);
+    var cells = w.cells.filter(function (c) { return c.e >= first; }); // 기록 시작 전 칸은 그리지 않는다
+    cells.forEach(function (c, i) {
+      var t = sumRange(rows, c.s, c.e); c.n = t.n; c.amt = t.amt;
+      c.cur = c.s <= today && today <= c.e;
+      if (trUnit === 'day') { c.label = md(c.s); c.tip = md(c.s) + ' (' + WEEKDAY[new Date(c.s).getUTCDay()] + ')'; }
+      else if (trUnit === 'week') { c.label = md(c.s); c.tip = md(c.s) + ' ~ ' + md(c.e) + ' 주'; }
+      else { c.label = ym(c.s); c.tip = ym(c.s); }
+    });
+    var eff = Math.max(w.start, first), span = Math.round((today - eff) / DAYMS) + 1;
+    var tot = sumRange(rows, eff, today);
+    var L = Math.round((today - w.start) / DAYMS) + 1;
+    var pS = w.start - L * DAYMS, comparable = first <= pS;
+    var prev = sumRange(rows, pS, w.start - DAYMS);
+
+    sum.textContent = md(eff) + ' ~ ' + md(today) + ' · ' + span + '일' + (eff > w.start ? ' · 기록 시작 ' + md(first) : '');
+
+    function per(v, days) { return span >= days ? v / span * days : null; } // 기록이 그 단위보다 짧으면 계산하지 않는다
+    var avgs = [['일평균', 1], ['주평균', 7], ['월평균', 30]].map(function (a) {
+      return { name: a[0], n: per(tot.n, a[1]), amt: per(tot.amt, a[1]) };
+    });
+    var kpi = $('trKpi'); kpi.innerHTML = '';
+    function kItem(label, val, sub) {
+      var d = document.createElement('div');
+      [['k-label', label], ['k-val', val], ['k-sub', sub]].forEach(function (p) {
+        var e = document.createElement('p'); e.className = p[0]; e.textContent = p[1]; d.appendChild(e);
+      });
+      kpi.appendChild(d);
+    }
+    kItem('결제 건수', tot.n + '건', deltaText(tot.n, prev.n, comparable, opt[1]));
+    kItem('결제액', won(tot.amt), deltaText(tot.amt, prev.amt, comparable, opt[1]));
+    var tb = document.createElement('table'); tb.className = 'avg';
+    var html = '<thead><tr><th>평균</th><th>건수</th><th>결제액</th></tr></thead><tbody>';
+    avgs.forEach(function (a) {
+      html += '<tr><td>' + a.name + '</td>' + (a.n === null
+        ? '<td class="na">-</td><td class="na">-</td>'
+        : '<td>' + cnt(a.n) + '</td><td>' + won(Math.round(a.amt / 1000) * 1000) + '</td>') + '</tr>';
+    });
+    tb.innerHTML = html + '</tbody>';
+    kpi.appendChild(tb);
+
+    var ch = $('trCharts'); ch.innerHTML = '';
+    var cw = ch.clientWidth || 480, need = trUnit === 'month' ? 64 : 48;
+    var step = Math.max(1, Math.ceil(cells.length / Math.max(1, Math.floor(cw / need))));
+    var line = avgs[trUnit === 'day' ? 0 : trUnit === 'week' ? 1 : 2];
+    // 값 라벨은 칸이 라벨보다 넓을 때만 모두 단다(좁으면 가장 큰 막대 하나)
+    var colW = cw / cells.length;
+    ch.appendChild(barChart('결제 건수', cells, 'n', function (v) { return String(v); }, cnt, line.n, false, step, colW >= 24));
+    ch.appendChild(barChart('결제액', cells, 'amt', man, won, line.amt, true, step, colW >= 44));
+    var note = document.createElement('p'); note.className = 'bars-note';
+    note.textContent = (line.n === null ? '' : '점선은 ' + u.name + '평균 · ') + '연한 막대는 진행 중';
+    ch.appendChild(note);
+    body.hidden = false;
+  }
+
   function renderStatus(d) {
     lastData = d;
     var items = d.items || [];
+    trItems = items; renderTrend();
     var w = count(items, 'writing'), sw = count(items, 'sendwait');
     $('statTitle').textContent = '시트 DB';
     $('statSum').textContent = '할 일 ' + (w + sw) + '건 · 작성 전 ' + w + ' · 완료 알림 전 ' + sw;
