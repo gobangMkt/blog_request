@@ -59,4 +59,18 @@ const bk = T.byKind(rows, D('2026-11-09'), today);
 assert.deepStrictEqual(bk['일반형'], { n: 2, amt: 140000 });
 assert.deepStrictEqual(bk['고급형'], { n: 1, amt: 150000 });
 
+// 임의 기간: 일간은 양끝 포함, 주간은 월요일 칸을 기간으로 자르고, 월간은 달 경계를 기간으로 자른다
+const cdy = T.cellsOf('day', D('2026-11-09'), D('2026-11-15'));
+assert.strictEqual(cdy.length, 7);
+assert.strictEqual(cdy[6].s, D('2026-11-15'));
+const cwk = T.cellsOf('week', D('2026-11-04'), D('2026-11-15')); // 수요일 시작
+assert.strictEqual(cwk.length, 2);
+assert.deepStrictEqual([cwk[0].ws, cwk[0].s, cwk[0].e], [D('2026-11-02'), D('2026-11-04'), D('2026-11-08')]);
+assert.deepStrictEqual([cwk[1].s, cwk[1].e], [D('2026-11-09'), D('2026-11-15')]);
+const cmo = T.cellsOf('month', D('2026-09-20'), D('2026-11-05'));
+assert.strictEqual(cmo.length, 3);
+assert.deepStrictEqual([cmo[0].s, cmo[0].e], [D('2026-09-20'), D('2026-09-30')]);
+assert.deepStrictEqual([cmo[2].ws, cmo[2].s, cmo[2].e], [D('2026-11-01'), D('2026-11-01'), D('2026-11-05')]);
+assert.strictEqual(T.cellsOf('day', D('2026-11-15'), D('2026-11-15')).length, 1);
+
 console.log('trend-calc: all passed');

@@ -15,6 +15,8 @@
       --ok-bg: #E8FBF0; --ok-ink: #00812A;
       --err-bg: #FFF0F2; --err-str: #D92B2B;
       --dim: rgba(25, 31, 40, 0.45);
+      --info: #F8FAFF; --bdr-i: #D0E2FF;
+      --pop-shadow: 0 8px 24px rgba(25, 31, 40, 0.14);
       --f: 'Pretendard', -apple-system, sans-serif;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -230,6 +232,54 @@
       .kc.dn, .kc:nth-child(3) { grid-column: span 2; }
     }
 
+    .k-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .k-row b { font-size: 15px; font-weight: 700; line-height: 1.5; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    /* 기간 달력: 버튼 하나 -> 팝오버(왼쪽 프리셋 · 오른쪽 달력 그리드). 선택 구간은 연한 파랑 띠, 양끝은 파랑 채움 */
+    .rng { position: relative; }
+    .rng-btn { display: inline-flex; align-items: center; gap: 6px; }
+    .rng-btn svg { width: 16px; height: 16px; flex: none; color: var(--g600); }
+    .rng-pop { position: absolute; top: calc(100% + 6px); left: 0; z-index: 30; display: flex; background: var(--sur); border: 1px solid var(--bdr); border-radius: 14px; box-shadow: var(--pop-shadow); overflow: hidden; max-width: calc(100vw - 16px); }
+    .rng-pop[hidden] { display: none; }
+    .rng-pre { width: 128px; flex: none; border-right: 1px solid var(--bdr); padding: 8px 0; }
+    .rng-pre button { display: flex; align-items: center; width: 100%; height: 40px; padding: 0 16px; border: 0; background: none; cursor: pointer; font-family: var(--f); font-size: 14px; font-weight: 600; color: var(--g600); text-align: left; }
+    .rng-pre button:hover { background: var(--bg); }
+    .rng-pre button.on { background: var(--info); color: var(--pri); font-weight: 700; }
+    .rng-main { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+    .rng-months { display: flex; gap: 20px; }
+    .rng-m { width: 252px; }
+    .rng-cap { position: relative; display: flex; align-items: center; justify-content: center; height: 32px; font-size: 14px; font-weight: 700; }
+    .rng-nav { position: absolute; top: 0; width: 32px; height: 32px; border: 0; background: none; border-radius: 8px; cursor: pointer; color: var(--g600); display: flex; align-items: center; justify-content: center; }
+    .rng-nav.prev { left: 0; }
+    .rng-nav.next { right: 0; }
+    .rng-nav svg { width: 16px; height: 16px; }
+    .rng-nav:hover:not(:disabled) { background: var(--bg); }
+    .rng-nav:disabled { color: var(--g300); cursor: not-allowed; }
+    .rng-wd, .rng-d { display: grid; grid-template-columns: repeat(7, 36px); }
+    .rng-wd span { height: 28px; line-height: 28px; text-align: center; font-size: 13px; color: var(--g500); }
+    .rng-d button, .rng-d .blank { height: 36px; }
+    .rng-d button { border: 0; background: none; border-radius: 8px; cursor: pointer; font-family: var(--f); font-size: 14px; color: var(--g900); font-variant-numeric: tabular-nums; }
+    .rng-d button:hover:not(:disabled):not(.st):not(.en):not(.mid) { background: var(--bg); }
+    .rng-d button:disabled { color: var(--g300); cursor: default; }
+    .rng-d button.today { font-weight: 700; color: var(--pri); }
+    .rng-d button.mid { background: var(--bdr-i); border-radius: 0; color: var(--g900); }
+    .rng-d button.st { background: var(--pri); color: var(--sur); font-weight: 700; border-radius: 8px 0 0 8px; }
+    .rng-d button.en { background: var(--pri); color: var(--sur); font-weight: 700; border-radius: 0 8px 8px 0; }
+    .rng-d button.st.en { border-radius: 8px; }
+    .rng-sel { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; border-top: 1px solid var(--bdr); padding-top: 12px; font-size: 14px; }
+    .rng-sel .l { font-size: 13px; color: var(--g500); }
+    .rng-sel b { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .rng-sel .n { color: var(--g600); }
+    .rng-act { display: flex; justify-content: flex-end; gap: 8px; }
+    .rng-act button { height: 40px; padding: 0 16px; border-radius: 10px; cursor: pointer; font-family: var(--f); font-size: 14px; font-weight: 700; }
+    .rng-act .cancel { border: 1.5px solid var(--bdr); background: none; color: var(--g900); }
+    .rng-act .ok { border: 0; background: var(--pri); color: var(--sur); }
+    .rng-act .ok:disabled { background: var(--g300); cursor: not-allowed; }
+    @media (max-width: 640px) {
+      .rng-pop { flex-direction: column; }
+      .rng-pre { width: auto; border-right: 0; border-bottom: 1px solid var(--bdr); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 4px 8px; }
+      .rng-pre button { justify-content: center; padding: 0 4px; }
+    }
+
     /* 확인 팝업 */
     .modal { position: fixed; inset: 0; background: var(--dim); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
     .modal[hidden] { display: none; }
@@ -278,10 +328,11 @@
                 <li><b>구분:</b> 부가상품 = 일반형·고급형, 기존 폼 = 15만원·10만원 폼. 전체는 둘의 합이고, 기존 폼은 결제완료일이 있는 건만 센다</li>
                 <li><b>집계 기준:</b> 결제일시(기존 폼은 결제완료일). 고급형은 알림톡만 보낸 건(응답 대기)도 포함, 응답 대기에서 지운 건은 제외</li>
                 <li><b>매출:</b> 공급가액 = 결제액(시트 단가, 부가세 포함) ÷ 1.1. 결제수수료·작성 정산을 뺀 실제 남는 돈이 아니고, 그 원가 자료가 없어 표시하지 않음</li>
-                <li><b>평균 매출:</b> 선택한 단위(일·주·월)에 맞춰 보인다. 기록 시작일부터 오늘까지(오늘 포함) 기준, 주평균은 기록 7일 이상·월평균은 30일 이상일 때만 계산(30일 환산), 천 원 단위 반올림</li>
+                <li><b>기간:</b> 달력에서 고른다(프리셋 또는 시작일·종료일). 차트 단위(일·주·월별)는 막대 칸만 바꾸고 카드 숫자는 바꾸지 않는다</li>
+                <li><b>누적·평균:</b> 건수·매출 카드는 고른 기간의 누적 합계. 평균 매출은 일·주·월평균을 한꺼번에 보인다(기간이 첫 결제일보다 길면 첫 결제일부터 센다). 주평균은 기록 7일 이상, 월평균은 30일 이상일 때만 계산(30일 환산), 천 원 단위 반올림</li>
                 <li><b>그래프:</b> 막대 = 매출(공급가액, 왼쪽 축), 꺾은선 = 결제 건수(오른쪽 축). 범례를 누르면 껐다 켠다. 직전 같은 일수 대비 ▲▼는 카드 오른쪽 위에, 직전 기록이 없으면 표시하지 않는다. 연한 막대는 오늘이 든 아직 덜 찬 칸, 기록 시작일 이전 칸은 그리지 않는다</li>
                 <li><b>구성:</b> 도넛 조각 길이 = 유형별 매출(결제액) 비중, 가운데 숫자 = 결제 건수</li>
-                <li><b>범위:</b> 시트 신청 내역 전체(2,000행 상한). 결제 10건 미만이면 평균·간격은 참고용</li>
+                <li><b>범위:</b> 시트 신청 내역 전체(2,000행 상한). 결제 10건 미만이면 평균은 참고용</li>
               </ul></span>
             </span>
           </div>
@@ -293,12 +344,15 @@
             <option value="addon">구분 · 부가상품</option>
             <option value="legacy">구분 · 기존 폼</option>
           </select>
-          <select class="sel" id="trUnit" aria-label="집계 단위">
-            <option value="day">단위 · 일간</option>
-            <option value="week">단위 · 주간</option>
-            <option value="month">단위 · 월간</option>
-          </select>
-          <select class="sel" id="trPeriod" aria-label="기간"></select>
+          <select class="sel" id="trUnit" aria-label="차트 단위">
+                <option value="day">차트 · 일별</option>
+                <option value="week">차트 · 주별</option>
+                <option value="month">차트 · 월별</option>
+              </select>
+          <div class="rng" id="trRng">
+                <button class="sel rng-btn" id="trRngBtn" type="button" aria-haspopup="dialog" aria-expanded="false"></button>
+                <div class="rng-pop" id="trRngPop" role="dialog" aria-label="기간 선택" hidden></div>
+              </div>
         </div>
       </div>
       <div class="trend-body" id="trBody" hidden>
@@ -608,9 +662,9 @@
 
   // ── 현황: 신청 내역의 부가상품 건을 결제 시간순으로. 일반형은 작성 체크로 시트 상태(작성완료)를 바꾼다 ──
   var KIND_SVG = {
-    '일반형': '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="3.5" y="1.5" width="13" height="17" rx="3" fill="#64A7FF"/><rect x="6.5" y="6" width="7" height="2" rx="1" fill="#FFFFFF"/><rect x="6.5" y="10" width="7" height="2" rx="1" fill="#FFFFFF"/><rect x="6.5" y="14" width="4" height="2" rx="1" fill="#FFFFFF"/></svg>',
-    '고급형': '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M2 15.5 1 5.8 6.2 9.6 10 3.5 13.8 9.6 19 5.8 18 15.5Z" fill="#FFC84D"/><rect x="2" y="15.5" width="16" height="3" rx="1.5" fill="#313D4C"/><circle cx="10" cy="11.5" r="1.6" fill="#EF4452"/></svg>',
-    '기존 폼': '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="3" y="3" width="14" height="16" rx="3" fill="#A3AFBD"/><rect x="7" y="1" width="6" height="4" rx="2" fill="#5B6878"/><path d="M6.4 11.2 7.8 9.8 9.2 11.2 12.6 7.8 14 9.2 9.2 14Z" fill="#FFFFFF"/></svg>'
+    '일반형': '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="3.5" y="1.5" width="13" height="17" rx="3" fill="#9AA9BC"/><rect x="6.5" y="6" width="7" height="2" rx="1" fill="#FFFFFF"/><rect x="6.5" y="10" width="7" height="2" rx="1" fill="#FFFFFF"/><rect x="6.5" y="14" width="4" height="2" rx="1" fill="#FFFFFF"/></svg>',
+    '고급형': '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M2 15.5 1 5.8 6.2 9.6 10 3.5 13.8 9.6 19 5.8 18 15.5Z" fill="#5A6779"/><rect x="2" y="15.5" width="16" height="3" rx="1.5" fill="#3A4556"/><circle cx="10" cy="11.5" r="1.6" fill="#FFFFFF"/></svg>',
+    '기존 폼': '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="3" y="3" width="14" height="16" rx="3" fill="#CBD3DD"/><rect x="7" y="1" width="6" height="4" rx="2" fill="#8E9BAD"/><path d="M6.4 11.2 7.8 9.8 9.2 11.2 12.6 7.8 14 9.2 9.2 14Z" fill="#6A7788"/></svg>'
   };
   var ST_TEXT = {
     notified: '응답 대기',
@@ -701,13 +755,12 @@
   var TC = window.TrendCalc, DAYMS = TC.DAYMS;
   var PRICE = { '일반형': 70000, '고급형': 150000 }; // GAS가 price를 보내면 그 값을 쓴다(옛 응답 대비 기본값)
   var SAMPLE_MIN = 10; // 결제가 이 건수보다 적으면 평균·간격은 참고용으로 알린다
-  var UNITS = {
-    day:   { name: '일', days: 1,  opts: [[7, '7일'], [14, '14일'], [30, '30일'], [90, '90일']], def: 1 },
-    week:  { name: '주', days: 7,  opts: [[4, '4주'], [8, '8주'], [12, '12주'], [26, '26주']], def: 1 },
-    month: { name: '월', days: 30, opts: [[3, '3개월'], [6, '6개월'], [12, '12개월']], def: 1 }
-  };
   var WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'];
-  var trUnit = 'day', trIdx = UNITS.day.def, trItems = [], trKind = 'all';
+  var trUnit = 'day', trItems = [], trKind = 'all';
+  var UNIT_KEY = { day: '14', week: '90', month: 'all' }; // 기간을 직접 고르기 전에는 차트 단위에 어울리는 기간으로
+  var trRng = { key: '14', from: 0, to: 0, touched: false }; // key = 프리셋 이름(오늘 기준으로 매번 계산), null = 직접 고른 시작~끝
+  var PRESETS = [['today', '오늘'], ['yday', '어제'], ['7', '최근 7일'], ['14', '최근 14일'], ['30', '최근 30일'], ['90', '최근 90일'],
+    ['month', '이번 달'], ['year', '올해'], ['all', '전체 기간']];
   var KIND_NAME = { all: '', addon: '부가상품 ', legacy: '기존 폼 ' };
   function inTrend(it) { // 기존 폼은 결제완료일이 있는 건(결제 완료)만 매출로 센다
     var legacy = it.kind === '기존 폼';
@@ -728,19 +781,10 @@
     var pct = Math.round((cur - prev) / prev * 100);
     return pct === 0 ? '±0%' : (pct > 0 ? '▲ ' : '▼ ') + Math.abs(pct) + '%';
   }
-  function fillPeriod() {
-    var u = UNITS[trUnit], sel = $('trPeriod'); sel.innerHTML = '';
-    u.opts.forEach(function (o, i) {
-      var op = document.createElement('option'); op.value = i; op.textContent = '기간 · 최근 ' + o[1]; sel.appendChild(op);
-    });
-    sel.value = trIdx;
-  }
   $('trKind').addEventListener('change', function () { trKind = this.value; this.className = 'sel' + (trKind === 'all' ? '' : ' on'); renderTrend(); });
-  $('trUnit').addEventListener('change', function () { trUnit = this.value; trIdx = UNITS[trUnit].def; fillPeriod(); renderTrend(); });
-  $('trPeriod').addEventListener('change', function () { trIdx = +this.value; renderTrend(); });
+  $('trUnit').addEventListener('change', function () { trUnit = this.value; if (!trRng.touched) trRng.key = UNIT_KEY[trUnit]; renderTrend(); });
   var rz = 0;
   window.addEventListener('resize', function () { cancelAnimationFrame(rz); rz = requestAnimationFrame(function () { if (!$('app').hidden) renderTrend(); }); });
-  fillPeriod();
 
   function el(tag, cls, text) {
     var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e;
@@ -845,64 +889,227 @@
     return card;
   }
 
-  function renderTrend() {
-    var u = UNITS[trUnit], opt = u.opts[trIdx], n = opt[0], today = TC.kstToday(Date.now());
+  // ── 기간 달력(gobang-admin DateRangePicker 문법): 버튼 하나 -> 팝오버(왼쪽 프리셋 · 오른쪽 달력 그리드) ──
+  // 범위는 그리드에서 시작 -> 끝 두 번 눌러 잡는다(끝이 앞이면 뒤집어 담는다). 프리셋은 누르면 바로 적용, 직접 고른 구간만 [적용]
+  var rng = { open: false, draft: { from: 0, to: 0 }, phase: 'start', hover: 0, view: 0, min: 0, max: 0, today: 0, first: Infinity };
+  var rngBtn = $('trRngBtn'), rngPop = $('trRngPop');
+  var CAL_SVG = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="14" height="12.5" rx="2.5"/><path d="M3 8.5h14M7 2.5v3M13 2.5v3"/></svg>';
+  var CHEV_SVG = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>';
+  var NAV_L = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg>';
+  var NAV_R = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 3 5 5-5 5"/></svg>';
+
+  function presetRange(key, today, first) {
+    var y = new Date(today).getUTCFullYear();
+    switch (key) {
+      case 'today': return [today, today];
+      case 'yday': return [today - DAYMS, today - DAYMS];
+      case '7': return [today - 6 * DAYMS, today];
+      case '14': return [today - 13 * DAYMS, today];
+      case '30': return [today - 29 * DAYMS, today];
+      case '90': return [today - 89 * DAYMS, today];
+      case 'month': return [TC.monthStart(today, 0), today];
+      case 'year': return [Date.UTC(y, 0, 1), today];
+      default: return [Math.min(first, today), today];
+    }
+  }
+  function curRange(today, first) { return trRng.key ? presetRange(trRng.key, today, first) : [trRng.from, trRng.to]; }
+  function presetName(key) { for (var i = 0; i < PRESETS.length; i++) if (PRESETS[i][0] === key) return PRESETS[i][1]; return ''; }
+  function matchKey(from, to, today, first) {
+    for (var i = 0; i < PRESETS.length; i++) {
+      var r = presetRange(PRESETS[i][0], today, first);
+      if (r[0] === from && r[1] === to) return PRESETS[i][0];
+    }
+    return null;
+  }
+  function trRows() {
     var rows = [];
     trItems.forEach(function (it) {
       if (!inTrend(it)) return;
       var day = TC.parseDay(it.paidAt); if (!isNaN(day)) rows.push({ day: day, price: priceOf(it), kind: it.kind });
     });
-    var body = $('trBody'), sum = $('trSum');
-    if (!rows.length) { body.hidden = true; sum.textContent = '아직 ' + KIND_NAME[trKind] + '결제 기록이 없어요.'; return; }
-    var first = Infinity; rows.forEach(function (r) { if (r.day < first) first = r.day; });
+    return rows;
+  }
+  function firstOf(rows) { var f = Infinity; rows.forEach(function (r) { if (r.day < f) f = r.day; }); return f; }
+  function allFirst() {
+    var f = Infinity;
+    trItems.forEach(function (it) { var d = TC.parseDay(it.paidAt); if (!isNaN(d) && d < f) f = d; });
+    return f;
+  }
+  function fillRngBtn(today, first) {
+    var rg = curRange(today, first);
+    var label = trRng.key ? presetName(trRng.key) : md(rg[0]) + ' – ' + md(rg[1]);
+    rngBtn.innerHTML = CAL_SVG;
+    rngBtn.appendChild(el('span', '', '기간 · ' + label));
+    rngBtn.insertAdjacentHTML('beforeend', CHEV_SVG);
+  }
+  function monthOf(ms) { return TC.monthStart(ms, 0); }
+  function rngN() { return document.documentElement.clientWidth < 760 ? 1 : 2; }
+  function clampView(v) {
+    var lo = monthOf(rng.min), hi = TC.monthStart(monthOf(rng.max), -(rngN() - 1));
+    return hi < lo ? hi : Math.max(lo, Math.min(hi, v));
+  }
+  function openRng() {
+    var today = TC.kstToday(Date.now()), first = firstOf(trRows()), rg = curRange(today, first), af = allFirst();
+    rng.today = today; rng.first = first; rng.draft = { from: rg[0], to: rg[1] }; rng.phase = 'start'; rng.hover = 0;
+    rng.min = af === Infinity ? today - 365 * DAYMS : Math.min(af, rg[0]); rng.max = today;
+    rng.view = clampView(TC.monthStart(rg[1], -(rngN() - 1)));
+    rng.open = true; rngBuild(); rngPop.hidden = false; rngBtn.setAttribute('aria-expanded', 'true'); rngPlace();
+  }
+  function closeRng() { rng.open = false; rngPop.hidden = true; rngBtn.setAttribute('aria-expanded', 'false'); }
+  function applyRng(r) {
+    var today = TC.kstToday(Date.now());
+    var key = r.key ? r.key : matchKey(r.from, r.to, today, firstOf(trRows()));
+    trRng = { key: key, from: r.from || 0, to: r.to || 0, touched: true };
+    closeRng(); renderTrend();
+  }
+  function rngPick(d) {
+    var dr = rng.draft;
+    if (rng.phase === 'start' || !dr.from) { rng.draft = { from: d, to: 0 }; rng.phase = 'end'; }
+    else { rng.draft = d < dr.from ? { from: d, to: dr.from } : { from: dr.from, to: d }; rng.phase = 'start'; }
+    rng.hover = 0; rngBuild(); rngPlace();
+  }
+  function rngPaint() {
+    var f = rng.draft.from, lo = f, hi = rng.draft.to || f;
+    if (rng.phase === 'end' && f && rng.hover) { lo = Math.min(f, rng.hover); hi = Math.max(f, rng.hover); }
+    var btns = rngPop.querySelectorAll('.rng-d button');
+    for (var i = 0; i < btns.length; i++) {
+      var d = +btns[i].getAttribute('data-d'), c = [];
+      if (d === rng.today) c.push('today');
+      if (lo && d >= lo && d <= hi) { if (d === lo) c.push('st'); if (d === hi) c.push('en'); if (d > lo && d < hi) c.push('mid'); }
+      btns[i].className = c.join(' ');
+    }
+  }
+  function rngMonth(ms, idx, n) {
+    var box = el('div', 'rng-m'), cap = el('div', 'rng-cap'), d0 = new Date(ms), Y = d0.getUTCFullYear(), M = d0.getUTCMonth();
+    if (idx === 0) {
+      var pv = el('button', 'rng-nav prev'); pv.type = 'button'; pv.setAttribute('aria-label', '이전 달'); pv.innerHTML = NAV_L;
+      pv.disabled = rng.view <= monthOf(rng.min);
+      pv.addEventListener('click', function () { rng.view = TC.monthStart(rng.view, -1); rngBuild(); rngPlace(); });
+      cap.appendChild(pv);
+    }
+    cap.appendChild(el('span', '', Y + '년 ' + (M + 1) + '월'));
+    if (idx === n - 1) {
+      var nx = el('button', 'rng-nav next'); nx.type = 'button'; nx.setAttribute('aria-label', '다음 달'); nx.innerHTML = NAV_R;
+      nx.disabled = ms >= monthOf(rng.max);
+      nx.addEventListener('click', function () { rng.view = TC.monthStart(rng.view, 1); rngBuild(); rngPlace(); });
+      cap.appendChild(nx);
+    }
+    box.appendChild(cap);
+    var wd = el('div', 'rng-wd');
+    ['일', '월', '화', '수', '목', '금', '토'].forEach(function (w) { wd.appendChild(el('span', '', w)); });
+    box.appendChild(wd);
+    var grid = el('div', 'rng-d'), days = new Date(Date.UTC(Y, M + 1, 0)).getUTCDate(), k;
+    for (k = 0; k < d0.getUTCDay(); k++) grid.appendChild(el('span', 'blank'));
+    for (k = 1; k <= days; k++) {
+      var dms = Date.UTC(Y, M, k), b = el('button', '', String(k)); b.type = 'button'; b.setAttribute('data-d', dms);
+      b.disabled = dms < rng.min || dms > rng.max;
+      b.addEventListener('click', function () { rngPick(+this.getAttribute('data-d')); });
+      b.addEventListener('mouseenter', function () { if (rng.phase === 'end') { rng.hover = +this.getAttribute('data-d'); rngPaint(); } });
+      grid.appendChild(b);
+    }
+    grid.addEventListener('mouseleave', function () { if (rng.hover) { rng.hover = 0; rngPaint(); } });
+    box.appendChild(grid);
+    return box;
+  }
+  function rngBuild() {
+    rngPop.innerHTML = '';
+    var on = matchKey(rng.draft.from, rng.draft.to, rng.today, rng.first);
+    var pre = el('div', 'rng-pre');
+    PRESETS.forEach(function (p) {
+      var b = el('button', on === p[0] ? 'on' : '', p[1]); b.type = 'button';
+      b.addEventListener('click', function () { applyRng({ key: p[0] }); });
+      pre.appendChild(b);
+    });
+    var main = el('div', 'rng-main'), ms = el('div', 'rng-months'), n = rngN();
+    for (var i = 0; i < n; i++) ms.appendChild(rngMonth(TC.monthStart(rng.view, i), i, n));
+    main.appendChild(ms);
+    var f = rng.draft.from, t = rng.draft.to, sel = el('div', 'rng-sel');
+    sel.appendChild(el('span', 'l', '선택 기간'));
+    sel.appendChild(el('b', '', !f ? '달력에서 시작일을 눌러 주세요' : rng.phase === 'end' ? md(f) + ' – 종료일을 눌러 주세요' : md(f) + ' – ' + md(t || f)));
+    if (f && rng.phase !== 'end') sel.appendChild(el('span', 'n', '· ' + (Math.round(((t || f) - f) / DAYMS) + 1) + '일'));
+    main.appendChild(sel);
+    var act = el('div', 'rng-act'), cancel = el('button', 'cancel', '취소'), ok = el('button', 'ok', '적용');
+    cancel.type = 'button'; ok.type = 'button'; ok.disabled = !f;
+    cancel.addEventListener('click', closeRng);
+    ok.addEventListener('click', function () { var d = rng.draft; applyRng({ key: null, from: d.from, to: d.to || d.from }); });
+    act.appendChild(cancel); act.appendChild(ok); main.appendChild(act);
+    rngPop.appendChild(pre); rngPop.appendChild(main);
+    rngPaint();
+  }
+  function rngPlace() { // 화면 밖으로 삐져나가지 않게 실측해서 당긴다(admin과 같은 규칙)
+    if (!rng.open) return;
+    var wr = $('trRng').getBoundingClientRect(), pw = rngPop.offsetWidth, vw = document.documentElement.clientWidth;
+    var left = Math.max(8, Math.min(wr.right - pw, vw - pw - 8));
+    rngPop.style.left = (left - wr.left) + 'px';
+  }
+  rngBtn.addEventListener('click', function () { if (rng.open) closeRng(); else openRng(); });
+  document.addEventListener('mousedown', function (e) { if (rng.open && !$('trRng').contains(e.target)) closeRng(); });
+  document.addEventListener('keydown', function (e) { if (rng.open && e.key === 'Escape') { closeRng(); rngBtn.focus(); } });
+  window.addEventListener('resize', function () { if (rng.open) { rng.view = clampView(rng.view); rngBuild(); rngPlace(); } });
 
-    var w = TC.windowOf(trUnit, n, today);
-    var cells = w.cells.filter(function (c) { return c.e >= first; }); // 기록 시작 전 칸은 그리지 않는다
+  function renderTrend() {
+    var today = TC.kstToday(Date.now()), rows = trRows(), body = $('trBody'), sum = $('trSum');
+    var first = firstOf(rows);
+    fillRngBtn(today, first);
+    if (!rows.length) { body.hidden = true; sum.textContent = '아직 ' + KIND_NAME[trKind] + '결제 기록이 없어요.'; return; }
+
+    var rg = curRange(today, first), from = rg[0], to = rg[1];
+    var L = Math.round((to - from) / DAYMS) + 1;
+    var eff = Math.max(from, first); // 첫 결제일 이전은 평균에서 뺀다(없던 날을 0건으로 세면 평균이 거짓으로 낮아진다)
+    if (eff > to) { body.hidden = true; sum.textContent = md(from) + ' ~ ' + md(to) + ' · 이 기간엔 결제 기록이 없어요'; return; }
+
+    // 칸이 너무 많으면 한 단계 거친 단위로(막대가 가루가 되지 않게)
+    var cells = TC.cellsOf(trUnit, from, to);
+    if (trUnit === 'day' && cells.length > 93) { trUnit = 'week'; cells = TC.cellsOf(trUnit, from, to); }
+    if (trUnit === 'week' && cells.length > 53) { trUnit = 'month'; cells = TC.cellsOf(trUnit, from, to); }
+    $('trUnit').value = trUnit;
+    cells = cells.filter(function (c) { return c.e >= first; }); // 첫 결제일 전 칸은 그리지 않는다
     cells.forEach(function (c) {
       var t = TC.sumRange(rows, c.s, c.e); c.n = t.n; c.amt = t.amt; c.rev = TC.vat(t.amt);
       c.cur = c.s <= today && today <= c.e;
       if (trUnit === 'day') { c.label = md(c.s); c.tip = md(c.s) + ' (' + WEEKDAY[new Date(c.s).getUTCDay()] + ')'; }
-      else if (trUnit === 'week') { c.label = md(c.s); c.tip = md(c.s) + ' ~ ' + md(c.e) + ' 주'; }
-      else { c.label = ym(c.s); c.tip = ym(c.s); }
+      else if (trUnit === 'week') { c.label = md(c.ws); c.tip = md(c.s) + ' ~ ' + md(c.e) + ' 주'; }
+      else { c.label = ym(c.ws); c.tip = ym(c.ws); }
     });
-    var eff = Math.max(w.start, first), span = Math.round((today - eff) / DAYMS) + 1;
-    var tot = TC.sumRange(rows, eff, today), rev = TC.vat(tot.amt);
-    var L = Math.round((today - w.start) / DAYMS) + 1; // 직전 기간 = 같은 일수만큼 바로 앞
-    var pS = w.start - L * DAYMS, comparable = first <= pS;
-    var prev = TC.sumRange(rows, pS, w.start - DAYMS);
 
-    sum.textContent = md(eff) + ' ~ ' + md(today) + ' · ' + span + '일' + (tot.n < SAMPLE_MIN ? ' · 참고용' : '')
+    var span = Math.round((to - eff) / DAYMS) + 1;
+    var tot = TC.sumRange(rows, eff, to), rev = TC.vat(tot.amt);
+    var pS = from - L * DAYMS, comparable = first <= pS; // 직전 기간 = 같은 일수만큼 바로 앞
+    var prev = TC.sumRange(rows, pS, from - DAYMS), pl = '직전 ' + L + '일';
+    sum.textContent = md(from) + ' ~ ' + md(to) + ' · ' + L + '일' + (tot.n < SAMPLE_MIN ? ' · 참고용' : '')
       + (lastData && lastData.truncated ? ' · 시트 2,000행을 넘어 오래된 행이 빠졌어요' : '');
 
     var avgs = [['일평균', 1], ['주평균', 7], ['월평균', 30]].map(function (a) {
-      return { name: a[0], n: TC.perUnit(tot.n, span, a[1]), amt: TC.perUnit(tot.amt, span, a[1]) };
+      return { name: a[0], amt: TC.perUnit(tot.amt, span, a[1]) };
     });
-    var line = avgs[trUnit === 'day' ? 0 : trUnit === 'week' ? 1 : 2];
 
-    // 카드: 건수 · 매출 · 선택 단위 평균 매출 · 유형 도넛
+    // 카드: 누적 건수 · 누적 매출 · 평균 매출(일·주·월 한꺼번에) · 유형 도넛
     var cards = $('trCards'); cards.innerHTML = '';
     function card(label, val, sub, delta) {
       var d = el('div', 'kc'), top = el('div', 'kc-top');
       top.appendChild(el('p', 'k-label', label));
-      if (delta) { var dl = el('p', 'k-delta', delta); dl.title = '직전 ' + opt[1] + ' 대비'; top.appendChild(dl); }
+      if (delta) { var dl = el('p', 'k-delta', delta); dl.title = pl + ' 대비'; top.appendChild(dl); }
       d.appendChild(top); d.appendChild(el('p', 'k-val', val));
       if (sub) d.appendChild(el('p', 'k-sub', sub));
       cards.appendChild(d);
     }
-    card('결제 건수', tot.n + '건', tot.n ? '건당 ' + won(rev / tot.n) : '', deltaShort(tot.n, prev.n, comparable));
-    card('매출 (공급가액)', won(rev), '결제액 ' + won(tot.amt), deltaShort(tot.amt, prev.amt, comparable));
-    card(u.name + '평균 매출', line.amt === null ? '-' : won(Math.round(TC.vat(line.amt) / 1000) * 1000),
-      line.n === null ? '기록이 모자라요' : cnt(line.n));
-    cards.appendChild(donutCard(TC.byKind(rows, eff, today), tot));
+    card('누적 결제 건수', tot.n + '건', tot.n ? '건당 ' + won(rev / tot.n) : '', deltaShort(tot.n, prev.n, comparable));
+    card('누적 매출 (공급가액)', won(rev), '결제액 ' + won(tot.amt), deltaShort(tot.amt, prev.amt, comparable));
+    var ac = el('div', 'kc'); ac.appendChild(el('p', 'k-label', '평균 매출 (공급가액)'));
+    avgs.forEach(function (a) {
+      var r = el('div', 'k-row'), v = el('b', '', a.amt === null ? '-' : won(Math.round(TC.vat(a.amt) / 1000) * 1000));
+      r.appendChild(el('span', 'k-label', a.name));
+      if (a.amt === null) v.title = a.name === '주평균' ? '기록이 7일 이상일 때 계산해요' : a.name === '월평균' ? '기록이 30일 이상일 때 계산해요' : '';
+      r.appendChild(v); ac.appendChild(r);
+    });
+    cards.appendChild(ac);
+    cards.appendChild(donutCard(TC.byKind(rows, eff, to), tot));
 
     // 콤보 차트 한 장 + 해당할 때만 안내 한 줄
     var ch = $('trCharts'); ch.innerHTML = '';
     var cw = ch.clientWidth || 480;
     ch.appendChild(comboChart(cells, cw, trUnit === 'month' ? 64 : 48, cells.some(function (c) { return c.cur; }) ? '연한 막대 진행 중' : ''));
-    var firstAddon = Infinity; rows.forEach(function (r) { if (r.kind !== '기존 폼' && r.day < firstAddon) firstAddon = r.day; });
-    [tot.zero ? '단가가 비어 있는 ' + tot.zero + '건은 매출에서 빠졌어요' : '',
-     trKind !== 'legacy' && firstAddon !== Infinity && eff < firstAddon ? '부가상품은 ' + md(firstAddon) + '부터 집계돼요' : ''
-    ].filter(Boolean).forEach(function (t) { ch.appendChild(el('p', 'bars-note', t)); });
+    if (tot.zero) ch.appendChild(el('p', 'bars-note', '단가가 비어 있는 ' + tot.zero + '건은 매출에서 빠졌어요'));
     body.hidden = false;
   }
 

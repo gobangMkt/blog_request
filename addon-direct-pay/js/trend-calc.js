@@ -34,6 +34,22 @@
     return { start: start, cells: cells };
   }
 
+  // 임의 기간 [from, to]의 칸 목록. 주는 월요일 칸, 월은 달 칸을 기간으로 자른다(양끝 칸은 일부만 든다).
+  // ws = 그 칸의 원래 시작일(주 월요일·달 1일): 축 라벨과 툴팁 제목에 쓴다
+  function cellsOf(unit, from, to) {
+    var cells = [], s;
+    if (unit === 'day') {
+      for (s = from; s <= to; s += DAYMS) cells.push({ s: s, e: s, ws: s });
+    } else if (unit === 'week') {
+      for (s = mondayOf(from); s <= to; s += 7 * DAYMS) cells.push({ s: Math.max(s, from), e: Math.min(s + 6 * DAYMS, to), ws: s });
+    } else {
+      for (s = monthStart(from, 0); s <= to; s = monthStart(s, 1)) {
+        cells.push({ s: Math.max(s, from), e: Math.min(monthStart(s, 1) - DAYMS, to), ws: s });
+      }
+    }
+    return cells;
+  }
+
   // rows = [{day, price, kind}]. 합계는 먼저 구하고 부가세는 합계에서 한 번만 뗀다(건별 반올림 금지)
   function sumRange(rows, s, e) {
     var n = 0, amt = 0, zero = 0;
@@ -87,7 +103,7 @@
 
   return {
     DAYMS: DAYMS, parseDay: parseDay, kstToday: kstToday, mondayOf: mondayOf, monthStart: monthStart,
-    windowOf: windowOf, sumRange: sumRange, vat: vat, perUnit: perUnit, median: median,
+    windowOf: windowOf, cellsOf: cellsOf, sumRange: sumRange, vat: vat, perUnit: perUnit, median: median,
     cadence: cadence, lastPay: lastPay, byKind: byKind
   };
 });
