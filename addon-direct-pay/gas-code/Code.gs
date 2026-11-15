@@ -325,11 +325,21 @@ function listStatus(token) {
   function fmt(d) { return Utilities.formatDate(d, TZ, 'yyyy-MM-dd HH:mm'); }
   function ymd(d) { return Utilities.formatDate(d, TZ, 'yyyy-MM-dd'); }
   function asDate(v) { var d = v ? new Date(v) : null; return d && !isNaN(d.getTime()) ? d : null; }
+  // 옛 폼 행은 날짜가 "2026. 5. 6 오전 9:51:08" 같은 글자로 들어 있을 수 있어 글자도 읽는다
+  function asDateLoose(v) {
+    var d = asDate(v); if (d) return d;
+    var m = String(v == null ? '' : v).match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})(?:\D+(오전|오후)?\s*(\d{1,2}):(\d{2}))?/);
+    if (!m) return null;
+    var h = m[5] ? +m[5] : 0;
+    if (m[4] === '오후' && h < 12) h += 12;
+    if (m[4] === '오전' && h === 12) h = 0;
+    return new Date(+m[1], +m[2] - 1, +m[3], h, m[6] ? +m[6] : 0);
+  }
 
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   var sheet = ss.getSheetByName('신청 내역');
   var lastRow = sheet.getLastRow();
-  var firstRow = Math.max(2, lastRow - 499);
+  var firstRow = Math.max(2, lastRow - 1999); // 시트 전체(기존 폼 건 포함)를 읽는다. 2,000행 상한
   var rows = lastRow >= 2 ? sheet.getRange(firstRow, 1, lastRow - firstRow + 1, 16).getValues() : [];
   // 결제 추이 집계용 단가(P열, 부가세 포함). 비어 있으면 현재 단가 상수를 쓴다
   function priceOf(v, dflt) { var n = Number(String(v == null ? '' : v).replace(/[^\d.]/g, '')); return n > 0 ? n : dflt; }
@@ -363,7 +373,17 @@ function listStatus(token) {
   var items = [];
   rows.forEach(function (r, idx) {
     var type = String(r[12] || '').trim();
-    if (type !== '직-일반' && DIRECT_TYPES.indexOf(type) < 0) return;
+    if (type !== '직-일반' && DIRECT_TYPES.indexOf(type) < 0) {
+      // 15만원·10만원 폼 건(A·B·10-A·10-B): 읽기 전용으로 보여 준다. 결제완료일(B)이 있으면 결제 완료, 없으면 결제 전.
+      if (!type) return; // 작성 타입이 없는 행(공지·빈 줄)
+      var lp = asDateLoose(r[1]), ld = lp || asDateLoose(r[0]);
+      if (!ld) return;
+      items.push({
+        kind: '기존 폼', label: String(r[2] || '').trim() || '(이름 없음)', paidAt: fmt(ld), ts: ld.getTime(),
+        stage: lp ? 'paid' : 'unpaid', price: priceOf(r[15], 0), form: type
+      });
+      return;
+    }
     var paidB = asDate(r[1]);
     var paid = paidB || asDate(r[0]);
     if (!paid) return;

@@ -139,7 +139,7 @@
     .tr.fin .c-who { color: var(--g600); font-weight: 600; }
     /* 상태 칩: 할 일(노랑·주황)이 먼저 눈에 띄고 끝난 건은 차분하다. 색만이 아니라 글자로도 구분한다 */
     .chip { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; line-height: 1.4; }
-    .chip.notified { background: var(--bg); color: var(--g600); }
+    .chip.notified, .chip.unpaid, .chip.paid { background: var(--bg); color: var(--g600); }
     .chip.writing { background: #FFF1BF; color: #7A5200; }
     .chip.sendwait { background: #FFE3CC; color: #9A4300; }
     .chip.sent, .chip.basic_done { background: var(--ok-bg); color: var(--ok-ink); }
@@ -255,7 +255,7 @@
                     <li><b>결제액:</b> 시트 단가(부가세 포함)의 합</li>
                     <li><b>평균:</b> 기록 시작일부터 오늘까지(오늘 포함). 주평균은 기록 7일 이상, 월평균은 30일 이상일 때만 계산(30일 환산)</li>
                     <li><b>연한 막대:</b> 오늘이 든 막대라 아직 덜 찬 값</li>
-                    <li><b>범위:</b> 시트 신청 내역 최근 500행</li>
+                    <li><b>범위:</b> 부가상품(일반형·고급형) 건만. 15만원·10만원 폼 건은 아래 시트 DB에만 보임</li>
                   </ul></span>
                 </span>
               </div>
@@ -292,11 +292,14 @@
                 <option value="notified">상태 · 응답 대기</option>
                 <option value="sent">상태 · 완료 알림 보냄</option>
                 <option value="basic_done">상태 · 작성 완료</option>
+                <option value="paid">상태 · 결제 완료</option>
+                <option value="unpaid">상태 · 결제 전</option>
               </select>
               <select class="sel" id="fKind" aria-label="유형 조건">
                 <option value="all">유형 · 전체</option>
                 <option value="일반형">유형 · 일반형</option>
                 <option value="고급형">유형 · 고급형</option>
+                <option value="기존 폼">유형 · 기존 폼</option>
               </select>
               <span class="quick"><a href="https://docs.google.com/spreadsheets/d/1lgAsrtoeqv1-g3Nh3D21zTyuGLdAZuP5jSXxftlIxh0/edit" target="_blank" rel="noopener" title="신청 내역 시트 열기">시트<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12"/></svg></a></span>
               <button class="refresh" id="refresh" type="button" aria-label="새로고침" title="새로고침">
@@ -572,22 +575,25 @@
   // ── 현황: 신청 내역의 부가상품 건을 결제 시간순으로. 일반형은 작성 체크로 시트 상태(작성완료)를 바꾼다 ──
   var KIND_SVG = {
     '일반형': '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="3.5" y="1.5" width="13" height="17" rx="3" fill="#64A7FF"/><rect x="6.5" y="6" width="7" height="2" rx="1" fill="#FFFFFF"/><rect x="6.5" y="10" width="7" height="2" rx="1" fill="#FFFFFF"/><rect x="6.5" y="14" width="4" height="2" rx="1" fill="#FFFFFF"/></svg>',
-    '고급형': '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M2 15.5 1 5.8 6.2 9.6 10 3.5 13.8 9.6 19 5.8 18 15.5Z" fill="#FFC84D"/><rect x="2" y="15.5" width="16" height="3" rx="1.5" fill="#313D4C"/><circle cx="10" cy="11.5" r="1.6" fill="#EF4452"/></svg>'
+    '고급형': '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M2 15.5 1 5.8 6.2 9.6 10 3.5 13.8 9.6 19 5.8 18 15.5Z" fill="#FFC84D"/><rect x="2" y="15.5" width="16" height="3" rx="1.5" fill="#313D4C"/><circle cx="10" cy="11.5" r="1.6" fill="#EF4452"/></svg>',
+    '기존 폼': '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="3" y="3" width="14" height="16" rx="3" fill="#A3AFBD"/><rect x="7" y="1" width="6" height="4" rx="2" fill="#5B6878"/><path d="M6.4 11.2 7.8 9.8 9.2 11.2 12.6 7.8 14 9.2 9.2 14Z" fill="#FFFFFF"/></svg>'
   };
   var ST_TEXT = {
     notified: '응답 대기',
     writing: '작성 전',
     sendwait: '완료 알림 전',
     sent: '완료 알림 보냄',
-    basic_done: '작성 완료'
+    basic_done: '작성 완료',
+    paid: '결제 완료',
+    unpaid: '결제 전'
   };
-  var DONE = { sent: true, basic_done: true };
+  var DONE = { sent: true, basic_done: true, paid: true, unpaid: true }; // 기존 폼 건은 이 도구에서 할 일이 없어 차분하게
   var WRITTEN = { sent: true, basic_done: true }; // 체크 표시: 일반형 작성 완료, 고급형 완료 알림 보냄
   var CHECK_SVG = '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 5.5 10.5 11.5 3.5"/></svg>';
   var lastData = null;
   var sortKey = 'paid', sortDir = 'desc', fState = 'all', fKind = 'all';
   var PAGE = 10, page = 1;
-  var RANK = { writing: 0, sendwait: 1, notified: 2, sent: 3, basic_done: 3 }; // 할 일이 먼저
+  var RANK = { writing: 0, sendwait: 1, notified: 2, sent: 3, basic_done: 3, paid: 4, unpaid: 4 }; // 할 일이 먼저
   var reqSeq = 0; // 겹친 요청 중 마지막 응답만 화면에 반영한다
   var statErr = $('statErr'), refresh = $('refresh');
   refresh.addEventListener('click', function () { loadStatus(); });
@@ -750,10 +756,11 @@
     var u = UNITS[trUnit], opt = u.opts[trIdx], n = opt[0], today = todayMs();
     var rows = [];
     trItems.forEach(function (it) {
+      if (it.kind === '기존 폼') return; // 추이는 부가상품(일반형·고급형)만 센다
       var day = parseDay(it.paidAt); if (!isNaN(day)) rows.push({ day: day, price: priceOf(it) });
     });
     var body = $('trBody'), sum = $('trSum');
-    if (!rows.length) { body.hidden = true; sum.textContent = trItems.length ? '' : '아직 결제 기록이 없어요.'; return; }
+    if (!rows.length) { body.hidden = true; sum.textContent = '아직 부가상품 결제 기록이 없어요.'; return; }
     var first = Infinity; rows.forEach(function (r) { if (r.day < first) first = r.day; });
 
     var w = windowOf(trUnit, n, today);
@@ -885,6 +892,7 @@
     btn.title = basic ? (it.stage === 'basic_done' ? '작성 전으로 되돌리기' : '작성 완료로 표시')
       : premium ? '작성 완료 알림 보내기'
       : it.stage === 'notified' ? '사장님 폼 제출을 기다리는 중이에요'
+      : it.kind === '기존 폼' ? '기존 폼 건은 시트에서 처리해요'
       : it.stage === 'sent' ? '완료 알림을 보냈어요'
       : it.kind === '고급형' ? '완료 내역 행이 없어요. 시트에서 확인해 주세요' : '시트 상태가 신청완료·작성완료가 아니에요';
     btn.setAttribute('aria-label', btn.title);
