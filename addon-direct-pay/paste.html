@@ -251,17 +251,23 @@
               <div class="res-title res-title-row">결제 추이
                 <span class="tip" tabindex="0" aria-label="도움말"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v3.8M8 5v.1" stroke-linecap="round"/></svg>
                   <span class="tip-box" role="tooltip"><ul>
-                    <li><b>집계 기준:</b> 결제일시. 고급형은 알림톡만 보낸 건(응답 대기)도 포함, 응답 대기에서 지운 건은 제외</li>
+                    <li><b>구분:</b> 부가상품 = 일반형·고급형, 기존 폼 = 15만원·10만원 폼. 전체는 둘의 합이고, 기존 폼은 결제완료일이 있는 건만 센다</li>
+                    <li><b>집계 기준:</b> 결제일시(기존 폼은 결제완료일). 고급형은 알림톡만 보낸 건(응답 대기)도 포함, 응답 대기에서 지운 건은 제외</li>
                     <li><b>결제액:</b> 시트 단가(부가세 포함)의 합</li>
                     <li><b>평균:</b> 기록 시작일부터 오늘까지(오늘 포함). 주평균은 기록 7일 이상, 월평균은 30일 이상일 때만 계산(30일 환산)</li>
                     <li><b>연한 막대:</b> 오늘이 든 막대라 아직 덜 찬 값</li>
-                    <li><b>범위:</b> 부가상품(일반형·고급형) 건만. 15만원·10만원 폼 건은 아래 시트 DB에만 보임</li>
+                    <li><b>범위:</b> 시트 신청 내역 전체(2,000행 상한)</li>
                   </ul></span>
                 </span>
               </div>
               <p class="res-sum" id="trSum"></p>
             </div>
             <div class="tools">
+              <select class="sel" id="trKind" aria-label="집계 구분">
+                <option value="all">구분 · 전체</option>
+                <option value="addon">구분 · 부가상품</option>
+                <option value="legacy">구분 · 기존 폼</option>
+              </select>
               <select class="sel" id="trUnit" aria-label="집계 단위">
                 <option value="day">단위 · 일간</option>
                 <option value="week">단위 · 주간</option>
@@ -670,7 +676,13 @@
     month: { name: '월', days: 30, opts: [[3, '3개월'], [6, '6개월'], [12, '12개월']], def: 1 }
   };
   var DAYMS = 86400000, WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'];
-  var trUnit = 'day', trIdx = UNITS.day.def, trItems = [];
+  var trUnit = 'day', trIdx = UNITS.day.def, trItems = [], trKind = 'all';
+  var KIND_NAME = { all: '', addon: '부가상품 ', legacy: '기존 폼 ' };
+  function inTrend(it) { // 기존 폼은 결제완료일이 있는 건(결제 완료)만 매출로 센다
+    var legacy = it.kind === '기존 폼';
+    if (legacy && it.stage !== 'paid') return false;
+    return trKind === 'all' || (trKind === 'legacy') === legacy;
+  }
   function p2(n) { return (n < 10 ? '0' : '') + n; }
   function parseDay(s) { var m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : NaN; }
   function md(ms) { var d = new Date(ms); return p2(d.getUTCMonth() + 1) + '.' + p2(d.getUTCDate()); }
@@ -714,6 +726,7 @@
     });
     sel.value = trIdx;
   }
+  $('trKind').addEventListener('change', function () { trKind = this.value; this.className = 'sel' + (trKind === 'all' ? '' : ' on'); renderTrend(); });
   $('trUnit').addEventListener('change', function () { trUnit = this.value; trIdx = UNITS[trUnit].def; fillPeriod(); renderTrend(); });
   $('trPeriod').addEventListener('change', function () { trIdx = +this.value; renderTrend(); });
   var rz = 0;
@@ -756,11 +769,11 @@
     var u = UNITS[trUnit], opt = u.opts[trIdx], n = opt[0], today = todayMs();
     var rows = [];
     trItems.forEach(function (it) {
-      if (it.kind === '기존 폼') return; // 추이는 부가상품(일반형·고급형)만 센다
+      if (!inTrend(it)) return;
       var day = parseDay(it.paidAt); if (!isNaN(day)) rows.push({ day: day, price: priceOf(it) });
     });
     var body = $('trBody'), sum = $('trSum');
-    if (!rows.length) { body.hidden = true; sum.textContent = '아직 부가상품 결제 기록이 없어요.'; return; }
+    if (!rows.length) { body.hidden = true; sum.textContent = '아직 ' + KIND_NAME[trKind] + '결제 기록이 없어요.'; return; }
     var first = Infinity; rows.forEach(function (r) { if (r.day < first) first = r.day; });
 
     var w = windowOf(trUnit, n, today);
