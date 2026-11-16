@@ -561,11 +561,11 @@ function checkSolapiProps() {
   });
 }
 
-// P열(16) 단가 — 작성타입 기준. 10-A/10-B(10만원 상품)=110,000, 그 외(A/B, 15만원)=165,000.
+// P열(16) 단가 — 작성타입 기준. 10-A/10-B(10만원 상품)=110,000, 그 외(A/B, 15만원)=150,000(부가세 포함, 11.16 변경: 이전 165,000, 이미 쌓인 행은 그대로).
 function setPriceByType_(sheet, row, tmplType) {
   if (!sheet.getRange(1, 16).getValue()) sheet.getRange(1, 16).setValue('단가');
   var t = String(tmplType || '').trim();
-  var price = (t.indexOf('10-') === 0) ? 110000 : 165000;
+  var price = (t.indexOf('10-') === 0) ? 110000 : 150000;
   var cell = sheet.getRange(row, 16);
   cell.setValue(price);
   cell.setNumberFormat('₩#,##0');
