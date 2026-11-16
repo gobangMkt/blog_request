@@ -639,16 +639,7 @@
     if (!val) { this.className = ''; setFb('url','',''); preview.style.display = 'none'; checkSubmit(); return; }
     if (!ok) { this.className = 'invalid'; setFb('url','error','https://gobang.kr/place/숫자 형식으로 입력해 주세요'); preview.style.display = 'none'; checkSubmit(); return; }
     this.className = ''; setFb('url','checking','확인 중...'); loadPlaceInfo(val);
-    var self = this;
-    urlCheckTimer = setTimeout(function() {
-      callAPI('checkPlaceUrl', { url: val }).then(function(r) {
-        if (self.value.trim() !== val) return;
-        if (r.error) { urlValid = false; self.className = 'invalid'; setFb('url','error','중복 확인 중 오류가 발생했어요.'); }
-        else if (r.available === false) { urlValid = false; self.className = 'invalid'; setFb('url','error','이미 신청된 지점이에요.'); }
-        else { urlValid = true; self.className = 'valid'; setFb('url','ok','신청 가능한 지점이에요'); }
-        checkSubmit();
-      }).catch(function(){ urlValid = false; self.className = 'invalid'; setFb('url','error','서버 연결 실패. 다시 시도해 주세요.'); checkSubmit(); });
-    }, 300);
+    urlValid = true; this.className = 'valid'; setFb('url','','');
     checkSubmit();
   });
 
@@ -778,7 +769,7 @@
       if (r.success) { document.getElementById('formArea').style.display = 'none'; document.getElementById('successScreen').style.display = 'flex'; window.scrollTo(0,0); }
       else {
         btn.disabled = false; btn.textContent = '신청 접수하기';
-        var msg = r.reason === 'duplicate_url' ? '이미 신청된 지점 URL이에요.'
+        var msg = r.reason === 'duplicate_url' ? '방금 같은 지점으로 제출된 내용이 있어요. 잠시 후 다시 확인해 주세요.'
                 : (r.reason && /링크|마감|기간|인원|받지/.test(r.reason)) ? r.reason
                 : '오류가 발생했어요. 다시 시도해 주세요.';
         alert(msg);

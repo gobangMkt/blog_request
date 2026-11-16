@@ -19,8 +19,8 @@
 ## 코어
 
 ### 공통 핵심 기능 (두 상품 동일)
-- **신청 폼**: 지점 URL 입력 → OG 정보 자동 조회 → 키워드 중복 체크 → 동의 후 제출
-- **백엔드**(`gas-code/Code.gs`): 구글 시트(신청 내역/완료 내역) 기록, 알림톡 발송, 중복 체크
+- **신청 폼**: 지점 URL 입력(형식 검사) → OG 정보 자동 조회 → 키워드 90일 선점 체크 → 동의 후 제출. 지점 URL 중복 신청은 막지 않음
+- **백엔드**(`gas-code/Code.gs`): 구글 시트(신청 내역/완료 내역) 기록, 알림톡 발송, 키워드 선점 체크, 같은 지점 10분 내 재제출(더블클릭) 차단
 
 ### 상품별 차이
 
@@ -43,7 +43,7 @@
 
 ### 데이터 흐름
 ```
-신청 폼 → GAS API (checkAccess / checkPlaceUrl / fetchPlaceInfo / checkKeyword / submitForm)
+신청 폼 → GAS API (checkAccess / fetchPlaceInfo / checkKeyword / submitForm)
        → 구글 시트(신청 내역 + 완료 내역) 기록 → 완료 내역 H열 드롭박스로 알림톡 발송 관리
 운영자 → 발급 페이지(?gen) → genLink(토큰) → 서명 링크 생성 → 원장에게 전달
 ```

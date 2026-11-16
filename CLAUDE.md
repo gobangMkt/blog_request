@@ -141,7 +141,7 @@ var GAS_URL = 'https://script.google.com/macros/s/AKfycbygEzqWKlYa1EgStmNY1wxvIL
 |--------|------|
 | `checkAccess` | 서명(from·sig) + 이벤트 기간/마감 검증 + 상태 배너 데이터 반환 |
 | `genLink` | (운영자 토큰) 시작일로 서명 신청 링크 발급 — 발급 페이지(`?gen`)가 호출 |
-| `checkPlaceUrl` | 지점 URL 중복 신청 여부 확인 |
+| `checkPlaceUrl` | 지점 URL 기신청 여부 조회(폼·제출에서 더 이상 호출하지 않음, 11.16 차단 제거) |
 | `fetchPlaceInfo` | 지점 URL로 OG 정보(이미지·제목·설명) 가져오기 |
 | `checkKeyword` | 키워드 사용 가능 여부 + 남은 일수 확인 |
 | `submitForm` | 최종 신청 데이터 제출 |

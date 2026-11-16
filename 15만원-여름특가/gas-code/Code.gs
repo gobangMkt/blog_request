@@ -209,13 +209,28 @@ function fetchPlaceInfo(url) {
   }
 }
 
+// 같은 지점 URL이 최근 10분 안에 이미 접수됐으면 더블클릭 중복 제출로 본다.
+// 지점당 1회로 막지 않는다 — 재신청하는 원장님을 돌려보내면 안 된다.
+function isRecentDuplicate_(sheet, placeUrl) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return false;
+  var from = Math.max(2, lastRow - 29);
+  var data = sheet.getRange(from, 1, lastRow - from + 1, 5).getValues();
+  var target = String(placeUrl || '').trim().toLowerCase();
+  var cutoff = new Date().getTime() - 10 * 60 * 1000;
+  for (var i = 0; i < data.length; i++) {
+    if (String(data[i][4] || '').trim().toLowerCase() !== target) continue;
+    if (data[i][0] && new Date(data[i][0]).getTime() > cutoff) return true;
+  }
+  return false;
+}
+
 function submitForm(formData) {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
 
-  var urlCheck = checkPlaceUrl(formData.placeUrl);
-  if (!urlCheck.available) return { success: false, reason: 'duplicate_url' };
-
   var sheet = ss.getSheetByName('신청 내역');
+  if (isRecentDuplicate_(sheet, formData.placeUrl)) return { success: false, reason: 'duplicate_url' };
+
   if (sheet.getLastRow() === 0) {
     sheet.appendRow(['신청일시', '결제완료일', '신청자', '전화번호', '지점 URL', '키워드1', '키워드2', '키워드3', '강조 내용', '보증금', '월세', '도보정보', '작성 타입', '상태']);
     sheet.getRange(1, 1, 1, 14).setFontWeight('bold').setBackground('#f0f0f0');
