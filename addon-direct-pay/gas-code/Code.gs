@@ -11,6 +11,12 @@
 var SPREADSHEET_ID = '1lgAsrtoeqv1-g3Nh3D21zTyuGLdAZuP5jSXxftlIxh0';
 var PRICE_DIRECT_PREMIUM = 150000; // 직A/직B — 고급형, 부가세 포함 (2026-11-09 결제화면 기준)
 var DIRECT_TYPES   = ['직A', '직B'];
+// 직-대기 = 고급형 키워드 폼 알림톡을 보냈고 사장님 폼 제출을 기다리는 건(작성 스타일 A/B를 아직 안 고른 상태).
+// 알림톡 발송 때 행이 생기고, 사장님이 폼을 내면 같은 행이 직A/직B로 바뀐다(같은 지점번호 가장 오래된 대기 행).
+// 폼 제출 흐름(DIRECT_TYPES)과 섞이지 않게 따로 둔다: 폼 타입 검증·완료 알림톡·10분 중복 판정은 직-대기를 보지 않는다.
+var PENDING_TYPE   = '직-대기';
+var PENDING_STATUS = '응답대기';
+var HOLD_STATUS    = '보류'; // 현황 탭에서 응답 대기를 지우면 행은 두고 상태만 보류로 바꾼다
 // 고급형 키워드 폼 안내 알림톡 템플릿(솔라피, 변수 #{지점명}). 스크립트 속성 TEMPLATE_PREMIUM_FORM이 있으면 그 값이 우선한다.
 var TEMPLATE_PREMIUM_FORM = 'KA01TP2611091218516116IoNk3cbXeW';
 // 작업완료 알림톡(기존 15만원·10만원 GAS의 TEMPLATE_COMPLETE와 같은 템플릿, 변수 #{지점URL}·#{장악키워드}·#{블로그URL})
@@ -21,6 +27,52 @@ var TEMPLATE_COMPLETE = 'KA01TP2605150533203936iNKdKqNSyV';
 var ROW_BG_PAID  = '#FFE599';
 var ROW_BG_BASIC = '#CFE2F3';
 var ROW_BG_DONE  = '#ff9900';
+var ROW_BG_PENDING = '#EFEFEF';
+
+// ── 지점명·직-대기 공용 도우미 ──
+function placeNo_(url) {
+  var m = String(url || '').match(/\/place\/(\d+)/);
+  return m ? m[1] : '';
+}
+
+function placeUrlOf_(no) { return 'https://gobang.kr/place/' + no; }
+
+function fmtPhone_(digits) {
+  var d = String(digits || '').replace(/\D/g, '');
+  if (d.length === 11) return d.slice(0, 3) + '-' + d.slice(3, 7) + '-' + d.slice(7);
+  if (d.length === 10) return d.slice(0, 3) + '-' + d.slice(3, 6) + '-' + d.slice(6);
+  return d;
+}
+
+// 고방 지점 페이지에서 지점명을 읽는다. og:title "[고시원] 월 38~41 / 보 10 - 하이리빙텔 영등포역"의 마지막 " - " 뒤,
+// 없으면 <title> "하이리빙텔 영등포역 - 영등포동3가 고시원/고시텔"의 첫 " - " 앞. 못 읽으면 빈 문자열.
+function branchNameOfPlace_(url) {
+  try {
+    var html = UrlFetchApp.fetch(url, {
+      muteHttpExceptions: true,
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+    }).getContentText('UTF-8');
+    var og = html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/i) || html.match(/<meta\s+content="([^"]+)"\s+property="og:title"/i);
+    if (og && og[1].indexOf(' - ') >= 0) return og[1].split(' - ').pop().trim();
+    var t = html.match(/<title>([^<]+)<\/title>/i);
+    if (t && t[1].indexOf(' - ') >= 0) return t[1].split(' - ')[0].trim();
+  } catch (e) {}
+  return '';
+}
+
+// 같은 지점번호의 가장 오래된 직-대기 행 번호(보류 제외). 없으면 0.
+function findPendingRow_(sheet, no) {
+  var lastRow = sheet.getLastRow();
+  if (!no || lastRow < 2) return 0;
+  var first = Math.max(2, lastRow - 1999);
+  var data = sheet.getRange(first, 1, lastRow - first + 1, 14).getValues();
+  for (var i = 0; i < data.length; i++) {
+    if (String(data[i][12] || '').trim() !== PENDING_TYPE) continue;
+    if (String(data[i][13] || '').trim() === HOLD_STATUS) continue;
+    if (placeNo_(data[i][4]) === no) return first + i;
+  }
+  return 0;
+}
 
 function getSettings() {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -169,27 +221,45 @@ function submitForm(formData) {
   if (!kw.available) return { success: false, reason: 'keyword_taken', remainingDays: kw.remainingDays };
 
   var now = new Date();
-  // 신청일시, 결제완료일(=신청일: 결제는 이미 끝났고 D-day는 작성 시작일 기준), 신청자, 전화번호, 지점URL,
-  // 키워드1~3, 강조내용, 보증금, 월세, 도보, 작성타입, 상태
-  sheet.appendRow([now, now, formData.name, formData.phone, formData.placeUrl,
-    formData.keyword1, formData.keyword2 || '', formData.keyword3 || '', formData.description,
-    formData.deposit || '', formData.monthly || '', formData.walking || '', tmplType, '신청완료']);
-  var newRow = sheet.getLastRow();
-  setPriceByType_(sheet, newRow, tmplType); // P열(16) 단가
-  sheet.getRange(newRow, 1, 1, sheet.getLastColumn()).setBackground(ROW_BG_PAID);
-
-  var doneSheet = ss.getSheetByName('완료 내역');
-  if (doneSheet) {
-    // D-day(A), 신청자(B), 전화번호(C), 지점URL(D), 장악키워드(E), 블로그URL(F), 완료일(G), 발송상태(H), 발송시간(I)
-    doneSheet.appendRow(['', formData.name || '', formData.phone || '', formData.placeUrl || '', '', '', '', '', '']);
-    doneSheet.getRange(doneSheet.getLastRow(), 8).setValue('발송대기');
-  }
-
-  // 프로그래밍 setValue는 시트 편집 트리거를 발동시키지 않으므로 후속 작업(D-day 갱신 + 팀 알림메일)을 직접 호출한다.
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  var newRow;
   try {
-    applyBlogPaymentComplete_(ss, sheet, newRow, now);
-  } catch (err) {
-    Logger.log('결제완료 후속작업 실패: ' + err);
+    // 같은 지점번호로 알림톡을 보내 둔 직-대기 행이 있으면 새 행 대신 그 행을 이어 쓴다.
+    // 이때 결제완료일(B)은 알림 원문의 실제 결제일시를 그대로 두고, 신청일시(A)만 제출 시각으로 바꾼다.
+    // D-day(결제완료일+7일)는 예전과 같이 제출일 기준(작성 시작일)으로 갱신한다.
+    var pendRow = findPendingRow_(sheet, placeNo_(formData.placeUrl));
+    // 신청일시, 결제완료일(=신청일: 결제는 이미 끝났고 D-day는 작성 시작일 기준), 신청자, 전화번호, 지점URL,
+    // 키워드1~3, 강조내용, 보증금, 월세, 도보, 작성타입, 상태
+    var vals = [now, now, formData.name, formData.phone, formData.placeUrl,
+      formData.keyword1, formData.keyword2 || '', formData.keyword3 || '', formData.description,
+      formData.deposit || '', formData.monthly || '', formData.walking || '', tmplType, '신청완료'];
+    if (pendRow) {
+      vals[1] = sheet.getRange(pendRow, 2).getValue() || now;
+      sheet.getRange(pendRow, 1, 1, 14).setValues([vals]);
+      newRow = pendRow;
+    } else {
+      sheet.appendRow(vals);
+      newRow = sheet.getLastRow();
+    }
+    setPriceByType_(sheet, newRow, tmplType); // P열(16) 단가
+    sheet.getRange(newRow, 1, 1, sheet.getLastColumn()).setBackground(ROW_BG_PAID);
+
+    var doneSheet = ss.getSheetByName('완료 내역');
+    if (doneSheet) {
+      // D-day(A), 신청자(B), 전화번호(C), 지점URL(D), 장악키워드(E), 블로그URL(F), 완료일(G), 발송상태(H), 발송시간(I)
+      doneSheet.appendRow(['', formData.name || '', formData.phone || '', formData.placeUrl || '', '', '', '', '', '']);
+      doneSheet.getRange(doneSheet.getLastRow(), 8).setValue('발송대기');
+    }
+
+    // 프로그래밍 setValue는 시트 편집 트리거를 발동시키지 않으므로 후속 작업(D-day 갱신 + 팀 알림메일)을 직접 호출한다.
+    try {
+      applyBlogPaymentComplete_(ss, sheet, newRow, now);
+    } catch (err) {
+      Logger.log('결제완료 후속작업 실패: ' + err);
+    }
+  } finally {
+    lock.releaseLock();
   }
 
   return { success: true };
@@ -276,6 +346,28 @@ function premiumKey_(branchNo, paidAt) {
   return 'PF_' + String(branchNo) + '_' + Utilities.formatDate(paidAt, 'Asia/Seoul', 'yyyyMMddHHmm');
 }
 
+// 알림톡 발송 직후 신청 내역에 직-대기 행을 만든다. 같은 지점번호+결제일시 행이 이미 있으면 만들지 않는다.
+// 신청일시·결제완료일 = 알림 원문 결제일시, 지점URL = gobang.kr/place/<번호>(폼 제출 때 같은 번호로 이 행을 찾는다),
+// 신청자 칸에는 일반형처럼 `지점명(번호)`를 넣는다(사장님이 폼을 내면 그 칸이 성함으로 바뀐다). 단가 150,000, 행 회색.
+function addPendingRow_(branch, branchNo, paidAt, digits) {
+  var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('신청 내역');
+  var stamp = Utilities.formatDate(paidAt, 'Asia/Seoul', 'yyyyMMddHHmm');
+  var lastRow = sheet.getLastRow();
+  if (lastRow >= 2) {
+    var first = Math.max(2, lastRow - 1999);
+    var data = sheet.getRange(first, 1, lastRow - first + 1, 14).getValues();
+    for (var i = 0; i < data.length; i++) {
+      if (String(data[i][12] || '').trim() !== PENDING_TYPE) continue;
+      if (placeNo_(data[i][4]) !== String(branchNo) || !data[i][1]) continue;
+      if (Utilities.formatDate(new Date(data[i][1]), 'Asia/Seoul', 'yyyyMMddHHmm') === stamp) return;
+    }
+  }
+  sheet.appendRow([paidAt, paidAt, branch + '(' + branchNo + ')', fmtPhone_(digits), placeUrlOf_(branchNo), '', '', '', '', '', '', '', PENDING_TYPE, PENDING_STATUS]);
+  var row = sheet.getLastRow();
+  setPriceByType_(sheet, row, PENDING_TYPE);
+  sheet.getRange(row, 1, 1, sheet.getLastColumn()).setBackground(ROW_BG_PENDING);
+}
+
 function registerPremium(payload) {
   var props = PropertiesService.getScriptProperties();
   var saved = props.getProperty('INBOX_TOKEN');
@@ -300,6 +392,9 @@ function registerPremium(payload) {
     if (!sent.ok) return { success: true, status: 'send_failed', msg: sent.msg };
     // 값 = 발송시각|지점명 (지점명은 현황 탭 표기용. 옛 건은 발송시각만 있다)
     props.setProperty(key, Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm') + '|' + branch);
+    // 시트에도 직-대기 행으로 남긴다(폼을 안 낸 결제자가 시트에서 빠지지 않게). 실패해도 알림톡은 이미 나갔으니
+    // 발송 성공으로 답하고, 현황 탭은 발송 기록(PF_)으로 계속 보여 준다.
+    try { addPendingRow_(branch, branchNo, paidAt, digits); } catch (err) { Logger.log('직-대기 행 기록 실패: ' + err); }
     return { success: true, status: 'sent' };
   } finally {
     lock.releaseLock();
@@ -315,7 +410,7 @@ function registerPremium(payload) {
 //   sent       = 고급형 완료 알림톡 보냄(완료 내역 H 발송완료)
 //   basic_done = 직-일반 N열 작성완료(현황 탭 체크로 바꾼다)
 // 배포 확인용 표식: 배포 뒤 틀린 토큰으로 listStatus를 불러 이 값이 응답에 오는지 보면 새 코드가 올라간 것(배포.bat이 확인한다)
-var BUILD = '2026-11-15-trend2';
+var BUILD = '2026-11-23-pending2';
 function listStatus(token) {
   var props = PropertiesService.getScriptProperties();
   var saved = props.getProperty('INBOX_TOKEN');
@@ -373,9 +468,10 @@ function listStatus(token) {
   }
 
   var items = [];
+  var pendingIds = {}; // 직-대기 행이 있는 발송 기록 id(지점번호_결제일시)
   rows.forEach(function (r, idx) {
     var type = String(r[12] || '').trim();
-    if (type !== '직-일반' && DIRECT_TYPES.indexOf(type) < 0) {
+    if (type !== '직-일반' && type !== PENDING_TYPE && DIRECT_TYPES.indexOf(type) < 0) {
       // 15만원·10만원 폼 건(A·B·10-A·10-B): 읽기 전용으로 보여 준다. 결제완료일(B)이 있으면 결제 완료, 없으면 결제 전.
       if (!type) return; // 작성 타입이 없는 행(공지·빈 줄)
       var lp = asDateLoose(r[1]), ld = lp || asDateLoose(r[0]);
@@ -402,10 +498,22 @@ function listStatus(token) {
       item.kind = '고급형';
       item.price = priceOf(r[15], PRICE_DIRECT_PREMIUM);
       // 폼의 지점 URL(gobang.kr/place/<지점번호>)에서 지점번호를 읽어 알림톡 발송 기록과 짝짓는다
-      var pm = String(r[4] || '').match(/\/place\/(\d+)/);
-      item.no = pm ? pm[1] : '';
-      if (item.no) item.label = item.label + '(' + item.no + ')';
-      var ps = premiumStage(r[4], paid);
+      item.no = placeNo_(r[4]);
+      // 직-대기 행의 신청자 칸은 이미 `지점명(번호)`라 번호를 또 붙이지 않는다
+      if (item.no && type !== PENDING_TYPE) item.label = item.label + '(' + item.no + ')';
+      if (type === PENDING_TYPE) {
+        // 알림톡만 보내고 폼은 아직인 건. 발송 기록(PF_)과 같은 건이라 아래 발송 기록 줄은 이 행으로 대신한다.
+        // 상태 칸이 보류면 현황 탭에서 지운 건이라 보이지 않는다(시트에는 남아 있다).
+        item.pending = true;
+        item.pfId = item.no + '_' + Utilities.formatDate(paid, TZ, 'yyyyMMddHHmm');
+        pendingIds[item.pfId] = true;
+        if (String(r[13] || '').trim() === HOLD_STATUS) return;
+        item.stage = 'notified';
+        item.pf = item.pfId;
+        items.push(item);
+        return;
+      }
+      var ps = premiumStage(r[4], asDateLoose(r[0]) || paid);
       item.stage = ps.stage;
       // 완료 알림 팝업에 필요한 값: 완료 내역 행이 있고 아직 안 보낸 건에만 준다(completePremium이 다시 대조)
       if (ps.hit && ps.stage !== 'sent' && paidB) {
@@ -434,9 +542,10 @@ function listStatus(token) {
     pfs.push({ no: m[1], ts: paid.getTime(), name: String(all[k]).split('|').slice(1).join('|').trim(), id: pfId, hidden: !!all['PFX_' + pfId] });
   });
   pfs.sort(function (a, b) { return b.ts - a.ts; });
-  var forms = items.filter(function (it) { return it.kind === '고급형' && it.no; })
+  var forms = items.filter(function (it) { return it.kind === '고급형' && it.no && !it.pending; })
     .sort(function (a, b) { return a.ts - b.ts; });
   pfs.forEach(function (pf) {
+    if (pendingIds[pf.id]) return; // 직-대기 행이 이 건을 대신 보여 준다
     var form = null;
     for (var i = 0; i < forms.length; i++) {
       if (!forms[i].paired && forms[i].no === pf.no && forms[i].ts >= pf.ts) { form = forms[i]; break; }
@@ -454,7 +563,7 @@ function listStatus(token) {
   });
 
   items.sort(function (a, b) { return b.ts - a.ts; });
-  items.forEach(function (it) { delete it.ts; delete it.paired; });
+  items.forEach(function (it) { delete it.ts; delete it.paired; delete it.pending; delete it.pfId; });
   // truncated = 2,000행 상한에 걸려 오래된 행이 빠졌다는 뜻(추이의 기록 시작일·평균이 틀어지므로 화면에 알린다)
   return { success: true, items: items, truncated: lastRow - 1 > 2000, build: BUILD };
 }
@@ -501,7 +610,75 @@ function hideNotified(payload) {
   var id = String(payload.pf || '');
   if (!/^\d+_\d{12}$/.test(id) || !props.getProperty('PF_' + id)) return { success: false, reason: 'stale' };
   props.setProperty('PFX_' + id, Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'));
+  // 같은 건의 직-대기 행은 지우지 않고 상태만 보류로 바꾼다(시트에 이력이 남고, 현황 탭에서는 빠진다).
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('신청 내역');
+    var lastRow = sheet.getLastRow();
+    if (lastRow >= 2) {
+      var first = Math.max(2, lastRow - 1999);
+      var data = sheet.getRange(first, 1, lastRow - first + 1, 14).getValues();
+      for (var i = 0; i < data.length; i++) {
+        if (String(data[i][12] || '').trim() !== PENDING_TYPE || !data[i][1]) continue;
+        var rid = placeNo_(data[i][4]) + '_' + Utilities.formatDate(new Date(data[i][1]), 'Asia/Seoul', 'yyyyMMddHHmm');
+        if (rid !== id) continue;
+        sheet.getRange(first + i, 14).setValue(HOLD_STATUS);
+        break;
+      }
+    }
+  } finally {
+    lock.releaseLock();
+  }
   return { success: true };
+}
+
+// 지금까지 보낸 고급형 키워드 폼 알림톡 중 시트에 행이 없는 건을 직-대기 행으로 만든다(편집기에서 직접 실행, 몇 번 돌려도 같은 결과).
+// 근거는 발송 기록(스크립트 속성 PF_<지점번호>_<결제일시>, 값 = 발송시각|지점명)이다. 같은 지점번호로 그 결제 뒤에 들어온
+// 직A/직B 폼 행이 있으면 폼을 낸 건이라 만들지 않고(발송 기록과 폼 행을 오래된 순으로 하나씩 짝지음), 이미 직-대기 행이 있는 건도 건너뛴다.
+// 현황에서 지운 건(PFX_)은 상태 보류로 만든다. 전화번호는 발송 기록에 없어 빈 칸이다. 옛 기록은 지점명이 없어 고방 지점 페이지에서 읽는다.
+// 발송 기록이 없는 건(스티브가 손으로 보낸 안내 등)은 만들 수 없다.
+function backfillPendingRows() {
+  var props = PropertiesService.getScriptProperties().getProperties();
+  var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('신청 내역');
+  var lastRow = sheet.getLastRow();
+  var rows = lastRow >= 2 ? sheet.getRange(2, 1, lastRow - 1, 14).getValues() : [];
+  var STAMP = 'yyyyMMddHHmm';
+  var pfs = [];
+  Object.keys(props).forEach(function (k) {
+    var m = k.match(/^PF_(\d+)_(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})$/);
+    if (!m) return;
+    pfs.push({ no: m[1], id: m[1] + '_' + m[2] + m[3] + m[4] + m[5] + m[6], ts: new Date(+m[2], +m[3] - 1, +m[4], +m[5], +m[6]),
+      name: String(props[k]).split('|').slice(1).join('|').trim(), hidden: !!props['PFX_' + m[1] + '_' + m[2] + m[3] + m[4] + m[5] + m[6]] });
+  });
+  pfs.sort(function (a, b) { return a.ts - b.ts; });
+  var havePending = {};
+  var forms = [];
+  rows.forEach(function (r) {
+    var type = String(r[12] || '').trim();
+    var no = placeNo_(r[4]);
+    if (type === PENDING_TYPE && r[1]) havePending[no + '_' + Utilities.formatDate(new Date(r[1]), 'Asia/Seoul', STAMP)] = true;
+    else if (DIRECT_TYPES.indexOf(type) >= 0 && no) {
+      var t = r[1] ? new Date(r[1]) : (r[0] ? new Date(r[0]) : null);
+      if (t && !isNaN(t.getTime())) forms.push({ no: no, ts: t.getTime(), used: false });
+    }
+  });
+  forms.sort(function (a, b) { return a.ts - b.ts; });
+  var made = 0, skippedForm = 0, skippedHave = 0;
+  pfs.forEach(function (pf) {
+    if (havePending[pf.id]) { skippedHave++; return; }
+    for (var i = 0; i < forms.length; i++) {
+      if (!forms[i].used && forms[i].no === pf.no && forms[i].ts >= pf.ts.getTime()) { forms[i].used = true; skippedForm++; return; }
+    }
+    var name = pf.name || branchNameOfPlace_(placeUrlOf_(pf.no));
+    sheet.appendRow([pf.ts, pf.ts, name ? name + '(' + pf.no + ')' : '지점번호 ' + pf.no, '', placeUrlOf_(pf.no), '', '', '', '', '', '', '', PENDING_TYPE, pf.hidden ? HOLD_STATUS : PENDING_STATUS]);
+    var row = sheet.getLastRow();
+    setPriceByType_(sheet, row, PENDING_TYPE);
+    sheet.getRange(row, 1, 1, sheet.getLastColumn()).setBackground(ROW_BG_PENDING);
+    made++;
+  });
+  Logger.log('직-대기 행 생성 ' + made + '건, 폼 제출로 이미 행 있음 ' + skippedForm + '건, 대기 행 이미 있음 ' + skippedHave + '건');
+  return { made: made, skippedForm: skippedForm, skippedHave: skippedHave };
 }
 
 // 고급형 작성 완료 → 사장님 작업완료 알림톡 (paste.html 시트 DB 체크 → 팝업).
