@@ -37,7 +37,7 @@
   // 머리의 "마지막 수집 mm.dd HH:mm". 3일 이상 안 눌렀거나 기록이 없으면 stale + 강조 글자
   function lastScanInfo(lastScan, nowMs) {
     var ms = lastScan && lastScan.at ? msOf(lastScan.at) : NaN;
-    if (isNaN(ms)) return { text: '마지막 수집 기록이 없어요', stale: true, chip: '잔디에서 북마크를 눌러 주세요' };
+    if (isNaN(ms)) return { text: '잔디 결제를 아직 가져오지 않았어요', stale: true, chip: '가져오기 필요' };
     var days = Math.floor((nowMs - ms) / DAYMS);
     var stale = days >= STALE_DAYS;
     return { text: '마지막 수집 ' + mdhm(kstStamp(ms)), stale: stale, chip: stale ? days + '일 지났어요' : '' };
