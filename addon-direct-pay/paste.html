@@ -68,8 +68,11 @@
     .cols[hidden] { display: none; }
     .hidechk { display: inline-flex; align-items: center; gap: 2px; height: 40px; padding: 0; border: 0; background: none; font-family: var(--f); font-size: 14px; font-weight: 700; color: var(--g600); cursor: pointer; }
     .hidechk .box { flex: none; }
-    .tr.wr { opacity: 0.7; }
+    .tr.wr { opacity: 0.55; }
     .tr.wr:hover { opacity: 1; }
+    .tr.wr .c-who { font-weight: 500; color: var(--g500); }
+    .tr.wr .chip { background: var(--bg); color: var(--g500); }
+    .tr.grp { display: block; margin-top: 10px; padding: 12px 0 6px; border-bottom: 1px solid var(--g300); font-size: 13px; font-weight: 700; color: var(--g500); }
     /* 결제 알림 줄: 잔디 링크 + 설치 방법·붙여넣기 열기(테두리). 붙여넣기 칸은 안 읽힌 건만 넣는 보조라 접어 둔다 */
     .regbar .card-head { margin-bottom: 0; }
     .regbar #pasteBox { margin-top: 12px; }
@@ -405,8 +408,6 @@
               <p class="res-sum" id="statSum"></p>
             </div>
             <div class="tools">
-              <button class="hidechk" id="hideDone" type="button" role="checkbox" aria-checked="true" data-act="hide-done"><span class="box"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 5.5 10.5 11.5 3.5"/></svg></span>완료건 숨김</button>
-              <button class="reset off" id="reset" type="button" disabled>초기화</button>
               <select class="sel" id="fState" aria-label="상태 조건">
                 <option value="all">상태 · 전체</option>
                 <option value="todo">상태 · 할 일</option>
@@ -424,10 +425,12 @@
                 <option value="고급형">유형 · 고급형</option>
                 <option value="기존 폼">유형 · 기존 폼</option>
               </select>
+              <button class="hidechk" id="hideDone" type="button" role="checkbox" aria-checked="true" data-act="hide-done"><span class="box"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 5.5 10.5 11.5 3.5"/></svg></span>완료건 숨김</button>
               <span class="quick"><a href="https://docs.google.com/spreadsheets/d/1lgAsrtoeqv1-g3Nh3D21zTyuGLdAZuP5jSXxftlIxh0/edit" target="_blank" rel="noopener" title="신청 내역 시트 열기">시트<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12"/></svg></a></span>
               <button class="refresh" id="refresh" type="button" aria-label="새로고침" title="새로고침">
                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 10a6.5 6.5 0 1 1-1.9-4.6"/><path d="M16.5 3.5v3.6h-3.6"/></svg>
               </button>
+              <button class="reset off" id="reset" type="button" disabled>초기화</button>
             </div>
           </div>
           <div id="statList"></div>
@@ -798,7 +801,8 @@
       var r = primary(a, b); if (sortDir === 'desc') r = -r;
       return r || (a.paidAt < b.paidAt ? 1 : a.paidAt > b.paidAt ? -1 : 0); // 동점은 결제 최신순
     });
-    return arr;
+    // 덜 된 건이 먼저, 작성 완료 건은 뒤로(각 묶음 안에서는 고른 정렬 그대로)
+    return arr.filter(function (it) { return !WRITTEN[it.stage]; }).concat(arr.filter(function (it) { return WRITTEN[it.stage]; }));
   }
   // 같은 열을 누를 때마다 오름 → 내림 → 기본(결제 최신순)으로 돌아간다. 결제 열은 기본이 내림이라 오름 ↔ 내림만 오간다
   function setSort(key) {
@@ -1235,7 +1239,17 @@
     }
     var pages = Math.max(1, Math.ceil(view.length / PAGE));
     if (page > pages) page = pages;
-    view.slice((page - 1) * PAGE, page * PAGE).forEach(function (it) { box.appendChild(statusRow(it)); });
+    // 덜 된 건과 작성 완료 건 사이에 구분 줄(둘 다 있을 때만). 다음 쪽이 완료 건으로 시작하면 그 쪽 맨 위에도 둔다
+    var doneN = view.filter(function (it) { return WRITTEN[it.stage]; }).length;
+    var lastW = null;
+    view.slice((page - 1) * PAGE, page * PAGE).forEach(function (it, i) {
+      var w = !!WRITTEN[it.stage];
+      if (doneN && doneN < view.length && w && lastW !== true && (i > 0 || (page - 1) * PAGE >= view.length - doneN)) {
+        var g = document.createElement('div'); g.className = 'tr grp'; g.textContent = '작성 완료 ' + doneN + '건'; box.appendChild(g);
+      }
+      lastW = w;
+      box.appendChild(statusRow(it));
+    });
     $('pager').hidden = pages < 2;
     $('pgNow').textContent = page + ' / ' + pages;
     $('pgPrev').disabled = page <= 1; $('pgNext').disabled = page >= pages;
