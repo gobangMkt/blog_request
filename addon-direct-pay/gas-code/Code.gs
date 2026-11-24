@@ -115,6 +115,10 @@ function doPost(e) {
       result = completePremium(payload);
     } else if (action === 'hideNotified') {
       result = hideNotified(payload);
+    } else if (action === 'previewJandi') {
+      result = previewJandi(payload.messages, payload.token);
+    } else if (action === 'importJandi') {
+      result = importJandi(payload);
     } else if (action === 'checkToken') {
       // paste.html 입장 시 접근 코드 한 번 확인(시트는 읽지 않는다)
       var saved = PropertiesService.getScriptProperties().getProperty('INBOX_TOKEN');
@@ -312,11 +316,17 @@ function registerOnePayment_(sheet, block) {
     }
     return { status: 'premium_need_phone', branch: p.branch, branchNo: p.branchNo, paidAt: tag.paidAt };
   }
+  return appendBasicRow_(sheet, p.branch, p.branchNo, p.paidAt);
+}
 
-  // 같은 지점·같은 결제일시가 이미 있으면 중복 붙여넣기로 본다.
+// 직-일반 행 한 줄 등록(붙여넣기 registerPayment와 잔디 importJandi가 같이 쓴다).
+// 같은 지점·같은 결제일시가 최근 2,000행(listStatus 상한과 같음) 안에 이미 있으면 중복으로 보고 쓰지 않는다.
+function appendBasicRow_(sheet, branch, branchNo, paidAt) {
+  var label = branch + '(' + branchNo + ')';
+  var tag = { branch: label, paidAt: Utilities.formatDate(paidAt, 'Asia/Seoul', 'yyyy-MM-dd HH:mm') };
   var lastRow = sheet.getLastRow();
   if (lastRow >= 2) {
-    var from = Math.max(2, lastRow - 199);
+    var from = Math.max(2, lastRow - 1999);
     var data = sheet.getRange(from, 1, lastRow - from + 1, 13).getValues();
     for (var i = 0; i < data.length; i++) {
       if (String(data[i][12] || '').trim() !== '직-일반') continue;
@@ -328,7 +338,7 @@ function registerOnePayment_(sheet, block) {
   }
   // 신청일시, 결제완료일(=결제일시), 신청자(지점명+번호), 전화번호(알림에 없음), 지점URL, 키워드1~3, 강조내용,
   // 보증금, 월세, 도보, 작성타입, 상태
-  sheet.appendRow([p.paidAt, p.paidAt, label, '', '', '', '', '', '', '', '', '', '직-일반', '신청완료']);
+  sheet.appendRow([paidAt, paidAt, label, '', '', '', '', '', '', '', '', '', '직-일반', '신청완료']);
   var row = sheet.getLastRow();
   if (!sheet.getRange(1, 16).getValue()) sheet.getRange(1, 16).setValue('단가');
   var cell = sheet.getRange(row, 16);
@@ -410,7 +420,7 @@ function registerPremium(payload) {
 //   sent       = 고급형 완료 알림톡 보냄(완료 내역 H 발송완료)
 //   basic_done = 직-일반 N열 작성완료(현황 탭 체크로 바꾼다)
 // 배포 확인용 표식: 배포 뒤 틀린 토큰으로 listStatus를 불러 이 값이 응답에 오는지 보면 새 코드가 올라간 것(배포.bat이 확인한다)
-var BUILD = '2026-11-23-pending2';
+var BUILD = '2026-11-24-jandi-import';
 function listStatus(token) {
   var props = PropertiesService.getScriptProperties();
   var saved = props.getProperty('INBOX_TOKEN');
@@ -565,7 +575,8 @@ function listStatus(token) {
   items.sort(function (a, b) { return b.ts - a.ts; });
   items.forEach(function (it) { delete it.ts; delete it.paired; delete it.pending; delete it.pfId; });
   // truncated = 2,000행 상한에 걸려 오래된 행이 빠졌다는 뜻(추이의 기록 시작일·평균이 틀어지므로 화면에 알린다)
-  return { success: true, items: items, truncated: lastRow - 1 > 2000, build: BUILD };
+  return { success: true, items: items, truncated: lastRow - 1 > 2000, build: BUILD,
+    billy: loadBillyList_(ss), lastScan: readLastScan_() };
 }
 
 // 현황 탭 체크: 직-일반 행 N열을 작성완료 ↔ 신청완료로 바꾸고 행 색도 맞춘다(작성완료 주황 / 결제완료 연파랑).
@@ -823,4 +834,346 @@ function applyBlogPaymentComplete_(ss, sheet, row, paymentDate) {
       MailApp.sendEmail(notifyTo, subject, body);
     }
   } catch (mailErr) {}
+}
+
+// ── 잔디 결제 알림 분류 미리보기 (읽기 전용, 슬라이스 2·7) ──
+// 분류기 본체는 JandiClassify.gs(= js/jandi-classify.js 와 글자까지 같은 파일, 테스트가 확인한다).
+// 이 구간의 함수는 시트·스크립트 속성을 읽기만 한다(쓰기 호출이 없다는 것을 테스트가 확인한다).
+// 쓰는 함수는 아래 "잔디 결제 알림 등록" 구간에만 둔다.
+var JANDI_MAX_MESSAGES = 500;
+var JANDI_LOG_TAB = '잔디 수집 로그';
+var JANDI_BILLY_TAB = '부가상품 결제';
+var JANDI_PENDING = ['번호필요', '확인필요']; // 로그에 남기는 판정(사람이 할 일)
+
+function jandiStamp_(v) {
+  var d = Object.prototype.toString.call(v) === '[object Date]' ? v : null;
+  if (d && !isNaN(d.getTime())) return Utilities.formatDate(d, 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+  return JandiClassify.stampOf(v);
+}
+
+function jandiText_(m) {
+  return String(m && typeof m === 'object' && m.text !== undefined ? m.text : (m == null ? '' : m));
+}
+
+// 대조에 쓸 기존 행: 신청 내역(직-일반·직-대기·직A·직B), 알림톡 발송 기록(PF_), 부가상품 결제 탭(있으면)
+function loadJandiExisting_(ss) {
+  ss = ss || SpreadsheetApp.openById(SPREADSHEET_ID);
+  var out = [];
+  var sheet = ss.getSheetByName('신청 내역');
+  var lastRow = sheet.getLastRow();
+  if (lastRow >= 2) {
+    var first = Math.max(2, lastRow - 1999);
+    sheet.getRange(first, 1, lastRow - first + 1, 14).getValues().forEach(function (r) {
+      var type = String(r[12] || '').trim();
+      var stamp = jandiStamp_(r[1]) || jandiStamp_(r[0]);
+      if (type === '직-일반') {
+        var m = String(r[2] || '').match(/\((\d+)\)\s*$/);
+        if (m) out.push({ type: type, no: m[1], paidAt: stamp });
+      } else if (type === PENDING_TYPE || DIRECT_TYPES.indexOf(type) >= 0) {
+        var no = placeNo_(r[4]);
+        if (no) out.push({ type: type, no: no, paidAt: stamp });
+      }
+    });
+  }
+  var all = PropertiesService.getScriptProperties().getProperties();
+  Object.keys(all).forEach(function (k) {
+    var m = k.match(/^PF_(\d+)_(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})$/);
+    if (m) out.push({ type: 'PF', no: m[1], paidAt: m[2] + '-' + m[3] + '-' + m[4] + ' ' + m[5] + ':' + m[6] });
+  });
+  var billy = ss.getSheetByName(JANDI_BILLY_TAB);
+  if (billy && billy.getLastRow() >= 2) {
+    var bFirst = Math.max(2, billy.getLastRow() - 1999);
+    billy.getRange(bFirst, 1, billy.getLastRow() - bFirst + 1, 3).getValues().forEach(function (r) {
+      var no = String(r[2] || '').replace(/\D/g, '');
+      if (no) out.push({ type: 'billy', no: no, paidAt: jandiStamp_(r[0]) });
+    });
+  }
+  return out;
+}
+
+// 수집 로그 탭(없으면 빈 목록): 열 = 수집일시, 키, 지점, 판정, 사유, 원문, 동반 상품, 메시지 결제금액, 종결일시
+function loadJandiLog_(ss) {
+  var sheet = ss.getSheetByName(JANDI_LOG_TAB);
+  var rows = [];
+  if (sheet && sheet.getLastRow() >= 2) {
+    var first = Math.max(2, sheet.getLastRow() - 4999);
+    sheet.getRange(first, 1, sheet.getLastRow() - first + 1, 9).getValues().forEach(function (r, i) {
+      rows.push({
+        row: first + i, key: String(r[1] || '').trim(), branch: String(r[2] || '').trim(),
+        judgment: String(r[3] || '').trim(), closed: !!r[8]
+      });
+    });
+  }
+  return { sheet: sheet, rows: rows };
+}
+
+function jandiLogHas_(log, key, judgment) {
+  return log.rows.some(function (r) { return r.key === key && r.judgment === judgment; });
+}
+
+// 종결된 확인필요·번호필요 조각에 closed:true와 reason "종결됨"을 붙인다(class는 그대로)
+function jandiApplyClosed_(results, log) {
+  results.forEach(function (x) {
+    var any = false;
+    x.pieces.forEach(function (p) {
+      var hit = log.rows.some(function (r) {
+        return r.closed && r.key === p.key && r.judgment === p.status;
+      });
+      if (hit) { p.closed = true; p.reason = (p.reason ? p.reason + ' · ' : '') + '종결됨'; any = true; }
+    });
+    if (any) {
+      var reasons = [];
+      x.pieces.forEach(function (p) { if (p.reason && reasons.indexOf(p.reason) < 0) reasons.push(p.reason); });
+      x.reason = reasons.join(' / ');
+    }
+  });
+}
+
+// 읽기 회귀 점검: 로그에 있던 결제가 이번 읽은 범위 안인데 이번 글 목록에 없으면 읽기가 덜 됐다는 신호다
+function jandiRegression_(results, log) {
+  var seen = {}, oldest = '', missing = [], done = {};
+  results.forEach(function (x) {
+    x.pieces.forEach(function (p) {
+      if (p.key) seen[p.key] = true;
+      if (p.paidAt && (!oldest || p.paidAt < oldest)) oldest = p.paidAt;
+    });
+  });
+  if (!oldest) return { missing: missing };
+  log.rows.forEach(function (r) {
+    var m = r.key.match(/^\d+_(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})$/);
+    if (!m || seen[r.key] || done[r.key]) return;
+    var stamp = m[1] + '-' + m[2] + '-' + m[3] + ' ' + m[4] + ':' + m[5];
+    if (stamp < oldest) return;
+    done[r.key] = true;
+    missing.push({ key: r.key, branch: r.branch, paidAt: stamp });
+  });
+  return { missing: missing };
+}
+
+// 마지막으로 끝까지 읽은 수집 기록(스크립트 속성 JANDI_LAST_SCAN). 없으면 null
+function readLastScan_() {
+  var raw = PropertiesService.getScriptProperties().getProperty('JANDI_LAST_SCAN');
+  if (!raw) return null;
+  try {
+    var o = JSON.parse(raw);
+    return o && o.at ? { at: o.at, complete: true } : null;
+  } catch (e) { return null; }
+}
+
+function previewJandi(messages, token) {
+  var saved = PropertiesService.getScriptProperties().getProperty('INBOX_TOKEN');
+  if (!saved || String(token || '') !== saved) return { success: false, reason: 'unauthorized' };
+  if (!Array.isArray(messages) || !messages.length) return { success: false, reason: 'bad_request' };
+  if (messages.length > JANDI_MAX_MESSAGES) return { success: false, reason: 'too_many' };
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var log = loadJandiLog_(ss);
+  var r = JandiClassify.classifyMessages(messages, loadJandiExisting_(ss));
+  jandiApplyClosed_(r.results, log);
+  return {
+    success: true, readOnly: true, results: r.results, counts: r.counts,
+    regression: jandiRegression_(r.results, log)
+  };
+}
+
+// ── 잔디 결제 알림 등록 (importJandi, 슬라이스 4·6·7) ──
+// 서버가 원문을 다시 분류하고 confirm에 든 열쇠(key)만 쓴다(화면의 분류를 믿지 않는다).
+// 스크립트 잠금 안에서 실행하고, 같은 호출을 되풀이해도 행이 늘지 않는다(중복 키 = 지점번호 + 결제일시 분).
+// 고급형은 전화번호가 필요해 자동 등록하지 않는다(registerPremium 흐름).
+function jandiDate_(stamp) {
+  // KST 벽시계 글자 -> 시각. 스크립트 시간대와 상관없이 같은 순간이 된다
+  var m = String(stamp).match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/);
+  return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4] - 9, +m[5])) : null;
+}
+
+// 시트 수식으로 읽히지 않게 = + - @ 로 시작하는 글자 앞에 작은따옴표를 붙인다
+function jandiSafe_(v) {
+  var s = String(v == null ? '' : v);
+  return /^[=+\-@]/.test(s) ? "'" + s : s;
+}
+
+function jandiEnsureTab_(ss, name, header) {
+  var sheet = ss.getSheetByName(name);
+  if (sheet) return sheet;
+  sheet = ss.insertSheet(name, ss.getSheets().length); // 맨 뒤(첫 탭 gid 0·위치로 읽는 코드를 건드리지 않는다)
+  sheet.appendRow(header);
+  return sheet;
+}
+
+// 부가상품 결제 탭에 빌리투어 한 줄. 같은 지점번호 + 결제일시(분)가 이미 있으면 쓰지 않는다. 금액은 조각 단가.
+function appendBillyRow_(ss, p) {
+  var sheet = jandiEnsureTab_(ss, JANDI_BILLY_TAB, ['결제일시', '지점명', '지점번호', '상품', '금액', '상태']);
+  var last = sheet.getLastRow();
+  if (last >= 2) {
+    var first = Math.max(2, last - 1999);
+    var data = sheet.getRange(first, 1, last - first + 1, 3).getValues();
+    for (var i = 0; i < data.length; i++) {
+      if (jandiStamp_(data[i][0]) === p.paidAt && String(data[i][2] || '').replace(/\D/g, '') === p.branchNo) {
+        return { status: 'duplicate' };
+      }
+    }
+  }
+  sheet.appendRow([jandiDate_(p.paidAt), jandiSafe_(p.branch), p.branchNo, jandiSafe_(p.product),
+    JandiClassify.PRICE.billy, '진행전']);
+  var row = sheet.getLastRow();
+  sheet.getRange(row, 1).setNumberFormat('yyyy-MM-dd HH:mm');
+  sheet.getRange(row, 5).setNumberFormat('₩#,##0');
+  return { status: 'added', row: row };
+}
+
+function jandiLogAdd_(ss, log, p, text, companions, closedAt) {
+  var sheet = jandiEnsureTab_(ss, JANDI_LOG_TAB, ['수집일시', '키', '지점', '판정', '사유', '원문',
+    '같은 글의 동반 상품', '메시지 결제금액', '종결일시']);
+  log.sheet = sheet;
+  sheet.appendRow([jandiNow_(), p.key, jandiSafe_(p.branch), p.status, jandiSafe_(p.reason),
+    jandiSafe_(String(text).slice(0, 1000)), jandiSafe_(companions), p.amount == null ? '' : p.amount,
+    closedAt || '']);
+  log.rows.push({ row: sheet.getLastRow(), key: p.key, branch: p.branch, judgment: p.status,
+    closed: !!closedAt });
+}
+
+// 열쇠가 같은 로그 줄의 종결일시를 채운다. 바뀐 줄 수를 돌려준다
+function jandiLogClose_(log, key) {
+  var n = 0;
+  log.rows.forEach(function (r) {
+    if (r.key !== key || r.closed) return;
+    log.sheet.getRange(r.row, 9).setValue(jandiNow_());
+    r.closed = true;
+    n++;
+  });
+  return n;
+}
+
+function jandiNow_() { return Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'); }
+
+function importJandi(payload) {
+  var props = PropertiesService.getScriptProperties();
+  var saved = props.getProperty('INBOX_TOKEN');
+  if (!saved || String(payload.token || '') !== saved) return { success: false, reason: 'unauthorized' };
+  var messages = payload.messages;
+  if (!Array.isArray(messages) || !messages.length) return { success: false, reason: 'bad_request' };
+  if (messages.length > JANDI_MAX_MESSAGES) return { success: false, reason: 'too_many' };
+  var confirm = payload.confirm == null ? [] : payload.confirm;
+  if (!Array.isArray(confirm)) return { success: false, reason: 'bad_request' };
+  if (confirm.length > JANDI_MAX_MESSAGES) return { success: false, reason: 'too_many' };
+  var scan = payload.scan || {};
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    var sheet = ss.getSheetByName('신청 내역');
+    var log = loadJandiLog_(ss);
+    var cls = JandiClassify.classifyMessages(messages, loadJandiExisting_(ss));
+    var pieces = [];
+    cls.results.forEach(function (x) { x.pieces.forEach(function (p) { pieces.push(p); }); });
+
+    var results = [], seen = {}, closedNow = {};
+    var counts = { added: 0, duplicate: 0, closed: 0, skipped: 0, error: 0 };
+
+    function findPiece(key, kind) {
+      return pieces.filter(function (p) { return p.key === key && p.kind === kind && p.status !== '중복'; })[0];
+    }
+    function confirmAdd(res, key, action) {
+      var kind = action === 'basic' ? 'basic' : 'billy';
+      var p = findPiece(key, kind);
+      if (!p) {
+        res.reason = findPiece(key, 'premium')
+          ? '고급형은 자동 등록하지 않아요(전화번호가 필요해요)' : '이번 글 목록에 없는 열쇠예요';
+        return;
+      }
+      var review = p.status === '확인필요';
+      if (p.status === '이미있음' || p.exists) {
+        res.status = 'duplicate'; res.reason = '이미 시트에 있어요';
+      } else if (p.status === '새로등록' || p.status === '빌리투어쌓기' ||
+        (review && p.extracted && p.branchNo && p.paidAt)) {
+        var r = kind === 'basic'
+          ? appendBasicRow_(sheet, p.branch, p.branchNo, jandiDate_(p.paidAt))
+          : appendBillyRow_(ss, p);
+        res.status = r.status === 'added' ? 'added' : 'duplicate';
+        res.reason = r.status === 'added' ? '시트에 등록했어요(' + r.row + '행)' : '이미 시트에 있어요';
+      } else {
+        res.reason = '등록할 수 없는 상태예요(' + p.status + ')';
+        return;
+      }
+      // 사람이 읽은 값을 확인하고 등록한 확인필요 글은 처리된 것이라 종결한다
+      if (review) { jandiLogClose_(log, key); closedNow[key] = true; }
+    }
+    function confirmClose(res, key) {
+      var changed = jandiLogClose_(log, key);
+      var had = log.rows.some(function (r) { return r.key === key; });
+      var p = pieces.filter(function (q) {
+        return q.key === key && JANDI_PENDING.indexOf(q.status) >= 0 && !jandiLogHas_(log, key, q.status);
+      })[0];
+      if (p) {
+        jandiLogAdd_(ss, log, p, jandiText_(messages[p.messageIndex]), '', jandiNow_());
+        closedNow[key] = true;
+      }
+      if (changed || p || had) { res.status = 'closed'; res.reason = '종결로 기록했어요'; }
+      else res.reason = '종결할 항목이 없어요';
+    }
+
+    confirm.forEach(function (c) {
+      var key = String(c && c.key != null ? c.key : '').trim();
+      var action = String(c && c.action != null ? c.action : '').trim();
+      var res = { key: key, action: action, status: 'skipped', reason: '' };
+      try {
+        if (!key || ['basic', 'billy', 'close'].indexOf(action) < 0) {
+          res.status = 'error'; res.reason = 'bad_request';
+        } else if (seen[action + ':' + key]) {
+          res.status = 'duplicate'; res.reason = '같은 요청이 한 호출에 두 번 들어왔어요';
+        } else {
+          seen[action + ':' + key] = true;
+          if (action === 'close') confirmClose(res, key); else confirmAdd(res, key, action);
+        }
+      } catch (err) {
+        res.status = 'error'; res.reason = String(err);
+      }
+      counts[res.status]++;
+      results.push(res);
+    });
+
+    // confirm이 비어 있어도 이번 스캔의 확인필요·번호필요 조각은 로그에 남긴다(같은 열쇠+같은 판정은 다시 쓰지 않는다)
+    var logged = 0;
+    pieces.forEach(function (p) {
+      if (JANDI_PENDING.indexOf(p.status) < 0 || !p.key || jandiLogHas_(log, p.key, p.status)) return;
+      var comps = [];
+      pieces.forEach(function (q) {
+        if (q !== p && q.messageIndex === p.messageIndex && q.product && comps.indexOf(q.product) < 0) {
+          comps.push(q.product);
+        }
+      });
+      jandiLogAdd_(ss, log, p, jandiText_(messages[p.messageIndex]), comps.join(', '),
+        closedNow[p.key] ? jandiNow_() : '');
+      logged++;
+    });
+
+    // 끝까지 읽은 스캔만 마지막 수집 기록을 갱신한다
+    if (scan.complete === true && !scan.aborted) {
+      props.setProperty('JANDI_LAST_SCAN', JSON.stringify({
+        at: new Date().toISOString(), oldestAt: String(scan.oldestAt || ''), newestId: String(scan.newestId || '')
+      }));
+    }
+    return { success: true, results: results, counts: counts, logged: logged, lastScan: readLastScan_() };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// 현황 탭용: 부가상품 결제 탭(없으면 빈 목록)을 결제 최신순으로. 읽기 전용
+function loadBillyList_(ss) {
+  var sheet = ss.getSheetByName(JANDI_BILLY_TAB);
+  if (!sheet || sheet.getLastRow() < 2) return [];
+  var first = Math.max(2, sheet.getLastRow() - 1999);
+  var out = [];
+  sheet.getRange(first, 1, sheet.getLastRow() - first + 1, 6).getValues().forEach(function (r) {
+    var paidAt = jandiStamp_(r[0]);
+    if (!paidAt) return;
+    out.push({
+      paidAt: paidAt, branch: String(r[1] || '').trim(), branchNo: String(r[2] || '').replace(/\D/g, ''),
+      product: String(r[3] || '').trim(), amount: Number(String(r[4] == null ? '' : r[4]).replace(/[^\d.]/g, '')) || 0,
+      status: String(r[5] || '').trim()
+    });
+  });
+  out.sort(function (a, b) { return a.paidAt < b.paidAt ? 1 : (a.paidAt > b.paidAt ? -1 : 0); });
+  return out;
 }

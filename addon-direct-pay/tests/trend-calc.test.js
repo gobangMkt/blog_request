@@ -73,4 +73,18 @@ assert.deepStrictEqual([cmo[0].s, cmo[0].e], [D('2026-09-20'), D('2026-09-30')])
 assert.deepStrictEqual([cmo[2].ws, cmo[2].s, cmo[2].e], [D('2026-11-01'), D('2026-11-01'), D('2026-11-05')]);
 assert.strictEqual(T.cellsOf('day', D('2026-11-15'), D('2026-11-15')).length, 1);
 
+// 구분(inScope): 블로그(기본) = 일반형·고급형 + 결제 완료된 기존 폼, 빌리투어는 따로, 전체 = 합
+const itm = (kind, stage) => ({ kind, stage });
+assert.strictEqual(T.inScope(itm('일반형', 'writing'), 'blog'), true);
+assert.strictEqual(T.inScope(itm('고급형', 'notified'), 'blog'), true);
+assert.strictEqual(T.inScope(itm('기존 폼', 'paid'), 'blog'), true);
+assert.strictEqual(T.inScope(itm('기존 폼', 'unpaid'), 'blog'), false);
+assert.strictEqual(T.inScope(itm('빌리투어', 'paid'), 'blog'), false);
+assert.strictEqual(T.inScope(itm('빌리투어', 'paid'), 'billy'), true);
+assert.strictEqual(T.inScope(itm('일반형', 'writing'), 'billy'), false);
+assert.strictEqual(T.inScope(itm('기존 폼', 'paid'), 'billy'), false);
+assert.strictEqual(T.inScope(itm('빌리투어', 'paid'), 'all'), true);
+assert.strictEqual(T.inScope(itm('일반형', 'writing'), 'all'), true);
+assert.strictEqual(T.inScope(itm('기존 폼', 'unpaid'), 'all'), false);
+
 console.log('trend-calc: all passed');

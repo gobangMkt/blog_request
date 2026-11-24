@@ -57,14 +57,23 @@
     .sort[aria-sort="ascending"], .sort[aria-sort="descending"] { color: var(--g900); }
     .sort[aria-sort="ascending"] .u, .sort[aria-sort="descending"] .d { fill: var(--g900); }
     /* 한 판: 왼쪽 등록, 오른쪽 현황 표(더 넓게). 1100px 이하는 위아래로 쌓는다(등록이 위) */
-    .cols { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 16px; align-items: start; margin-top: 12px; }
+    .cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; margin-top: 12px; }
     .col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
     .cols .card { margin-top: 0; }
     .col-reg { order: -1; }
-    @media (max-width: 1100px) {
-      .cols { grid-template-columns: minmax(0, 1fr); }
-      .col-reg { max-width: 480px; }
-    }
+    /* 상품 탭: 같은 화면에서 여는 선택이라 테두리 컨트롤(.sel과 같은 높이·테두리), 선택은 테두리 색으로만 */
+    .ptabs { display: flex; gap: 8px; margin-top: 12px; }
+    .ptab, .tgl { height: 40px; padding: 0 16px; border: 1.5px solid var(--bdr); border-radius: 10px; background: var(--sur); color: var(--g600); font-family: var(--f); font-size: 14px; font-weight: 700; cursor: pointer; }
+    .ptab[aria-selected="true"] { border-color: var(--pri); color: var(--g900); }
+    .cols[hidden] { display: none; }
+    .hidechk { display: inline-flex; align-items: center; gap: 2px; height: 40px; padding: 0; border: 0; background: none; font-family: var(--f); font-size: 14px; font-weight: 700; color: var(--g600); cursor: pointer; }
+    .hidechk .box { flex: none; }
+    .tr.wr { opacity: 0.7; }
+    .tr.wr:hover { opacity: 1; }
+    /* 결제 알림 줄: 잔디 링크 + 설치 방법·붙여넣기 열기(테두리). 붙여넣기 칸은 안 읽힌 건만 넣는 보조라 접어 둔다 */
+    .regbar .card-head { margin-bottom: 0; }
+    .regbar #pasteBox { margin-top: 12px; }
+    .regbar #go { width: 100%; height: 52px; margin-top: 16px; font-size: 16px; padding: 0; border-radius: 12px; }
     .card { background: var(--sur); border: 1px solid var(--bdr); border-radius: 18px; padding: 22px 18px 20px; margin-top: 12px; }
     .gate { max-width: 420px; margin: 12px auto 0; }
     label { display: inline-flex; align-items: center; gap: 4px; font-size: 15px; font-weight: 700; margin-bottom: 8px; }
@@ -155,13 +164,13 @@
       width: 44px; height: 44px; border: 0; background: none; cursor: pointer;
       display: inline-flex; align-items: center; justify-content: center;
     }
-    .ck .box {
+    .ck .box, .hidechk .box {
       width: 22px; height: 22px; border: 1.5px solid var(--g300); border-radius: 6px; background: var(--sur);
       display: inline-flex; align-items: center; justify-content: center; color: var(--sur);
     }
-    .ck .box svg { width: 14px; height: 14px; visibility: hidden; }
-    .ck[aria-checked="true"] .box { background: var(--pri); border-color: var(--pri); }
-    .ck[aria-checked="true"] .box svg { visibility: visible; }
+    .ck .box svg, .hidechk .box svg { width: 14px; height: 14px; visibility: hidden; }
+    .ck[aria-checked="true"] .box, .hidechk[aria-checked="true"] .box { background: var(--pri); border-color: var(--pri); }
+    .ck[aria-checked="true"] .box svg, .hidechk[aria-checked="true"] .box svg { visibility: visible; }
     .ck:disabled { cursor: default; }
     .ck:disabled .box { border-color: var(--bdr); background: var(--bg); }
     .ck:disabled[aria-checked="true"] .box { background: var(--g300); border-color: var(--g300); }
@@ -175,6 +184,7 @@
     @media (max-width: 640px) {
       .tr { grid-template-columns: 44px minmax(0, 1fr) 32px 88px 44px; gap: 8px; }
       .c-price, .tr.th .r { display: none; }
+      .recon .tr[data-row="grp"] .c-price { display: block; }
       .sort svg { display: none; }
       .c-kind .kt { display: none; }
       .c-who { white-space: normal; }
@@ -300,12 +310,28 @@
     .pg { height: 40px; padding: 0 14px; border: 1.5px solid var(--bdr); border-radius: 10px; background: var(--sur); font-family: var(--f); font-size: 14px; font-weight: 700; color: var(--g900); cursor: pointer; }
     .pg:disabled { color: var(--g300); cursor: not-allowed; }
     .pg-now { font-size: 14px; color: var(--g600); font-variant-numeric: tabular-nums; }
+    /* 잔디 가져오기: 머리의 마지막 수집, 설치 칸, 대조 카드(.tr 표 문법 그대로, 안내 줄·펼침 영역만 더한다) */
+    .top .res-sum { margin: 0; flex: 1; }
+    .regbar #setupBox { margin-top: 12px; }
+    a.tgl { display: inline-flex; align-items: center; text-decoration: none; }
+    .dn-seg.s3 { opacity: 0.2; }
+    .sw.s3 { opacity: 0.2; }
+    .recon .tr { grid-template-columns: 104px minmax(0, 1fr) 84px 92px 124px 96px; }
+    .recon .tr[data-row="grp"] > :first-child { grid-column: 1 / 4; }
+    .recon .tr > p { grid-column: 1 / -1; font-size: 13px; line-height: 1.5; color: var(--g600); }
+    .recon .res { margin-bottom: 12px; }
+    .hold { padding: 8px 0 12px; border-bottom: 1px solid var(--bdr); }
+    .hold[hidden] { display: none; }
+    .hold > p:not(.err) { background: var(--bg); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .hold > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    @media (max-width: 640px) { .recon .tr { grid-template-columns: 44px minmax(0, 1fr) 32px 88px 96px; } }
   </style>
 </head>
 <body>
 <div class="wrap">
   <div class="top">
     <h1>블로그 부가상품</h1>
+    <p class="res-sum" id="lastScan"></p>
     <button class="voc-open" id="vocOpen" type="button">불편 신고</button>
   </div>
 
@@ -326,7 +352,7 @@
           <div class="res-title res-title-row">결제 추이
             <span class="tip" tabindex="0" aria-label="도움말"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v3.8M8 5v.1" stroke-linecap="round"/></svg>
               <span class="tip-box" role="tooltip"><ul>
-                <li><b>구분:</b> 부가상품 = 일반형·고급형, 기존 폼 = 15만원·10만원 폼. 전체는 둘의 합이고, 기존 폼은 결제완료일이 있는 건만 센다</li>
+                <li><b>구분:</b> 블로그(기본, 고방 매출) = 일반형·고급형 + 15만원·10만원 폼(결제완료일이 있는 건만), 빌리투어 = 부가상품 결제 탭의 금액 합. 전체는 둘의 합</li>
                 <li><b>집계 기준:</b> 결제일시(기존 폼은 결제완료일). 고급형은 알림톡만 보낸 건(응답 대기)도 포함, 응답 대기에서 지운 건은 제외</li>
                 <li><b>매출:</b> 공급가액 = 결제액(시트 단가, 부가세 포함) ÷ 1.1. 결제수수료·작성 정산을 뺀 실제 남는 돈이 아니고, 그 원가 자료가 없어 표시하지 않음</li>
                 <li><b>기간:</b> 달력에서 고른다(프리셋 또는 시작일·종료일). 차트 단위(일·주·월별)는 막대 칸만 바꾸고 카드 숫자는 바꾸지 않는다</li>
@@ -341,9 +367,9 @@
         </div>
         <div class="tools">
           <select class="sel" id="trKind" aria-label="집계 구분">
+            <option value="blog">구분 · 블로그 (고방 매출)</option>
+            <option value="billy">구분 · 빌리투어</option>
             <option value="all">구분 · 전체</option>
-            <option value="addon">구분 · 부가상품</option>
-            <option value="legacy">구분 · 기존 폼</option>
           </select>
           <select class="sel" id="trUnit" aria-label="차트 단위">
                 <option value="day">차트 · 일별</option>
@@ -362,6 +388,14 @@
       </div>
     </div>
 
+    <div class="ptabs" role="tablist" aria-label="상품">
+      <button class="ptab" type="button" role="tab" aria-selected="true" data-act="tab-blog" data-tab="blog">블로그</button>
+      <button class="ptab" type="button" role="tab" aria-selected="false" data-act="tab-billy" data-tab="billy">빌리투어</button>
+    </div>
+    <div class="card" id="billyPane" hidden>
+      <p class="empty">빌리투어 결제를 불러오는 중이에요.</p>
+    </div>
+
     <div class="cols">
       <div class="col col-stat">
         <div class="card">
@@ -371,6 +405,7 @@
               <p class="res-sum" id="statSum"></p>
             </div>
             <div class="tools">
+              <button class="hidechk" id="hideDone" type="button" role="checkbox" aria-checked="true" data-act="hide-done"><span class="box"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 5.5 10.5 11.5 3.5"/></svg></span>완료건 숨김</button>
               <button class="reset off" id="reset" type="button" disabled>초기화</button>
               <select class="sel" id="fState" aria-label="상태 조건">
                 <option value="all">상태 · 전체</option>
@@ -406,23 +441,49 @@
       </div>
 
       <div class="col col-reg">
-        <div class="card">
+        <div class="card regbar">
           <div class="card-head">
-            <label for="text">결제 알림 메시지
-              <span class="tip" tabindex="0" aria-label="도움말"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v3.8M8 5v.1" stroke-linecap="round"/></svg>
-                <span class="tip-box" role="tooltip"><ul>
-                  <li><b>붙여 넣기:</b> U사장님 운영팀 "[상품 결제완료]" 메시지를 그대로, 여러 건 한 번에</li>
-                  <li><b>일반형:</b> 시트에 직-일반 행으로 등록</li>
-                  <li><b>고급형:</b> 사장님 번호를 넣어 키워드 폼 알림톡 발송</li>
-                </ul></span>
-              </span>
-            </label>
-            <span class="quick"><a id="uceo" href="https://u-ceo.kr" target="_blank" rel="noopener" title="U사장님 열기">U사장님<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12"/></svg></a></span>
+            <div>
+              <label for="text">결제 알림
+                <span class="tip" tabindex="0" aria-label="도움말"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v3.8M8 5v.1" stroke-linecap="round"/></svg>
+                  <span class="tip-box" role="tooltip"><ul>
+                    <li><b>잔디 가져오기:</b> 잔디 방에서 북마크를 누르면 방을 끝까지 읽어 시트와 맞춰 봐요. 결제 알림은 원문 그대로 올려야 읽혀요</li>
+                    <li><b>붙여 넣기:</b> 안 읽힌 "[상품 결제완료]" 메시지를 그대로, 여러 건 한 번에</li>
+                    <li><b>일반형:</b> 시트에 직-일반 행으로 등록</li>
+                    <li><b>고급형:</b> 사장님 번호를 넣어 키워드 폼 알림톡 발송</li>
+                  </ul></span>
+                </span>
+              </label>
+            </div>
+            <div class="tools"><span class="quick"><a id="uceo" href="https://u-ceo.kr" target="_blank" rel="noopener" title="U사장님 열기">U사장님<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12"/></svg></a></span>
+            <span class="quick"><a id="fetchJandi" href="https://neoflat.jandi.com/" target="_blank" rel="noopener" data-act="fetch-jandi" title="잔디 방 열기">잔디<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12"/></svg></a></span>
+            <button class="tgl" id="setupToggle" type="button" aria-expanded="false" aria-controls="setupBox" data-act="setup-toggle">설치 방법</button>
+            <button class="tgl" id="pasteToggle" type="button" aria-expanded="false" aria-controls="pasteBox" data-act="paste-toggle">안 읽힌 건 붙여넣기</button>
+            </div>
           </div>
-          <textarea id="text" placeholder="[Web발신]&#10;[상품 결제완료]&#10;..."></textarea>
-          <button class="cta" id="go" type="button" disabled>결제 알림을 붙여 넣어 주세요</button>
-          <p class="err" id="err" hidden></p>
+          <div id="setupBox" hidden>
+            <section class="guide" aria-labelledby="bmTitle">
+              <h2 id="bmTitle">북마크 설치 (마케팅팀 각자 한 번)</h2>
+              <ol>
+                <li>크롬 북마크바가 안 보이면 <b>Ctrl+Shift+B</b>로 켜요.</li>
+                <li>아래 <b>NF 결제 가져오기</b>를 북마크바로 끌어다 놓아요. 눌러서 쓰는 게 아니에요.</li>
+                <li>잔디에서 <b>U사장님-콘텐츠상품</b> 방을 열고 북마크를 눌러요. 끝까지 읽는 데 1~2분 걸리니 탭을 그대로 둬요.</li>
+                <li>읽기가 끝나면 <b>결과 화면으로 보내기</b>를 눌러요. 결제 알림은 원문 그대로 올려야 읽혀요.</li>
+              </ol>
+            </section>
+            <div class="card-head">
+              <a class="tgl" id="bmLink" href="#" draggable="true" aria-disabled="true" data-act="bookmark-drag" title="북마크바로 끌어다 놓아요">NF 결제 가져오기</a>
+              <p class="res-sum" id="bmNote">북마크 버전 1 · 오래됐다는 안내가 뜨면 다시 끌어다 놓아요</p>
+            </div>
+          </div>
+          <div id="pasteBox" hidden>
+            <textarea id="text" placeholder="[Web발신]&#10;[상품 결제완료]&#10;..."></textarea>
+            <button class="cta" id="go" type="button" disabled>결제 알림을 붙여 넣어 주세요</button>
+            <p class="err" id="err" hidden></p>
+          </div>
         </div>
+
+        <div class="card recon" id="recon" hidden></div>
 
         <div class="card" id="out" hidden>
           <p class="res-title" id="resTitle"></p>
@@ -434,11 +495,12 @@
         <section class="guide" aria-labelledby="gTitle">
           <h2 id="gTitle">사용 방법</h2>
           <ol>
-            <li>결제완료 메시지를 붙여 넣고 <b>시트에 등록하기</b></li>
+            <li>잔디 방에서 북마크 <b>NF 결제 가져오기</b>를 눌러 읽고 <b>시트에 등록하기</b>. 결제 알림은 원문 그대로 올려야 읽히고, 안 읽힌 건은 <b>안 읽힌 건 붙여넣기</b>로 넣어요</li>
             <li>고급형은 사장님 번호를 넣고 <b>알림톡 보내기</b></li>
             <li>글을 다 쓰면 시트 DB의 <b>작성</b> 체크 (고급형은 완료 알림톡까지)</li>
           </ol>
         </section>
+
       </div>
     </div>
   </div>
@@ -477,6 +539,9 @@
 </div>
 
 <script src="js/trend-calc.js"></script>
+<script src="js/jandi-recon.js"></script>
+<script src="js/jandi-bridge.js"></script>
+<script src="js/jandi-ui.js"></script>
 <script>
 (function () {
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbysJEvbkNX8PU7C5zcdfGqtw5xbfejQmDOIONr9PwssxwPyv2-HIQPI6uZtV2AChYS7/exec';
@@ -639,6 +704,7 @@
   }
 
   function render(results) {
+    JandiUI.hideCard(); // 대조 카드와 이 결과 카드는 한 번에 하나만
     var added = results.filter(function (r) { return r.status === 'added'; }).length;
     var asks = results.filter(function (r) { return r.status === 'premium_need_phone'; }).length;
     var bad = results.filter(function (r) { return LABEL[r.status] && LABEL[r.status].cls === 'bad'; }).length;
@@ -680,7 +746,7 @@
   var WRITTEN = { sent: true, basic_done: true }; // 체크 표시: 일반형 작성 완료, 고급형 완료 알림 보냄
   var CHECK_SVG = '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 5.5 10.5 11.5 3.5"/></svg>';
   var lastData = null;
-  var sortKey = 'paid', sortDir = 'desc', fState = 'all', fKind = 'all';
+  var sortKey = 'paid', sortDir = 'desc', fState = 'all', fKind = 'all', hideDone = true;
   var PAGE = 10, page = 1;
   var RANK = { writing: 0, sendwait: 1, notified: 2, sent: 3, basic_done: 3, paid: 4, unpaid: 4 }; // 할 일이 먼저
   var reqSeq = 0; // 겹친 요청 중 마지막 응답만 화면에 반영한다
@@ -720,6 +786,8 @@
   }
   function passes(it) {
     if (fKind !== 'all' && it.kind !== fKind) return false;
+    // 완료건 숨김(기본 켬): 작성 완료·완료 알림 보낸 건을 가린다. 그 상태를 직접 고르면 보여 준다
+    if (hideDone && WRITTEN[it.stage] && fState !== 'sent' && fState !== 'basic_done') return false;
     if (fState === 'all') return true;
     if (fState === 'todo') return it.stage === 'writing' || it.stage === 'sendwait';
     return it.stage === fState;
@@ -742,14 +810,33 @@
     page = 1;
     if (lastData) renderStatus(lastData);
   }
-  function isDefault() { return sortKey === 'paid' && sortDir === 'desc' && fState === 'all' && fKind === 'all'; }
+  function isDefault() { return sortKey === 'paid' && sortDir === 'desc' && fState === 'all' && fKind === 'all' && hideDone; }
   function syncReset() { var off = isDefault(); $('reset').className = off ? 'reset off' : 'reset'; $('reset').disabled = off; }
   $('fState').addEventListener('change', function () { page = 1; fState = this.value; this.className = 'sel' + (fState === 'all' ? '' : ' on'); if (lastData) renderStatus(lastData); else syncReset(); });
   $('fKind').addEventListener('change', function () { page = 1; fKind = this.value; this.className = 'sel' + (fKind === 'all' ? '' : ' on'); if (lastData) renderStatus(lastData); else syncReset(); });
   $('reset').addEventListener('click', function () {
-    sortKey = 'paid'; sortDir = 'desc'; fState = 'all'; fKind = 'all'; page = 1;
+    sortKey = 'paid'; sortDir = 'desc'; fState = 'all'; fKind = 'all'; hideDone = true; page = 1;
+    $('hideDone').setAttribute('aria-checked', 'true');
     $('fState').value = 'all'; $('fState').className = 'sel'; $('fKind').value = 'all'; $('fKind').className = 'sel';
     if (lastData) renderStatus(lastData); else syncReset();
+  });
+
+  $('pasteToggle').addEventListener('click', function () {
+    var open = $('pasteBox').hidden;
+    $('pasteBox').hidden = !open;
+    this.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) $('text').focus();
+  });
+  $('hideDone').addEventListener('click', function () { page = 1; hideDone = !hideDone; this.setAttribute('aria-checked', hideDone ? 'true' : 'false'); if (lastData) renderStatus(lastData); else syncReset(); });
+
+  // 상품 탭: 블로그는 지금 화면(등록 + 시트 DB), 빌리투어는 연결 전 안내만
+  Array.prototype.forEach.call(document.querySelectorAll('.ptab'), function (b) {
+    b.addEventListener('click', function () {
+      var billy = b.getAttribute('data-tab') === 'billy';
+      Array.prototype.forEach.call(document.querySelectorAll('.ptab'), function (x) { x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
+      $('billyPane').hidden = !billy;
+      document.querySelector('.cols').hidden = billy;
+    });
   });
 
   // ── 결제 추이: 계산은 js/trend-calc.js(순수 함수·테스트 있음), 여기서는 그리기만 한다 ──
@@ -757,17 +844,13 @@
   var PRICE = { '일반형': 70000, '고급형': 150000 }; // GAS가 price를 보내면 그 값을 쓴다(옛 응답 대비 기본값)
   var SAMPLE_MIN = 10; // 결제가 이 건수보다 적으면 평균·간격은 참고용으로 알린다
   var WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'];
-  var trUnit = 'day', trItems = [], trKind = 'all';
+  var trUnit = 'day', trItems = [], trKind = 'blog';
   var UNIT_KEY = { day: '14', week: '90', month: 'all' }; // 기간을 직접 고르기 전에는 차트 단위에 어울리는 기간으로
   var trRng = { key: '14', from: 0, to: 0, touched: false }; // key = 프리셋 이름(오늘 기준으로 매번 계산), null = 직접 고른 시작~끝
   var PRESETS = [['today', '오늘'], ['yday', '어제'], ['7', '최근 7일'], ['14', '최근 14일'], ['30', '최근 30일'], ['90', '최근 90일'],
     ['month', '이번 달'], ['year', '올해'], ['all', '전체 기간']];
-  var KIND_NAME = { all: '', addon: '부가상품 ', legacy: '기존 폼 ' };
-  function inTrend(it) { // 기존 폼은 결제완료일이 있는 건(결제 완료)만 매출로 센다
-    var legacy = it.kind === '기존 폼';
-    if (legacy && it.stage !== 'paid') return false;
-    return trKind === 'all' || (trKind === 'legacy') === legacy;
-  }
+  var KIND_NAME = { all: '', blog: '블로그 ', billy: '빌리투어 ' };
+  function inTrend(it) { return TC.inScope(it, trKind); } // 구분 규칙은 trend-calc(시험 있음)
   function p2(n) { return (n < 10 ? '0' : '') + n; }
   function md(ms) { var d = new Date(ms); return p2(d.getUTCMonth() + 1) + '.' + p2(d.getUTCDate()); }
   function ym(ms) { var d = new Date(ms); return d.getUTCFullYear() + '.' + p2(d.getUTCMonth() + 1); }
@@ -782,7 +865,7 @@
     var pct = Math.round((cur - prev) / prev * 100);
     return pct === 0 ? '±0%' : (pct > 0 ? '▲ ' : '▼ ') + Math.abs(pct) + '%';
   }
-  $('trKind').addEventListener('change', function () { trKind = this.value; this.className = 'sel' + (trKind === 'all' ? '' : ' on'); renderTrend(); });
+  $('trKind').addEventListener('change', function () { trKind = this.value; this.className = 'sel' + (trKind === 'blog' ? '' : ' on'); renderTrend(); });
   $('trUnit').addEventListener('change', function () { trUnit = this.value; if (!trRng.touched) trRng.key = UNIT_KEY[trUnit]; renderTrend(); });
   var rz = 0;
   window.addEventListener('resize', function () { cancelAnimationFrame(rz); rz = requestAnimationFrame(function () { if (!$('app').hidden) renderTrend(); }); });
@@ -868,7 +951,7 @@
   }
 
   // 유형 구성 도넛: 조각 길이 = 유형별 결제액 비중(결제액이 없으면 건수), 가운데 = 결제 건수. 같은 파랑의 농도로만 가른다
-  var KIND_ORDER = ['일반형', '고급형', '기존 폼'];
+  var KIND_ORDER = ['일반형', '고급형', '기존 폼', '빌리투어'];
   function donutCard(bk, tot) {
     var kinds = KIND_ORDER.filter(function (k) { return bk[k] && bk[k].n > 0; });
     var useAmt = kinds.some(function (k) { return bk[k].amt > 0; });
@@ -1118,10 +1201,12 @@
   function renderStatus(d) {
     lastData = d;
     var items = d.items || [];
-    trItems = items; renderTrend();
+    trItems = items.concat(JandiRecon.billyTrendItems(d.billy)); renderTrend(); // 추이 구분 빌리투어용
+    JandiUI.onStatus(d); // 마지막 수집, 빌리투어 표, 기다리던 잔디 결과
     var w = count(items, 'writing'), sw = count(items, 'sendwait');
     $('statTitle').textContent = '시트 DB';
-    $('statSum').textContent = '할 일 ' + (w + sw) + '건 · 작성 전 ' + w + ' · 완료 알림 전 ' + sw;
+    var hid = items.filter(function (it) { return WRITTEN[it.stage]; }).length;
+    $('statSum').textContent = '할 일 ' + (w + sw) + '건 · 작성 전 ' + w + ' · 완료 알림 전 ' + sw + (hideDone && hid ? ' · 작성 완료 ' + hid + '건 숨김' : '');
     syncReset();
     var box = $('statList'); box.innerHTML = '';
     if (!items.length) {
@@ -1173,6 +1258,7 @@
     var chip = document.createElement('span'); chip.className = 'chip ' + it.stage; chip.textContent = ST_TEXT[it.stage] || it.stage;
     st.appendChild(chip);
     if (DONE[it.stage]) row.className = 'tr fin';
+    if (WRITTEN[it.stage] && fState !== 'sent' && fState !== 'basic_done') row.className += ' wr'; // 작성 완료·알림 보냄은 흐리게(그 상태를 직접 고르면 흐리지 않음)
     var cell = document.createElement('span'); cell.className = 'c-ck';
     cell.appendChild(it.stage === 'notified' && it.pf ? delBtn(it, st) : checkBtn(it, st));
     row.appendChild(date); row.appendChild(who); row.appendChild(kind); row.appendChild(price); row.appendChild(st); row.appendChild(cell);
@@ -1299,6 +1385,9 @@
     if (!p) { p = document.createElement('span'); p.className = 'row-err'; stCell.appendChild(p); }
     p.textContent = '바꾸지 못했어요. 다시 눌러 주세요';
   }
+
+  JandiUI.init({ post: post, confirmBox: confirmBox, askCard: askCard, loadStatus: loadStatus, showGate: showGate,
+    hideOut: function () { out.hidden = true; }, KIND_SVG: KIND_SVG });
 
   // 시작: 저장된 코드가 있으면 바로 들어가 현황을 불러온다
   if (TOKEN) { $('app').hidden = false; loadStatus(); } else showGate('');

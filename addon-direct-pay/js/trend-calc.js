@@ -101,9 +101,17 @@
     return out;
   }
 
+  // 결제 추이 구분: 블로그(기본, 고방 매출) = 일반형·고급형 + 결제 완료된 기존 폼, 빌리투어, 전체 = 둘의 합
+  function inScope(it, scope) {
+    if (it.kind === '빌리투어') return scope !== 'blog';
+    if (scope === 'billy') return false;
+    if (it.kind === '기존 폼' && it.stage !== 'paid') return false;
+    return true;
+  }
+
   return {
     DAYMS: DAYMS, parseDay: parseDay, kstToday: kstToday, mondayOf: mondayOf, monthStart: monthStart,
     windowOf: windowOf, cellsOf: cellsOf, sumRange: sumRange, vat: vat, perUnit: perUnit, median: median,
-    cadence: cadence, lastPay: lastPay, byKind: byKind
+    cadence: cadence, lastPay: lastPay, byKind: byKind, inScope: inScope
   };
 });
