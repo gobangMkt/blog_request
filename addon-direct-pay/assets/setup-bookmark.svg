@@ -1,14 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 150" width="360" height="150" font-family="Pretendard, 'Malgun Gothic', sans-serif">
   <rect width="360" height="150" fill="#F2F4F6"/>
-  <rect x="12" y="14" width="336" height="40" rx="10" fill="#FFFFFF" stroke="#E5E8EB"/>
-  <path d="M30 24l2.6 5.3 5.8.8-4.2 4.1 1 5.8L30 37.2l-5.2 2.8 1-5.8-4.2-4.1 5.8-.8z" fill="#B0B8C1"/>
-  <text x="48" y="39" font-size="13" fill="#8B95A1">메일</text>
-  <text x="86" y="39" font-size="13" fill="#8B95A1">시트</text>
-  <rect x="124" y="22" width="132" height="24" rx="8" fill="#E8F1FF" stroke="#3182F6" stroke-width="1.5" stroke-dasharray="4 3"/>
-  <text x="190" y="39" font-size="13" font-weight="700" fill="#191F28" text-anchor="middle">NF 결제 가져오기</text>
-  <path d="M190 88V62" stroke="#3182F6" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M183 69l7-8 7 8" fill="none" stroke="#3182F6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="116" y="94" width="148" height="34" rx="10" fill="#3182F6"/>
-  <text x="190" y="116" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle">NF 결제 가져오기</text>
-  <text x="280" y="116" font-size="13" fill="#4E5968">끌어다 놓기</text>
+  <rect x="12" y="12" width="336" height="40" rx="10" fill="#FFFFFF" stroke="#E5E8EB"/>
+  <path d="M30 22l2.6 5.3 5.8.8-4.2 4.1 1 5.8L30 35.2l-5.2 2.8 1-5.8-4.2-4.1 5.8-.8z" fill="#B0B8C1"/>
+  <text x="48" y="37" font-size="13" fill="#8B95A1">메일</text>
+  <text x="86" y="37" font-size="13" fill="#8B95A1">시트</text>
+  <rect x="124" y="18" width="150" height="28" rx="8" fill="#EAF2FE" stroke="#3182F6" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="199" y="37" font-size="13" font-weight="700" fill="#1B6CF2" text-anchor="middle">NF 결제 가져오기</text>
+  <path d="M199 90V64" stroke="#3182F6" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M192 71l7-8 7 8" fill="none" stroke="#3182F6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="112" y="96" width="174" height="42" rx="12" fill="#EAF2FE" stroke="#3182F6" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <g fill="#1B6CF2" opacity="0.7">
+    <circle cx="127" cy="111" r="1.6"/><circle cx="133" cy="111" r="1.6"/>
+    <circle cx="127" cy="117" r="1.6"/><circle cx="133" cy="117" r="1.6"/>
+    <circle cx="127" cy="123" r="1.6"/><circle cx="133" cy="123" r="1.6"/>
+  </g>
+  <text x="147" y="122" font-size="14" font-weight="700" fill="#1B6CF2">NF 결제 가져오기</text>
+  <text x="298" y="122" font-size="13" fill="#4E5968">끌어다 놓기</text>
 </svg>

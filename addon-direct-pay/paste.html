@@ -41,7 +41,10 @@
       font-family: var(--f); font-size: 14px; font-weight: 700; padding: 0 10px; cursor: pointer; outline: none;
     }
     .sel:focus { border-color: var(--pri); }
-    .tools.filters { flex: 1 1 100%; justify-content: space-between; }
+    .tools.filters { flex: 1 1 100%; justify-content: flex-end; }
+    .col-stat .card-head { position: sticky; top: 0; z-index: 5; background: var(--sur); margin: -22px -18px 8px; padding: 22px 18px 8px; border-radius: 18px 18px 0 0; }
+    .res-title.res-title-row.stat-title { gap: 4px 12px; margin-bottom: 0; }
+    .stat-title .refresh { margin: -10px 0 -10px -4px; }
     .tools-l, .tools-r { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; }
     .tools-r { justify-content: flex-end; }
     .reset {
@@ -330,7 +333,7 @@
     .pop-card.pop-narrow { max-width: 720px; }
     .pop-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 24px 24px 0; }
     .pop-body[hidden] { display: none; }
-    .pop-narrow .pop-body { padding-bottom: 24px; }
+    .pop-narrow .pop-body, .pop-body:not(:has(.pop-foot)) { padding-bottom: 24px; }
     .pop-x { position: absolute; top: 10px; right: 10px; z-index: 2; width: 44px; height: 44px; border: 0; border-radius: 12px; background: none; color: var(--g600); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
     .pop-x svg { width: 20px; height: 20px; }
     .pop-title { font-size: 20px; font-weight: 800; line-height: 1.35; padding-right: 44px; }
@@ -340,14 +343,20 @@
     .pop-foot .cta { margin-top: 0; }
     .fold { margin-top: 12px; padding-bottom: 4px; }
     .hold-item + .hold-item { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--bdr); }
-    .steps { list-style: none; display: flex; flex-direction: column; gap: 20px; margin-top: 16px; }
-    .steps > li { display: grid; grid-template-columns: 26px minmax(0, 1fr) 360px; gap: 12px 16px; align-items: start; }
+    .steps { list-style: none; display: flex; flex-direction: column; gap: 0; margin-top: 20px; }
+    .steps > li { display: grid; grid-template-columns: 26px minmax(0, 1fr) 360px; gap: 8px 16px; align-items: start; padding: 20px 0; border-top: 1px solid var(--bdr); }
+    .steps > li:first-child { border-top: 0; padding-top: 0; }
+    .steps > li:last-child { padding-bottom: 0; }
     .step-n { width: 26px; height: 26px; border-radius: 50%; background: var(--teal); color: var(--sur); font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
-    .step-txt > b { font-size: 15px; font-weight: 700; color: var(--g900); }
+    .step-txt > b { display: block; font-size: 15px; font-weight: 700; line-height: 26px; color: var(--g900); }
     .step-txt p { margin-top: 4px; font-size: 14px; line-height: 1.7; color: var(--g600); }
     .step-txt p b { color: var(--g900); font-weight: 700; }
-    .step-act { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-top: 8px; }
+    .step-act { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 12px; }
     .step-act .res-sum { margin: 0; }
+    .bm-drag { display: inline-flex; align-items: center; gap: 10px; height: 48px; padding: 0 18px 0 12px; border: 1.5px dashed var(--pri); border-radius: 12px; background: #EAF2FE; color: var(--pri-h); font-family: var(--f); font-size: 15px; font-weight: 700; text-decoration: none; cursor: grab; box-shadow: 0 2px 6px rgba(49, 130, 246, 0.18); user-select: none; }
+    .bm-drag svg { width: 12px; height: 18px; flex: none; opacity: 0.7; }
+    .bm-drag:active { cursor: grabbing; box-shadow: none; }
+    .bm-drag[aria-disabled="true"] { opacity: 0.5; }
     .step-img { width: 100%; max-width: 360px; height: auto; border: 1px solid var(--bdr); border-radius: 12px; background: var(--bg); }
     @media (max-width: 760px) {
       .pop { padding: 0; }
@@ -442,16 +451,16 @@
         <div class="card">
           <div class="card-head">
             <div>
-              <p class="res-title" id="statTitle">시트 DB</p>
-              <p class="res-sum" id="statSum"></p>
-            </div>
-            <div class="tools filters">
-              <div class="tools-l">
+              <div class="res-title res-title-row stat-title">
+                <span id="statTitle">시트 DB</span>
                 <span class="quick"><a href="https://docs.google.com/spreadsheets/d/1lgAsrtoeqv1-g3Nh3D21zTyuGLdAZuP5jSXxftlIxh0/edit" target="_blank" rel="noopener" title="신청 내역 시트 열기">시트<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12"/></svg></a></span>
                 <button class="refresh" id="refresh" type="button" aria-label="새로고침" title="새로고침">
                   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 10a6.5 6.5 0 1 1-1.9-4.6"/><path d="M16.5 3.5v3.6h-3.6"/></svg>
                 </button>
               </div>
+              <p class="res-sum" id="statSum"></p>
+            </div>
+            <div class="tools filters">
               <div class="tools-r">
                 <button class="reset off" id="reset" type="button" aria-label="초기화" title="필터 초기화" disabled>
                   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M7.5 7.5l5 5M12.5 7.5l-5 5"/></svg>
@@ -546,7 +555,7 @@
           <div class="step-txt"><b>북마크 끌어다 놓기</b>
             <p>크롬 북마크바가 안 보이면 <b>Ctrl+Shift+B</b>로 켜요. 아래 버튼을 북마크바로 끌어다 놓아요. 눌러서 쓰는 게 아니에요.</p>
             <div class="step-act">
-              <a class="tgl" id="bmLink" href="#" draggable="true" aria-disabled="true" data-act="bookmark-drag" title="북마크바로 끌어다 놓아요">NF 결제 가져오기</a>
+              <a class="bm-drag" id="bmLink" href="#" draggable="true" aria-disabled="true" data-act="bookmark-drag" title="북마크바로 끌어다 놓아요"><svg viewBox="0 0 12 18" fill="currentColor" aria-hidden="true"><circle cx="3" cy="3" r="1.6"/><circle cx="9" cy="3" r="1.6"/><circle cx="3" cy="9" r="1.6"/><circle cx="9" cy="9" r="1.6"/><circle cx="3" cy="15" r="1.6"/><circle cx="9" cy="15" r="1.6"/></svg>NF 결제 가져오기</a>
               <p class="res-sum" id="bmNote">북마크 버전 2 · 오래됐다는 안내가 뜨면 다시 끌어다 놓아요</p>
             </div>
           </div>

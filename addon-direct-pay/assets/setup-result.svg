@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 190" width="360" height="190" font-family="Pretendard, 'Malgun Gothic', sans-serif">
   <rect width="360" height="190" fill="#F2F4F6"/>
-  <rect x="12" y="10" width="336" height="170" rx="14" fill="#FFFFFF" stroke="#E5E8EB"/>
+  <rect x="12" y="10" width="336" height="172" rx="14" fill="#FFFFFF" stroke="#E5E8EB"/>
   <text x="26" y="34" font-size="15" font-weight="800" fill="#191F28">잔디에서 7건 읽었어요</text>
   <rect x="26" y="44" width="84" height="30" rx="10" fill="#FFFFFF" stroke="#3182F6" stroke-width="1.5"/>
   <text x="68" y="64" font-size="13" font-weight="700" fill="#191F28" text-anchor="middle">블로그 6</text>
@@ -11,6 +11,6 @@
   <text x="300" y="96" font-size="13" font-weight="700" fill="#7A5200" text-anchor="middle">등록 전</text>
   <line x1="26" y1="108" x2="334" y2="108" stroke="#E5E8EB"/>
   <text x="26" y="127" font-size="13" font-weight="700" fill="#191F28">이미 시트에 있음 5건</text>
-  <rect x="26" y="146" width="308" height="26" rx="10" fill="#3182F6"/>
-  <text x="180" y="164" font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="middle">시트에 등록하기</text>
+  <rect x="26" y="142" width="308" height="26" rx="10" fill="#3182F6"/>
+  <text x="180" y="160"font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="middle">시트에 등록하기</text>
 </svg>
