@@ -46,16 +46,20 @@ function fmtPhone_(digits) {
 
 // 고방 지점 페이지에서 지점명을 읽는다. og:title "[고시원] 월 38~41 / 보 10 - 하이리빙텔 영등포역"의 마지막 " - " 뒤,
 // 없으면 <title> "하이리빙텔 영등포역 - 영등포동3가 고시원/고시텔"의 첫 " - " 앞. 못 읽으면 빈 문자열.
+var PLACE_FETCH_HEADERS = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' };
+
+function branchNameFromHtml_(html) {
+  var og = html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/i) || html.match(/<meta\s+content="([^"]+)"\s+property="og:title"/i);
+  if (og && og[1].indexOf(' - ') >= 0) return og[1].split(' - ').pop().trim();
+  var t = html.match(/<title>([^<]+)<\/title>/i);
+  if (t && t[1].indexOf(' - ') >= 0) return t[1].split(' - ')[0].trim();
+  return '';
+}
+
 function branchNameOfPlace_(url) {
   try {
-    var html = UrlFetchApp.fetch(url, {
-      muteHttpExceptions: true,
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-    }).getContentText('UTF-8');
-    var og = html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/i) || html.match(/<meta\s+content="([^"]+)"\s+property="og:title"/i);
-    if (og && og[1].indexOf(' - ') >= 0) return og[1].split(' - ').pop().trim();
-    var t = html.match(/<title>([^<]+)<\/title>/i);
-    if (t && t[1].indexOf(' - ') >= 0) return t[1].split(' - ')[0].trim();
+    var html = UrlFetchApp.fetch(url, { muteHttpExceptions: true, headers: PLACE_FETCH_HEADERS }).getContentText('UTF-8');
+    return branchNameFromHtml_(html);
   } catch (e) {}
   return '';
 }
@@ -420,7 +424,7 @@ function registerPremium(payload) {
 //   sent       = 고급형 완료 알림톡 보냄(완료 내역 H 발송완료)
 //   basic_done = 직-일반 N열 작성완료(현황 탭 체크로 바꾼다)
 // 배포 확인용 표식: 배포 뒤 틀린 토큰으로 listStatus를 불러 이 값이 응답에 오는지 보면 새 코드가 올라간 것(배포.bat이 확인한다)
-var BUILD = '2026-11-24-jandi-import';
+var BUILD = '2026-11-25-branch-name';
 function listStatus(token) {
   var props = PropertiesService.getScriptProperties();
   var saved = props.getProperty('INBOX_TOKEN');
@@ -488,7 +492,7 @@ function listStatus(token) {
       if (!ld) return;
       items.push({
         kind: '기존 폼', label: String(r[2] || '').trim() || '(이름 없음)', paidAt: fmt(ld), ts: ld.getTime(),
-        stage: lp ? 'paid' : 'unpaid', price: priceOf(r[15], 0), form: type
+        stage: lp ? 'paid' : 'unpaid', price: priceOf(r[15], 0), form: type, no: placeNo_(r[4])
       });
       return;
     }
@@ -570,6 +574,40 @@ function listStatus(token) {
       kind: '고급형', label: pf.name ? pf.name + '(' + pf.no + ')' : '지점번호 ' + pf.no,
       paidAt: fmt(new Date(pf.ts)), ts: pf.ts, stage: 'notified', pf: pf.id, price: PRICE_DIRECT_PREMIUM
     });
+  });
+
+  // 기존 폼 건: 신청자(원장님 이름) 대신 지점명으로 보여 준다. 지점 URL(E열)의 지점번호로 이름을 찾는다.
+  // 이미 아는 이름(발송 기록·직-대기 행) → 저장해 둔 이름(BN_) → 고방 지점 페이지 순. 한 번에 최대 30곳만 읽고
+  // 나머지는 다음 새로고침에서 채운다. 이름을 못 찾은 건은 원래 신청자 이름 그대로 둔다.
+  var nameByNo = {};
+  Object.keys(all).forEach(function (k) {
+    var bm = k.match(/^BN_(\d+)$/);
+    if (bm && all[k]) nameByNo[bm[1]] = all[k];
+  });
+  pfs.forEach(function (pf) { if (pf.name) nameByNo[pf.no] = pf.name; });
+  items.forEach(function (it) {
+    if (it.pending && it.no) { var pn = String(it.label).replace(/\(\d+\)$/, '').trim(); if (pn) nameByNo[it.no] = pn; }
+  });
+  var needNo = [];
+  items.forEach(function (it) {
+    if (it.kind === '기존 폼' && it.no && !nameByNo[it.no] && needNo.indexOf(it.no) < 0) needNo.push(it.no);
+  });
+  needNo = needNo.slice(0, 30);
+  if (needNo.length) {
+    try {
+      var fetched = UrlFetchApp.fetchAll(needNo.map(function (n) {
+        return { url: placeUrlOf_(n), muteHttpExceptions: true, headers: PLACE_FETCH_HEADERS };
+      }));
+      var learned = {};
+      fetched.forEach(function (rs, fi) {
+        var nm = rs.getResponseCode() === 200 ? branchNameFromHtml_(rs.getContentText('UTF-8')) : '';
+        if (nm) { nameByNo[needNo[fi]] = nm; learned['BN_' + needNo[fi]] = nm; }
+      });
+      if (Object.keys(learned).length) props.setProperties(learned);
+    } catch (e) {}
+  }
+  items.forEach(function (it) {
+    if (it.kind === '기존 폼' && it.no && nameByNo[it.no]) it.label = nameByNo[it.no] + '(' + it.no + ')';
   });
 
   items.sort(function (a, b) { return b.ts - a.ts; });

@@ -58,6 +58,21 @@
     .guide ol { padding-left: 20px; font-size: 14px; line-height: 1.7; color: var(--g600); display: flex; flex-direction: column; gap: 6px; }
     .guide li b { color: var(--g900); font-weight: 700; }
     .sel.on { border-color: var(--pri); }
+    /* 아이콘이 보이는 드롭다운(js/dropdown.js). 모양은 .sel과 같고 항목 앞에 그림을 둔다. 트리거는 고정 너비 + 말줄임 */
+    .dd { position: relative; }
+    .dd-btn { display: inline-flex; align-items: center; gap: 8px; width: 176px; text-align: left; }
+    #fState .dd-btn { width: 188px; }
+    .dd-txt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dd-ico { display: inline-flex; flex: none; width: 20px; height: 20px; }
+    .dd-ico[hidden] { display: none; }
+    .dd-ico svg { width: 20px; height: 20px; }
+    .dd-caret { display: inline-flex; flex: none; color: var(--g500); }
+    .dd-caret svg { width: 12px; height: 8px; }
+    .dd-list { position: absolute; top: calc(100% + 6px); left: 0; min-width: 100%; z-index: 20; list-style: none; background: var(--sur); border: 1px solid var(--bdr); border-radius: 12px; box-shadow: var(--pop-shadow); padding: 6px; }
+    .dd-list[hidden] { display: none; }
+    .dd-opt { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 8px; font-size: 14px; font-weight: 700; color: var(--g900); cursor: pointer; white-space: nowrap; }
+    .dd-opt.act { background: var(--bg); }
+    .dd-opt[aria-selected="true"] { color: var(--pri); }
     .sort {
       display: inline-flex; align-items: center; gap: 4px; height: 32px; border: 0; background: none; cursor: pointer;
       font-family: var(--f); font-size: 13px; font-weight: 700; color: var(--g500); padding: 0;
@@ -153,7 +168,7 @@
     .refresh svg { width: 20px; height: 20px; }
     .refresh:disabled { color: var(--g300); cursor: not-allowed; }
     .tr {
-      display: grid; grid-template-columns: 104px minmax(0, 1fr) 84px 92px 124px 56px; gap: 12px; align-items: center;
+      display: grid; grid-template-columns: 96px 104px minmax(0, 1fr) 92px 124px 56px; gap: 12px; align-items: center;
       padding: 6px 0; border-bottom: 1px solid var(--bdr); font-size: 14px; line-height: 1.4;
     }
     .tr.th { font-size: 13px; font-weight: 700; color: var(--g500); padding: 0 0 4px; }
@@ -195,7 +210,7 @@
     .del:disabled { color: var(--g300); cursor: not-allowed; }
     .empty { font-size: 14px; color: var(--g600); line-height: 1.6; padding: 6px 0; }
     @media (max-width: 640px) {
-      .tr { grid-template-columns: 44px minmax(0, 1fr) 32px 88px 44px; gap: 8px; }
+      .tr { grid-template-columns: 32px 44px minmax(0, 1fr) 88px 44px; gap: 8px; }
       .c-price, .tr.th .r { display: none; }
       .recon .tr[data-row="grp"] .c-price { display: block; }
       .sort svg { display: none; }
@@ -466,23 +481,8 @@
                   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M7.5 7.5l5 5M12.5 7.5l-5 5"/></svg>
                 </button>
                 <button class="hidechk" id="hideDone" type="button" role="checkbox" aria-checked="true" data-act="hide-done"><span class="box"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 5.5 10.5 11.5 3.5"/></svg></span>완료건 숨김</button>
-                <select class="sel" id="fKind" aria-label="유형 조건">
-                  <option value="all">유형 · 전체</option>
-                  <option value="일반형">유형 · 일반형</option>
-                  <option value="고급형">유형 · 고급형</option>
-                  <option value="기존 폼">유형 · 기존 폼</option>
-                </select>
-                <select class="sel" id="fState" aria-label="상태 조건">
-                  <option value="all">상태 · 전체</option>
-                  <option value="todo">상태 · 할 일</option>
-                  <option value="writing">상태 · 작성 전</option>
-                  <option value="sendwait">상태 · 완료 알림 전</option>
-                  <option value="notified">상태 · 응답 대기</option>
-                  <option value="sent">상태 · 완료 알림 보냄</option>
-                  <option value="basic_done">상태 · 작성 완료</option>
-                  <option value="paid">상태 · 결제 완료</option>
-                  <option value="unpaid">상태 · 결제 전</option>
-                </select>
+                <div id="fKind"></div>
+                <div id="fState"></div>
               </div>
             </div>
           </div>
@@ -615,6 +615,7 @@
 <script src="js/trend-calc.js"></script>
 <script src="js/jandi-recon.js"></script>
 <script src="js/jandi-bridge.js"></script>
+<script src="js/dropdown.js"></script>
 <script src="js/jandi-ui.js"></script>
 <script>
 (function () {
@@ -848,7 +849,7 @@
 
   function count(items, st) { return items.filter(function (it) { return it.stage === st; }).length; }
 
-  var COLS = [['결제', 'paid'], ['지점', 'who'], ['유형', 'kind'], ['단가', 'price', 'r'], ['상태', 'stage'], ['작성', '']];
+  var COLS = [['유형', 'kind'], ['결제', 'paid'], ['지점', 'who'], ['단가', 'price', 'r'], ['상태', 'stage'], ['작성', '']];
   var ARROW = '<svg viewBox="0 0 8 12" aria-hidden="true"><path class="u" d="M4 0 8 5H0Z"/><path class="d" d="M4 12 0 7h8Z"/></svg>';
 
   function primary(a, b) {
@@ -887,12 +888,23 @@
   }
   function isDefault() { return sortKey === 'paid' && sortDir === 'desc' && fState === 'all' && fKind === 'all' && hideDone; }
   function syncReset() { var off = isDefault(); $('reset').className = off ? 'reset off' : 'reset'; $('reset').disabled = off; }
-  $('fState').addEventListener('change', function () { page = 1; fState = this.value; this.className = 'sel' + (fState === 'all' ? '' : ' on'); if (lastData) renderStatus(lastData); else syncReset(); });
-  $('fKind').addEventListener('change', function () { page = 1; fKind = this.value; this.className = 'sel' + (fKind === 'all' ? '' : ' on'); if (lastData) renderStatus(lastData); else syncReset(); });
+  var ddState = Dropdown.create($('fState'), { axis: '상태', label: '상태 조건', value: 'all', onChange: function (v) {
+    page = 1; fState = v; if (lastData) renderStatus(lastData); else syncReset();
+  }, options: [
+    { v: 'all', t: '전체' }, { v: 'todo', t: '할 일' }, { v: 'writing', t: '작성 전' }, { v: 'sendwait', t: '완료 알림 전' },
+    { v: 'notified', t: '응답 대기' }, { v: 'sent', t: '완료 알림 보냄' }, { v: 'basic_done', t: '작성 완료' },
+    { v: 'paid', t: '결제 완료' }, { v: 'unpaid', t: '결제 전' }
+  ] });
+  var ddKind = Dropdown.create($('fKind'), { axis: '유형', label: '유형 조건', value: 'all', onChange: function (v) {
+    page = 1; fKind = v; if (lastData) renderStatus(lastData); else syncReset();
+  }, options: [
+    { v: 'all', t: '전체' }, { v: '일반형', t: '일반형', icon: KIND_SVG['일반형'] },
+    { v: '고급형', t: '고급형', icon: KIND_SVG['고급형'] }, { v: '기존 폼', t: '기존 폼', icon: KIND_SVG['기존 폼'] }
+  ] });
   $('reset').addEventListener('click', function () {
     sortKey = 'paid'; sortDir = 'desc'; fState = 'all'; fKind = 'all'; hideDone = true; page = 1;
     $('hideDone').setAttribute('aria-checked', 'true');
-    $('fState').value = 'all'; $('fState').className = 'sel'; $('fKind').value = 'all'; $('fKind').className = 'sel';
+    ddState.setValue('all'); ddKind.setValue('all');
     if (lastData) renderStatus(lastData); else syncReset();
   });
 
@@ -1346,7 +1358,7 @@
     if (WRITTEN[it.stage] && fState !== 'sent' && fState !== 'basic_done') row.className += ' wr'; // 작성 완료·알림 보냄은 흐리게(그 상태를 직접 고르면 흐리지 않음)
     var cell = document.createElement('span'); cell.className = 'c-ck';
     cell.appendChild(it.stage === 'notified' && it.pf ? delBtn(it, st) : checkBtn(it, st));
-    row.appendChild(date); row.appendChild(who); row.appendChild(kind); row.appendChild(price); row.appendChild(st); row.appendChild(cell);
+    row.appendChild(kind); row.appendChild(date); row.appendChild(who); row.appendChild(price); row.appendChild(st); row.appendChild(cell);
     return row;
   }
 

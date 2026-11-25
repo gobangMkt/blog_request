@@ -60,14 +60,14 @@
     pane.appendChild(el('p', 'res-sum', v.sum));
     if (!v.rows.length) { pane.appendChild(el('p', 'empty', '아직 쌓인 빌리투어 결제가 없어요.')); return; }
     var th = el('div', 'tr th');
-    ['결제', '지점', '유형', '금액', '상태', ''].forEach(function (t, i) { th.appendChild(el('span', i === 3 ? 'r' : '', t)); });
+    ['유형', '결제', '지점', '금액', '상태', ''].forEach(function (t, i) { th.appendChild(el('span', i === 3 ? 'r' : '', t)); });
     pane.appendChild(th);
     v.rows.slice(0, BILLY_SHOW_MAX).forEach(function (r) {
       var row = el('div', 'tr');
       var who = el('span', 'c-who', r.who); who.title = r.who;
       var kind = kindCell('빌리투어'); kind.title = r.product;
       var st = el('span', 'c-st'); st.appendChild(el('span', 'chip notified', r.status));
-      row.appendChild(el('span', 'c-date', r.when)); row.appendChild(who); row.appendChild(kind);
+      row.appendChild(kind); row.appendChild(el('span', 'c-date', r.when)); row.appendChild(who);
       row.appendChild(el('span', 'c-price', r.amount > 0 ? won(r.amount) : '-')); row.appendChild(st); row.appendChild(el('span', 'c-ck'));
       pane.appendChild(row);
     });
