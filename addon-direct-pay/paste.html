@@ -322,7 +322,9 @@
     /* 확인 팝업 */
     .modal { position: fixed; inset: 0; background: var(--dim); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
     .modal[hidden] { display: none; }
-    .sheet { width: 100%; max-width: 420px; background: var(--sur); border-radius: 20px; padding: 24px 20px 20px; }
+    .sheet { width: 100%; max-width: 420px; max-height: calc(100vh - 32px); overflow-y: auto; background: var(--sur); border-radius: 20px; padding: 24px 20px 20px; }
+    #fDesc { min-height: 120px; }
+    #fType { width: 100%; }
     .sheet h2 { font-size: 20px; font-weight: 800; line-height: 1.35; }
     .sheet ul { list-style: none; margin-top: 10px; font-size: 15px; line-height: 1.6; color: var(--g600); }
     .sheet .btns { display: flex; gap: 8px; margin-top: 20px; }
@@ -612,6 +614,41 @@
   </div>
 </div>
 
+<div class="modal" id="fModal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="fTitle">
+    <h2 id="fTitle"></h2>
+    <ul id="fInfo"></ul>
+    <div class="fld">
+      <label for="fK1">키워드 1 (필수)</label>
+      <input id="fK1" type="text" autocomplete="off" maxlength="60">
+    </div>
+    <div class="fld">
+      <label for="fK2">키워드 2</label>
+      <input id="fK2" type="text" autocomplete="off" maxlength="60">
+    </div>
+    <div class="fld">
+      <label for="fK3">키워드 3</label>
+      <input id="fK3" type="text" autocomplete="off" maxlength="60">
+    </div>
+    <div class="fld">
+      <label for="fDesc">강조 내용</label>
+      <textarea id="fDesc" rows="4"></textarea>
+    </div>
+    <div class="fld">
+      <label for="fType">작성 타입</label>
+      <select class="sel" id="fType">
+        <option value="직A">설명형 (직A)</option>
+        <option value="직B">후기형 (직B)</option>
+      </select>
+    </div>
+    <p class="err" id="fErr" hidden></p>
+    <div class="btns">
+      <button class="no" id="fNo" type="button">취소</button>
+      <button class="yes" id="fYes" type="button" disabled></button>
+    </div>
+  </div>
+</div>
+
 <script src="js/trend-calc.js"></script>
 <script src="js/jandi-recon.js"></script>
 <script src="js/jandi-bridge.js"></script>
@@ -817,6 +854,17 @@
     paid: '결제 완료',
     unpaid: '결제 전'
   };
+  // 고급형 응답 대기: 결제일시로부터 5일이 지나면 알아서 작성할 수 있다(서버 FILL_AFTER_DAYS와 같은 값). left = 남은 일수
+  var WAIT_DAYS = 5;
+  function waitOf(it) {
+    if (it.stage !== 'notified') return null;
+    var m = String(it.paidAt || '').match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/);
+    if (!m) return null;
+    var days = Math.floor((Date.now() - new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]).getTime()) / 86400000);
+    var left = WAIT_DAYS - days;
+    return { days: days, left: left, due: left <= 0 };
+  }
+  function isDue(it) { var w = waitOf(it); return !!(w && w.due && it.pf && it.no); }
   var DONE = { sent: true, basic_done: true, paid: true, unpaid: true }; // 기존 폼 건은 이 도구에서 할 일이 없어 차분하게
   var WRITTEN = { sent: true, basic_done: true }; // 체크 표시: 일반형 작성 완료, 고급형 완료 알림 보냄
   var CHECK_SVG = '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 5.5 10.5 11.5 3.5"/></svg>';
@@ -857,14 +905,15 @@
     if (sortKey === 'who') return String(a.label).localeCompare(String(b.label), 'ko');
     if (sortKey === 'kind') return String(a.kind).localeCompare(String(b.kind), 'ko');
     if (sortKey === 'price') return priceOf(a) - priceOf(b);
-    return (RANK[a.stage] === undefined ? 9 : RANK[a.stage]) - (RANK[b.stage] === undefined ? 9 : RANK[b.stage]);
+    return rankOf(a) - rankOf(b);
   }
+  function rankOf(it) { return isDue(it) ? 1 : RANK[it.stage] === undefined ? 9 : RANK[it.stage]; } // 5일 지난 응답 대기는 할 일
   function passes(it) {
     if (fKind !== 'all' && it.kind !== fKind) return false;
     // 완료건 숨김(기본 켬): 작성 완료·완료 알림 보낸 건을 가린다. 그 상태를 직접 고르면 보여 준다
     if (hideDone && WRITTEN[it.stage] && fState !== 'sent' && fState !== 'basic_done') return false;
     if (fState === 'all') return true;
-    if (fState === 'todo') return it.stage === 'writing' || it.stage === 'sendwait';
+    if (fState === 'todo') return it.stage === 'writing' || it.stage === 'sendwait' || isDue(it);
     return it.stage === fState;
   }
   function viewOf(items) {
@@ -1293,7 +1342,8 @@
     var w = count(items, 'writing'), sw = count(items, 'sendwait');
     $('statTitle').textContent = '시트 DB';
     var hid = items.filter(function (it) { return WRITTEN[it.stage]; }).length;
-    $('statSum').textContent = '할 일 ' + (w + sw) + '건 · 작성 전 ' + w + ' · 완료 알림 전 ' + sw + (hideDone && hid ? ' · 작성 완료 ' + hid + '건 숨김' : '');
+    var due = items.filter(isDue).length;
+    $('statSum').textContent = '할 일 ' + (w + sw + due) + '건 · 작성 전 ' + w + ' · 완료 알림 전 ' + sw + (due ? ' · 작성 가능 ' + due : '') + (hideDone && hid ? ' · 작성 완료 ' + hid + '건 숨김' : '');
     syncReset();
     var box = $('statList'); box.innerHTML = '';
     if (!items.length) {
@@ -1353,11 +1403,17 @@
     var pv = priceOf(it); price.textContent = pv > 0 ? won(pv) : '-';
     var st = document.createElement('span'); st.className = 'c-st';
     var chip = document.createElement('span'); chip.className = 'chip ' + it.stage; chip.textContent = ST_TEXT[it.stage] || it.stage;
+    var wt = waitOf(it);
+    if (wt) { // 응답 대기: 5일까지 D-day, 지나면 작성 가능(주황 = 내가 할 일)
+      chip.className = 'chip ' + (wt.due ? 'sendwait' : 'notified');
+      chip.textContent = wt.due ? '작성 가능 ' + (wt.left === 0 ? 'D-day' : 'D+' + (-wt.left)) : '응답 대기 D-' + wt.left;
+      chip.title = '결제일시부터 ' + WAIT_DAYS + '일 지나면 알아서 작성할 수 있어요';
+    }
     st.appendChild(chip);
     if (DONE[it.stage]) row.className = 'tr fin';
     if (WRITTEN[it.stage] && fState !== 'sent' && fState !== 'basic_done') row.className += ' wr'; // 작성 완료·알림 보냄은 흐리게(그 상태를 직접 고르면 흐리지 않음)
     var cell = document.createElement('span'); cell.className = 'c-ck';
-    cell.appendChild(it.stage === 'notified' && it.pf ? delBtn(it, st) : checkBtn(it, st));
+    cell.appendChild(it.stage === 'notified' && it.pf ? (isDue(it) ? fillBtn(it, st) : delBtn(it, st)) : checkBtn(it, st));
     row.appendChild(kind); row.appendChild(date); row.appendChild(who); row.appendChild(price); row.appendChild(st); row.appendChild(cell);
     return row;
   }
@@ -1474,6 +1530,68 @@
         });
     });
     return btn;
+  }
+
+  // 5일 지난 응답 대기: 지점 페이지에서 읽은 사실로 키워드·강조 내용을 채워 보여 주고, 확인하면 직-대기 행이 직A/직B 작성 건으로 바뀐다
+  var PENCIL_SVG = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 3.5l3 3L7 16H4v-3z"/><path d="M12 5l3 3"/></svg>';
+  var F_MSG = {
+    no_row: '시트에 대기 행이 없는 옛 건이에요. 시트에서 직접 처리해 주세요.',
+    not_due: '아직 5일이 안 지났어요.',
+    no_date: '결제일시를 읽지 못했어요. 시트에서 확인해 주세요.',
+    stale: '시트가 바뀌었어요. 새로고침 뒤 다시 해 주세요.',
+    bad_request: '키워드 1과 강조 내용을 넣어 주세요.',
+    keyword_taken: '이 키워드는 90일 안에 이미 쓴 키워드예요. 다른 키워드로 바꿔 주세요.',
+    invalid_type: '작성 타입을 확인해 주세요.'
+  };
+  function fillBtn(it, stCell) {
+    var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'refresh';
+    btn.title = '5일이 지났어요. 지점에 맞춰 채워서 작성 시작'; btn.setAttribute('aria-label', btn.title);
+    btn.innerHTML = PENCIL_SVG;
+    btn.addEventListener('click', function () { fillBox(it); });
+    return btn;
+  }
+  function fillBox(it) {
+    var ks = [$('fK1'), $('fK2'), $('fK3')], desc = $('fDesc'), type = $('fType'), yes = $('fYes'), fErr = $('fErr');
+    var ready = false;
+    $('fTitle').textContent = it.label + ' 작성을 시작할까요?';
+    var info = $('fInfo'); info.innerHTML = '';
+    ['사장님이 5일 넘게 키워드를 안 보내서, 지점 페이지에서 읽은 정보로 채웠어요.', '고친 뒤 시작하면 시트의 대기 행이 작성 건으로 바뀌고 되돌릴 수 없어요.'].forEach(function (l) {
+      var li = document.createElement('li'); li.textContent = l; info.appendChild(li);
+    });
+    ks.forEach(function (k) { k.value = ''; k.disabled = true; }); desc.value = ''; desc.disabled = true; type.value = '직A'; type.disabled = true;
+    fErr.hidden = true;
+    function sync() {
+      var ok = ready && !!ks[0].value.trim() && !!desc.value.trim();
+      yes.disabled = !ok;
+      yes.textContent = !ready ? '불러오는 중이에요' : !ks[0].value.trim() ? '키워드 1을 넣어 주세요' : !desc.value.trim() ? '강조 내용을 넣어 주세요' : '작성 시작';
+    }
+    ks[0].oninput = desc.oninput = sync; sync();
+    $('fModal').hidden = false;
+    function close() { $('fModal').hidden = true; yes.onclick = $('fNo').onclick = null; document.onkeydown = null; }
+    $('fNo').onclick = close;
+    document.onkeydown = function (e) { if (e.key === 'Escape') close(); };
+    post({ action: 'previewFill', no: it.no })
+      .then(function (d) {
+        if (d.reason === 'unauthorized') { close(); showGate('접근 코드가 바뀌었어요. 다시 입력해 주세요.'); return; }
+        if (!d.success) { fErr.textContent = F_MSG[d.reason] || '추천을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.'; fErr.hidden = false; return; }
+        (d.keywords || []).forEach(function (k, i) { if (ks[i]) ks[i].value = k; });
+        desc.value = d.description || ''; type.value = d.type || '직A';
+        ks.forEach(function (k) { k.disabled = false; }); desc.disabled = false; type.disabled = false;
+        if (d.taken && d.taken.length) { fErr.textContent = '90일 안에 이미 쓴 키워드라 뺐어요: ' + d.taken.join(', '); fErr.hidden = false; }
+        ready = true; sync(); ks[0].focus();
+      })
+      .catch(function () { fErr.textContent = '연결에 실패했어요. 잠시 뒤 다시 시도해 주세요.'; fErr.hidden = false; });
+    yes.onclick = function () {
+      yes.disabled = true; yes.textContent = '시작하는 중이에요'; fErr.hidden = true;
+      post({ action: 'fillPending', no: it.no, keywords: ks.map(function (k) { return k.value.trim(); }), description: desc.value.trim(), templateType: type.value })
+        .then(function (d) {
+          if (d.reason === 'unauthorized') { close(); showGate('접근 코드가 바뀌었어요. 다시 입력해 주세요.'); return; }
+          if (d.success) { close(); loadStatus(); return; }
+          fErr.textContent = (F_MSG[d.reason] || '오류가 났어요. 잠시 뒤 다시 시도해 주세요.') + (d.remainingDays ? ' (' + d.remainingDays + '일 남음)' : '');
+          fErr.hidden = false; sync();
+        })
+        .catch(function () { fErr.textContent = '연결에 실패했어요. 잠시 뒤 다시 시도해 주세요.'; fErr.hidden = false; sync(); });
+    };
   }
 
   function ckFail(btn, stCell) {

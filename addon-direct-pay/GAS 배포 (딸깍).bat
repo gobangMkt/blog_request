@@ -26,7 +26,7 @@ if errorlevel 1 goto fail
 echo.
 echo [4/4] Verifying the live version...
 curl.exe -s -L -m 60 -H "Content-Type: text/plain" -d "{\"action\":\"listStatus\",\"token\":\"x\"}" "https://script.google.com/macros/s/AKfycbysJEvbkNX8PU7C5zcdfGqtw5xbfejQmDOIONr9PwssxwPyv2-HIQPI6uZtV2AChYS7/exec" > "%TEMP%\gas_verify.txt"
-findstr /c:"2026-11-25-branch-name" "%TEMP%\gas_verify.txt" >nul
+findstr /c:"2026-11-25-fill-pending" "%TEMP%\gas_verify.txt" >nul
 if errorlevel 1 goto notlive
 echo.
 echo ===== DONE: new version is live. Opening the page... =====

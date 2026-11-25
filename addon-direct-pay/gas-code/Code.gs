@@ -119,6 +119,10 @@ function doPost(e) {
       result = completePremium(payload);
     } else if (action === 'hideNotified') {
       result = hideNotified(payload);
+    } else if (action === 'previewFill') {
+      result = previewFill(payload);
+    } else if (action === 'fillPending') {
+      result = fillPending(payload);
     } else if (action === 'previewJandi') {
       result = previewJandi(payload.messages, payload.token);
     } else if (action === 'importJandi') {
@@ -197,6 +201,109 @@ function fetchPlaceInfo(url) {
   } catch(e) {
     return { error: true, msg: e.toString() };
   }
+}
+
+// ── 고급형 응답 대기 5일 경과: 지점에 맞춰 키워드·강조 내용을 알아서 채워 작성을 시작한다 ──
+// 사장님이 키워드 폼을 안 낸 직-대기 건이 결제일시(B열)로부터 5일 지나면 마케팅팀이 직접 쓴다. 폼 제출과 같은 경로(submitForm)로
+// 직-대기 행을 직A/직B로 바꾸고 완료 내역 행을 만든다. 사실은 지점 페이지에서 읽은 값만 쓰고 지어내지 않는다.
+var FILL_AFTER_DAYS = 5;
+
+// 지점 페이지 글자(og:title, <title>, og:description)에서 추천에 쓸 사실만 뽑는다.
+function placeFacts_(html) {
+  var f = { name: branchNameFromHtml_(html), type: '', dong: '', station: '', walking: '', monthly: '', deposit: '' };
+  var og = html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/i) || html.match(/<meta\s+content="([^"]+)"\s+property="og:title"/i);
+  if (og) {
+    var tm = og[1].match(/^\s*\[([^\]]+)\]/); if (tm) f.type = tm[1].trim();
+    var mm = og[1].match(/월\s+([0-9~,]+)/); if (mm) f.monthly = mm[1] + '만원';
+    var dm = og[1].match(/보\s+([0-9~,]+)/); if (dm) f.deposit = dm[1] + '만원';
+  }
+  var t = html.match(/<title>([^<]+)<\/title>/i);
+  if (t && t[1].indexOf(' - ') >= 0) {
+    var after = t[1].split(' - ').slice(1).join(' - ');
+    var dg = after.match(/([가-힣]+동)\d*가?/); if (dg) f.dong = dg[1];
+  }
+  var desc = html.match(/<meta\s+property="og:description"\s+content="([^"]+)"/i) || html.match(/<meta\s+content="([^"]+)"\s+property="og:description"/i);
+  var wk = desc && desc[1].match(/([가-힣]+역)\s+도보\s+([0-9]+)분/);
+  if (wk) { f.station = wk[1]; f.walking = wk[1] + ' 도보 ' + wk[2] + '분'; }
+  if (!f.station) { var sn = String(f.name).match(/([가-힣]+역)/); if (sn) f.station = sn[1]; }
+  return f;
+}
+
+// 사실(f)로 키워드 후보와 강조 내용 한 덩어리를 만든다. 키워드는 가까운 역·동 + 유형 순.
+function suggestFill_(f) {
+  var type = f.type || '고시원';
+  var alt = type === '고시원' ? '고시텔' : '고시원';
+  var cands = [];
+  function add(k) { k = String(k || '').replace(/\s+/g, ' ').trim(); if (k && cands.indexOf(k) < 0) cands.push(k); }
+  if (f.station) add(f.station + ' ' + type);
+  if (f.dong) add(f.dong + ' ' + type);
+  add(f.name);
+  if (f.station) add(f.station + ' ' + alt);
+  if (f.dong) add(f.dong + ' ' + alt);
+  var facts = [];
+  if (f.monthly) facts.push('월세 ' + f.monthly);
+  if (f.deposit) facts.push('보증금 ' + f.deposit);
+  if (f.walking) facts.push(f.walking);
+  var lead = (f.name || '이 지점') + (f.dong ? '(' + f.dong + ')' : '') + ' ' + type + '입니다.';
+  var description = lead + (facts.length ? ' 지점 페이지 기준 ' + facts.join(', ') + '.' : '') + ' 위치와 방 구조, 생활 편의가 잘 보이도록 작성해 주세요.';
+  return { candidates: cands, description: description };
+}
+
+function toDate_(v) {
+  var d = v instanceof Date ? v : new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// 5일이 지난 직-대기 행 정보. 못 쓰면 이유(no_row·no_date·not_due)를 준다.
+function pendingForFill_(sheet, no) {
+  var row = findPendingRow_(sheet, String(no || ''));
+  if (!row) return { reason: 'no_row' };
+  var r = sheet.getRange(row, 1, 1, 14).getValues()[0];
+  var paid = toDate_(r[1]) || toDate_(r[0]);
+  if (!paid) return { reason: 'no_date' };
+  var days = Math.floor((new Date().getTime() - paid.getTime()) / (24 * 60 * 60 * 1000));
+  if (days < FILL_AFTER_DAYS) return { reason: 'not_due', days: days };
+  return { row: row, name: String(r[2] || '').trim(), phone: String(r[3] || '').trim(), url: String(r[4] || '').trim() || placeUrlOf_(no), days: days };
+}
+
+function authOk_(token) {
+  var saved = PropertiesService.getScriptProperties().getProperty('INBOX_TOKEN');
+  return !!saved && String(token || '') === saved;
+}
+
+// 채우기 미리보기: 추천 키워드(90일 선점 안 걸린 것 3개까지)와 강조 내용. 시트는 쓰지 않는다.
+function previewFill(payload) {
+  if (!authOk_(payload.token)) return { success: false, reason: 'unauthorized', build: BUILD };
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('신청 내역');
+  var pend = pendingForFill_(sheet, payload.no);
+  if (!pend.row) return { success: false, reason: pend.reason, days: pend.days };
+  var html = '';
+  try { html = UrlFetchApp.fetch(pend.url, { muteHttpExceptions: true, headers: PLACE_FETCH_HEADERS }).getContentText('UTF-8'); } catch (e) {}
+  var facts = placeFacts_(html);
+  var sug = suggestFill_(facts);
+  var keywords = [], taken = [];
+  sug.candidates.forEach(function (k) {
+    if (keywords.length >= 3) return;
+    if (checkKeyword(k).available) keywords.push(k); else taken.push(k);
+  });
+  return { success: true, branch: pend.name, days: pend.days, keywords: keywords, taken: taken, description: sug.description, type: '직A' };
+}
+
+// 채우기 실행: 직-대기 행을 직A/직B로 바꾼다(폼 제출과 같은 경로). 신청자 칸은 `지점명(번호)` 그대로 둔다.
+function fillPending(payload) {
+  if (!authOk_(payload.token)) return { success: false, reason: 'unauthorized', build: BUILD };
+  var type = String(payload.templateType || '').trim();
+  var kws = (payload.keywords || []).map(function (k) { return String(k || '').trim(); });
+  var description = String(payload.description || '').trim();
+  if (['직A', '직B'].indexOf(type) < 0 || !kws[0] || !description) return { success: false, reason: 'bad_request' };
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var pend = pendingForFill_(ss.getSheetByName('신청 내역'), payload.no);
+  if (!pend.row) return { success: false, reason: pend.reason === 'no_row' ? 'stale' : pend.reason };
+  return submitForm({
+    templateType: type, name: pend.name, phone: pend.phone, placeUrl: pend.url,
+    keyword1: kws[0], keyword2: kws[1] || '', keyword3: kws[2] || '', description: description
+  });
 }
 
 // 같은 지점 URL의 직접결제 건이 최근 10분 안에 이미 있으면 중복 제출(더블클릭)로 본다.
@@ -424,7 +531,7 @@ function registerPremium(payload) {
 //   sent       = 고급형 완료 알림톡 보냄(완료 내역 H 발송완료)
 //   basic_done = 직-일반 N열 작성완료(현황 탭 체크로 바꾼다)
 // 배포 확인용 표식: 배포 뒤 틀린 토큰으로 listStatus를 불러 이 값이 응답에 오는지 보면 새 코드가 올라간 것(배포.bat이 확인한다)
-var BUILD = '2026-11-25-branch-name';
+var BUILD = '2026-11-25-fill-pending';
 function listStatus(token) {
   var props = PropertiesService.getScriptProperties();
   var saved = props.getProperty('INBOX_TOKEN');
@@ -571,7 +678,7 @@ function listStatus(token) {
     }
     if (pf.hidden) return; // 시트 DB에서 지운 응답 대기 건
     items.push({
-      kind: '고급형', label: pf.name ? pf.name + '(' + pf.no + ')' : '지점번호 ' + pf.no,
+      kind: '고급형', label: pf.name ? pf.name + '(' + pf.no + ')' : '지점번호 ' + pf.no, no: pf.no,
       paidAt: fmt(new Date(pf.ts)), ts: pf.ts, stage: 'notified', pf: pf.id, price: PRICE_DIRECT_PREMIUM
     });
   });
