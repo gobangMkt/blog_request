@@ -7,7 +7,7 @@
   else root.JandiBridge = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   var JANDI_ORIGIN = 'https://neoflat.jandi.com';
-  var EXPECTED_VERSION = '1'; // jandi-reader.js · jandi-bookmarklet-src.js 의 READER_VERSION 과 같아야 한다
+  var EXPECTED_VERSION = '2'; // jandi-reader.js · jandi-bookmarklet-src.js 의 READER_VERSION 과 같아야 한다
   var MAX_MESSAGES = 500;     // GAS JANDI_MAX_MESSAGES 와 같다
   var MAX_TEXT = 4000;
 
@@ -28,10 +28,10 @@
     return a < b ? -1 : a > b ? 1 : 0;
   }
 
-  // 읽기 결과 -> 서버로 보낼 scan 객체. 끝까지 읽은 것만 complete(그래야 수집 시각이 갱신된다)
+  // 읽기 결과 -> 서버로 보낼 scan 객체. 끝까지(방 처음 또는 지난 수집 이후 겹침 구간까지) 읽은 것만 complete(그래야 수집 시각이 갱신된다)
   function scanOf(result) {
     var r = result || {};
-    var complete = r.ok === true && !r.aborted && r.reachedTop === true && !r.bottomStale;
+    var complete = r.ok === true && !r.aborted && (r.reachedTop === true || r.stoppedAtRange === true) && !r.bottomStale;
     return {
       complete: complete, reachedTop: r.reachedTop === true, aborted: String(r.aborted || ''),
       total: Number(r.total) || 0, newestId: r.newestId == null ? '' : String(r.newestId),
@@ -75,7 +75,14 @@
     try { opener.postMessage({ type: 'nf-ready' }, JANDI_ORIGIN); return true; } catch (e) { return false; }
   }
 
+  // 등록까지 끝났으면 북마크가 다음 읽기 범위를 정하도록 이 읽기의 최신 글 번호를 알린다(끝까지 읽은 경우만)
+  function announceCommit(opener, scan) {
+    if (!opener || typeof opener.postMessage !== 'function' || !scan || scan.complete !== true) return false;
+    if (!/^\d+$/.test(String(scan.newestId || ''))) return false;
+    try { opener.postMessage({ type: 'nf-commit', newestId: String(scan.newestId) }, JANDI_ORIGIN); return true; } catch (e) { return false; }
+  }
+
   return { JANDI_ORIGIN: JANDI_ORIGIN, EXPECTED_VERSION: EXPECTED_VERSION, MAX_MESSAGES: MAX_MESSAGES,
     isJandiOrigin: isJandiOrigin, compareVersion: compareVersion, scanOf: scanOf, messagesOf: messagesOf,
-    receive: receive, announceReady: announceReady };
+    receive: receive, announceReady: announceReady, announceCommit: announceCommit };
 });

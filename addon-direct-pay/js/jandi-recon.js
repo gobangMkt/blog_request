@@ -139,7 +139,7 @@
     var complete = scan.complete === true;
     var sumText = '';
     if (complete) sumText = (oldest ? md(oldest) + (newest ? ' ~ ' + md(newest) : '') + ' · ' : '') +
-      (scan.reachedTop ? '방 처음까지 읽음' : '정한 범위까지 읽음');
+      (scan.reachedTop ? '방 처음까지 읽음' : '지난 수집 이후까지 읽음');
     else sumText = oldest ? md(oldest) + ' 까지만 읽었어요' : '끝까지 읽지 못했어요';
 
     var warnings = [];
@@ -164,6 +164,7 @@
     else if (!targets.length) { reg.mode = 'logonly'; reg.label = '읽은 기록 남기기'; }
     else reg.label = '시트에 등록하기 (일반형 ' + reg.basic + '건, 빌리투어 ' + reg.billy + '건)';
 
+    var tabs = tabsOf(groups);
     var byKey = {};
     GROUPS.concat([{ id: 'chat' }]).forEach(function (g) {
       (buckets[g.id] || []).forEach(function (r) { if (r.key && !byKey[r.key + ':' + r.kindKey]) byKey[r.key + ':' + r.kindKey] = r; if (r.key && !byKey[r.key]) byKey[r.key] = r; });
@@ -173,8 +174,55 @@
       title: read > 0 ? '잔디에서 결제 알림 ' + read + '건 읽었어요' : '잔디에서 읽은 결제 알림이 없어요',
       sum: sumText, read: read, complete: complete, warnings: warnings, groups: groups,
       image: opts.imageOnly > 0 ? { count: opts.imageOnly, text: '읽지 않은 이미지 ' + opts.imageOnly + '건' } : null,
-      check: { text: checkText, ok: sumOk }, register: reg, byKey: byKey
+      check: { text: checkText, ok: sumOk }, register: reg, byKey: byKey, tabs: tabs.tabs, fold: tabs.fold
     };
+  }
+
+  // 탭 = 상품. 한 줄은 탭 하나에만 들어간다: 빌리투어로 읽힌 줄은 빌리투어, 나머지(상품 미확인 포함)는 블로그.
+  // 상품과 무관한 줄(대상 아님·안내·중복·종결·분류 못함)은 탭 밖 "해당 없음"으로 모은다.
+  var TAB_DEFS = [
+    { id: 'blog', label: '블로그', order: ['newBasic', 'needPhone', 'review', 'known'] },
+    { id: 'billy', label: '빌리투어', order: ['billy', 'review', 'billyExists'] }
+  ];
+  var PRIMARY = { newBasic: 1, billy: 1 }; // 0건이어도 보여 주는 줄(탭의 본업)
+  var FOLD_IDS = ['notTarget', 'guide', 'dup', 'closed', 'other'];
+
+  function tabOfRow(row) { return row.kindKey === 'billy' ? 'billy' : 'blog'; }
+
+  // 같은 지점·같은 사유가 반복되는 줄을 한 묶음으로(원문은 묶음 안에서 각각 본다)
+  function clusterRows(rows) {
+    var out = [], idx = {};
+    rows.forEach(function (r) {
+      var k = r.who + '|' + r.reason + '|' + r.warnings.join('/');
+      if (idx[k] === undefined) { idx[k] = out.length; out.push({ who: r.who, reason: r.reason, rows: [] }); }
+      out[idx[k]].rows.push(r);
+    });
+    return out;
+  }
+
+  function tabsOf(groups) {
+    var byId = {};
+    groups.forEach(function (g) { byId[g.id] = g; });
+    var tabs = TAB_DEFS.map(function (t) {
+      var list = [], count = 0;
+      t.order.forEach(function (id) {
+        var g = byId[id]; if (!g) return;
+        var rows = id === 'review' ? g.rows.filter(function (r) { return tabOfRow(r) === t.id; }) : g.rows;
+        var n = id === 'review' ? rows.length : g.count;
+        if (!n && !PRIMARY[id]) return;
+        count += n;
+        list.push({ id: id, label: g.label, chip: g.chip, tone: g.tone, open: g.open, count: n, rows: rows,
+          clusters: g.open === 'raw' ? clusterRows(rows) : [] });
+      });
+      return { id: t.id, label: t.label, count: count, groups: list };
+    });
+    var fold = { count: 0, groups: [] };
+    FOLD_IDS.forEach(function (id) {
+      var g = byId[id]; if (!g || !g.count) return;
+      fold.count += g.count;
+      fold.groups.push({ id: id, label: g.label, chip: g.chip, tone: g.tone, open: '', count: g.count, rows: g.rows, clusters: [] });
+    });
+    return { tabs: tabs, fold: fold };
   }
 
   // 등록 확인 팝업 문구
@@ -233,5 +281,5 @@
   }
 
   return { build: build, confirmText: confirmText, resultView: resultView, billyView: billyView,
-    billyTrendItems: billyTrendItems, lastScanInfo: lastScanInfo, STALE_DAYS: STALE_DAYS };
+    billyTrendItems: billyTrendItems, lastScanInfo: lastScanInfo, clusterRows: clusterRows, STALE_DAYS: STALE_DAYS };
 });

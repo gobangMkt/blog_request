@@ -2,7 +2,8 @@
 // scripts/build-bookmarklet.js 가 jandi-reader.js 와 이 파일을 이어 붙여 js/jandi-bookmarklet.txt(javascript: 한 줄)를 만든다.
 // 접근 코드·시트 정보는 보지도 받지도 않는다. 보내는 곳은 paste.html 배포 주소의 출처 하나뿐이다.
 // 바뀌면 2대(토미, 스티브)에서 북마크를 다시 끌어다 놓아야 하므로 READER_VERSION 을 올린다.
-var READER_VERSION = '1';
+var READER_VERSION = '2';
+var COMMIT_KEY = 'nf_jandi_commit';
 var ROOM_ID = '35912598';
 var ROOM_NAME = 'U사장님-콘텐츠상품';
 var PASTE_URL = 'https://gobangmkt.github.io/blog_request/addon-direct-pay/paste.html';
@@ -70,6 +71,60 @@ function nfSend(ui, result) {
   }, 30000);
 }
 
+// 지난 수집의 최신 글 번호. 결과 화면에서 등록까지 끝났을 때만 저장된다(등록 안 한 건을 건너뛰지 않으려고)
+function nfCommitId() {
+  try {
+    var v = JSON.parse(localStorage.getItem(COMMIT_KEY) || 'null');
+    return v && /^\d+$/.test(String(v.newestId)) ? Number(v.newestId) : 0;
+  } catch (e) { return 0; }
+}
+
+// 결과 화면이 "등록 끝"을 알려 오면 저장한다. 더 큰 번호만 받는다
+function nfListenCommit() {
+  if (window.__nfCommitListener) { return; }
+  window.__nfCommitListener = true;
+  window.addEventListener('message', function (ev) {
+    var d = ev.data;
+    if (ev.origin !== PASTE_ORIGIN || !d || d.type !== 'nf-commit' || !/^\d+$/.test(String(d.newestId))) { return; }
+    var cur = nfCommitId();
+    if (Number(d.newestId) > cur) {
+      try { localStorage.setItem(COMMIT_KEY, JSON.stringify({ newestId: String(d.newestId), at: Date.now() })); } catch (e) { /* 저장 못 하면 다음에도 처음부터 읽을 뿐이다 */ }
+    }
+  });
+}
+
+async function nfRead(ui, full) {
+  nfListenCommit();
+  var stopAtId = full ? 0 : nfCommitId();
+  var started = Date.now();
+  var timer = setInterval(function () {
+    ui.msg.textContent = (stopAtId ? '지난 수집 이후를 읽는 중이에요' : '방을 처음까지 읽는 중이에요') +
+      ' (' + Math.round((Date.now() - started) / 1000) + '초). 이 탭을 그대로 두세요.';
+  }, 1000);
+  var result;
+  try {
+    result = await globalThis.JandiReader.run({ maxSteps: 260, maxMs: 180000, stopAtId: stopAtId });
+  } catch (e) {
+    clearInterval(timer);
+    ui.msg.textContent = '읽는 중 오류가 났어요. 다시 눌러 주세요.';
+    return;
+  }
+  clearInterval(timer);
+  if (!result || !result.ok) {
+    ui.msg.textContent = '잔디 화면 구조가 바뀐 것 같아요. 개발팀에 알려 주세요.';
+    return;
+  }
+  var complete = (result.reachedTop || result.stoppedAtRange) && !result.aborted && !result.bottomStale;
+  ui.msg.textContent = '글 ' + result.total + '개를 읽고 결제 후보 ' + result.candidates.length + '개를 골랐어요.' +
+    (complete ? '' : ' 끝까지 읽지 못했어요.');
+  ui.row.innerHTML = '';
+  nfButton(ui.row, '닫기', false, function () { ui.box.remove(); });
+  nfButton(ui.row, '결과 화면으로 보내기', true, function () { nfSend(ui, result); });
+  if (result.stoppedAtRange) {
+    nfButton(ui.row, '방 처음부터 다시 읽기', false, function () { ui.row.innerHTML = ''; nfButton(ui.row, '닫기', false, function () { ui.box.remove(); }); nfRead(ui, true); });
+  }
+}
+
 (async function nfMain() {
   var ui = nfBox();
   nfButton(ui.row, '닫기', false, function () { ui.box.remove(); });
@@ -81,25 +136,5 @@ function nfSend(ui, result) {
     ui.msg.textContent = '잔디 화면 구조가 바뀐 것 같아요. 개발팀에 알려 주세요.';
     return;
   }
-  var started = Date.now();
-  var timer = setInterval(function () {
-    ui.msg.textContent = '방을 끝까지 읽는 중이에요 (' + Math.round((Date.now() - started) / 1000) + '초). 이 탭을 그대로 두세요.';
-  }, 1000);
-  var result;
-  try {
-    result = await globalThis.JandiReader.run({ maxSteps: 260, maxMs: 180000 });
-  } catch (e) {
-    clearInterval(timer);
-    ui.msg.textContent = '읽는 중 오류가 났어요. 다시 눌러 주세요.';
-    return;
-  }
-  clearInterval(timer);
-  if (!result || !result.ok) {
-    ui.msg.textContent = '잔디 화면 구조가 바뀐 것 같아요. 개발팀에 알려 주세요.';
-    return;
-  }
-  var complete = result.reachedTop && !result.aborted && !result.bottomStale;
-  ui.msg.textContent = '글 ' + result.total + '개를 읽고 결제 후보 ' + result.candidates.length + '개를 골랐어요.' +
-    (complete ? '' : ' 끝까지 읽지 못했어요.');
-  nfButton(ui.row, '결과 화면으로 보내기', true, function () { nfSend(ui, result); });
+  await nfRead(ui, false);
 })();

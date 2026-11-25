@@ -12,7 +12,7 @@
   var BILLY_SVG = '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="1.5" y="5" width="12" height="10" rx="3" fill="#7C8CA1"/><path d="M14.5 8.6 18.5 6.2V13.8L14.5 11.4Z" fill="#7C8CA1"/><path d="M6 8.2 9.6 10 6 11.8Z" fill="#FFFFFF"/></svg>';
 
   var api = null;
-  var S = { ready: false, pending: null, data: null, preview: null, view: null, closedKeys: {}, busy: false, billy: null };
+  var S = { ready: false, pending: null, data: null, preview: null, view: null, closedKeys: {}, busy: false, billy: null, tab: '', foldOpen: false };
 
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, text) {
@@ -74,9 +74,16 @@
     if (v.rows.length > BILLY_SHOW_MAX) pane.appendChild(el('p', 'empty', '오래된 ' + (v.rows.length - BILLY_SHOW_MAX) + '건은 시트에서 확인해 주세요.'));
   }
 
-  // ── 대조 카드 ──
-  function card() { var c = $('recon'); c.innerHTML = ''; c.hidden = false; return c; }
-  function hideCard() { var c = $('recon'); if (c) { c.hidden = true; c.innerHTML = ''; } }
+  // ── 전면 팝업(결과·설치 안내): 뒤 화면 스크롤을 잠그고, 둘 다 닫히면 푼다 ──
+  function popOpen(id) { var p = $(id); return !!(p && !p.hidden); }
+  function lockScroll() {
+    if (document.body) document.body.style.overflow = (popOpen('reconPop') || popOpen('setupPop')) ? 'hidden' : '';
+  }
+  function setPop(id, open) { var p = $(id); if (p) p.hidden = !open; lockScroll(); }
+
+  // ── 대조 카드(전면 팝업 본문) ──
+  function card() { var c = $('recon'); c.innerHTML = ''; c.hidden = false; setPop('reconPop', true); return c; }
+  function hideCard() { var c = $('recon'); if (c) { c.hidden = true; c.innerHTML = ''; } setPop('reconPop', false); }
 
   function warnList(items) {
     var ul = el('ul', 'res');
@@ -112,7 +119,7 @@
 
   // 잔디 읽기 결과 한 건을 받아 시트와 대조한다
   function run(rec) {
-    S.data = rec; S.closedKeys = {}; S.busy = false; S.preview = null;
+    S.data = rec; S.closedKeys = {}; S.busy = false; S.preview = null; S.tab = ''; S.foldOpen = false;
     api.hideOut();
     if (!rec.messages.length) {
       S.preview = { success: true, results: [], counts: { sumOk: true, pieces: 0, messages: 0 }, regression: { missing: [] } };
@@ -148,33 +155,62 @@
   }
 
   var seq = 0;
-  function itemRows(g, list) {
-    g.rows.forEach(function (row) {
-      var tr = el('div', 'tr');
-      var who = el('span', 'c-who', row.who); who.title = row.who;
-      var st = el('span', 'c-st'); st.appendChild(el('span', 'chip ' + g.tone, g.chip));
-      tr.appendChild(el('span', 'c-date', row.when)); tr.appendChild(who);
-      tr.appendChild(row.kind ? kindCell(row.kind) : el('span', 'c-kind', '-'));
-      tr.appendChild(el('span', 'c-price', row.amount ? won(row.amount) : '-')); tr.appendChild(st);
-      var cell = el('span', 'c-ck');
-      var note = noteOf(row, g.id);
-      var hold = null;
-      if (g.open) {
-        hold = el('div', 'hold'); hold.hidden = true; hold.id = 'hold' + (++seq);
-        var tgl = act(el('button', 'tgl', g.open === 'phone' ? '번호 넣기' : '원문 보기'), 'recon-open');
-        tgl.type = 'button'; tgl.setAttribute('aria-expanded', 'false'); tgl.setAttribute('aria-controls', hold.id);
-        tgl.addEventListener('click', function () {
-          var open = hold.hidden;
-          if (open && !hold.firstChild) fillHold(hold, g.open, row);
-          hold.hidden = !open; tgl.setAttribute('aria-expanded', open ? 'true' : 'false');
-        });
-        cell.appendChild(tgl);
-      }
-      tr.appendChild(cell);
-      if (note) tr.appendChild(el('p', '', note));
-      list.appendChild(tr);
-      if (hold) list.appendChild(hold);
+
+  // 줄 끝 칸의 펼침 버튼 + 그 아래 펼침 영역. fill(hold)이 펼칠 때 한 번 내용을 채운다
+  function holdToggle(label, fill) {
+    var hold = el('div', 'hold'); hold.hidden = true; hold.id = 'hold' + (++seq);
+    var tgl = act(el('button', 'tgl', label), 'recon-open');
+    tgl.type = 'button'; tgl.setAttribute('aria-expanded', 'false'); tgl.setAttribute('aria-controls', hold.id);
+    tgl.addEventListener('click', function () {
+      var open = hold.hidden;
+      if (open && !hold.firstChild) fill(hold);
+      hold.hidden = !open; tgl.setAttribute('aria-expanded', open ? 'true' : 'false');
     });
+    return { tgl: tgl, hold: hold };
+  }
+
+  function oneRow(g, row, list) {
+    var tr = el('div', 'tr');
+    var who = el('span', 'c-who', row.who); who.title = row.who;
+    var st = el('span', 'c-st'); st.appendChild(el('span', 'chip ' + g.tone, g.chip));
+    tr.appendChild(el('span', 'c-date', row.when)); tr.appendChild(who);
+    tr.appendChild(row.kind ? kindCell(row.kind) : el('span', 'c-kind', '-'));
+    tr.appendChild(el('span', 'c-price', row.amount ? won(row.amount) : '-')); tr.appendChild(st);
+    var cell = el('span', 'c-ck');
+    var note = noteOf(row, g.id);
+    var h = g.open ? holdToggle(g.open === 'phone' ? '번호 넣기' : '원문 보기', function (hold) { fillHold(hold, g.open, row); }) : null;
+    if (h) cell.appendChild(h.tgl);
+    tr.appendChild(cell);
+    if (note) tr.appendChild(el('p', '', note));
+    list.appendChild(tr);
+    if (h) list.appendChild(h.hold);
+  }
+
+  // 같은 지점·같은 사유가 반복되면 한 줄로 묶고, 원문은 펼쳐서 건마다 본다
+  function clusterRow(g, cl, list) {
+    var first = cl.rows[0], n = cl.rows.length;
+    var tr = el('div', 'tr');
+    var who = el('span', 'c-who', first.who); who.title = first.who;
+    var st = el('span', 'c-st'); st.appendChild(el('span', 'chip ' + g.tone, g.chip));
+    tr.appendChild(el('span', 'c-date', first.when)); tr.appendChild(who);
+    tr.appendChild(first.kind ? kindCell(first.kind) : el('span', 'c-kind', '-'));
+    tr.appendChild(el('span', 'c-price', n + '건')); tr.appendChild(st);
+    var cell = el('span', 'c-ck');
+    var h = holdToggle('원문 ' + n + '건', function (hold) {
+      cl.rows.forEach(function (row) { var item = el('div', 'hold-item'); fillHold(item, 'raw', row); hold.appendChild(item); });
+    });
+    cell.appendChild(h.tgl); tr.appendChild(cell);
+    var note = noteOf(first, g.id);
+    tr.appendChild(el('p', '', (note ? note + ' · ' : '') + '같은 글 ' + n + '건'));
+    list.appendChild(tr); list.appendChild(h.hold);
+  }
+
+  function itemRows(g, list) {
+    if (g.clusters && g.clusters.length) {
+      g.clusters.forEach(function (cl) { if (cl.rows.length > 1) clusterRow(g, cl, list); else oneRow(g, cl.rows[0], list); });
+      return;
+    }
+    g.rows.forEach(function (row) { oneRow(g, row, list); });
   }
 
   function holdBtn(label, name, onClick) {
@@ -210,7 +246,7 @@
   }
 
   function afterWrite(d, hold, fallback) { // 공통 실패 처리. 성공이면 true
-    if (d.reason === 'unauthorized') { api.showGate('접근 코드가 바뀌었어요. 다시 입력해 주세요.'); return false; }
+    if (d.reason === 'unauthorized') { hideCard(); api.showGate('접근 코드가 바뀌었어요. 다시 입력해 주세요.'); return false; }
     if (!d.success) { holdMsg(hold, fallback); return false; }
     return true;
   }
@@ -248,11 +284,12 @@
       S.busy = true; draw();
       importCall(v.register.targets).then(function (d) {
         S.busy = false;
-        if (d.reason === 'unauthorized') { draw(); api.showGate('접근 코드가 바뀌었어요. 다시 입력해 주세요.'); return; }
+        if (d.reason === 'unauthorized') { hideCard(); api.showGate('접근 코드가 바뀌었어요. 다시 입력해 주세요.'); return; }
         if (!d.success) { draw(); var c = $('recon'); c.insertBefore(warnList([{ title: '등록하지 못했어요', text: '잠시 뒤 다시 눌러 주세요.' }]), c.firstChild); return; }
         drawResult(root.JandiRecon.resultView(d, v), logonly, d, v);
         drawLastScan(d.lastScan);
         api.loadStatus();
+        if (v.complete && root.JandiBridge.announceCommit) root.JandiBridge.announceCommit(root.opener, S.data.scan); // 다음 읽기 범위의 기준
       }).catch(function () {
         S.busy = false; draw(); var c = $('recon');
         c.insertBefore(warnList([{ title: '연결에 실패했어요', text: '잠시 뒤 다시 눌러 주세요.' }]), c.firstChild);
@@ -275,31 +312,63 @@
     c.appendChild(okButton());
   }
 
+  function groupList(groups) {
+    var list = el('div');
+    groups.forEach(function (g) { list.appendChild(groupRow(g)); itemRows(g, list); });
+    return list;
+  }
+
+  // 탭 = 상품(블로그·빌리투어). 선택은 테두리 하나로만 말한다(.ptab 어휘)
+  function tabsBar(v) {
+    var bar = el('div', 'ptabs pop-tabs'); bar.setAttribute('role', 'tablist');
+    v.tabs.forEach(function (t) {
+      var b = act(el('button', 'ptab', t.label + ' ' + t.count), 'recon-tab');
+      b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', S.tab === t.id ? 'true' : 'false');
+      b.addEventListener('click', function () { S.tab = t.id; draw(); });
+      bar.appendChild(b);
+    });
+    return bar;
+  }
+
+  // 상품과 무관한 줄(대상 아님·안내·중복·종결)은 탭 밖에 접어 둔다
+  function foldBox(v) {
+    var box = el('div', 'fold');
+    var body = el('div'); body.hidden = !S.foldOpen;
+    var tgl = act(el('button', 'tgl', '해당 없음 ' + v.fold.count + '건'), 'recon-fold');
+    tgl.type = 'button'; tgl.setAttribute('aria-expanded', S.foldOpen ? 'true' : 'false');
+    tgl.addEventListener('click', function () {
+      S.foldOpen = body.hidden; body.hidden = !S.foldOpen; tgl.setAttribute('aria-expanded', S.foldOpen ? 'true' : 'false');
+    });
+    body.appendChild(groupList(v.fold.groups));
+    box.appendChild(tgl); box.appendChild(body);
+    return box;
+  }
+
   function draw() {
     var v = root.JandiRecon.build(S.preview, S.data.scan, { messages: S.data.messages, imageOnly: S.data.imageOnly, closedKeys: S.closedKeys });
     S.view = v;
+    if (!S.tab || !v.tabs.some(function (t) { return t.id === S.tab; })) { // 처음엔 일이 있는 탭을 연다
+      var busy = v.tabs.filter(function (t) { return t.groups.some(function (g) { return g.count && g.id !== 'known' && g.id !== 'billyExists'; }); })[0];
+      S.tab = (busy || v.tabs[0]).id;
+    }
     var c = card();
     if (v.warnings.length) c.appendChild(warnList(v.warnings));
-    var head = el('div', 'res-title res-title-row', v.title);
-    head.appendChild(tip(['텍스트 결제 알림 기준이에요. 이미지 캡처는 읽지 않아요.']));
+    var head = el('div', 'res-title res-title-row', v.title); head.id = 'reconTitle';
+    head.appendChild(tip(['텍스트 결제 알림 기준이에요. 이미지 캡처는 읽지 않아요.', v.check.text]));
     c.appendChild(head);
     c.appendChild(el('p', 'res-sum', v.sum));
-    var list = el('div');
-    v.groups.forEach(function (g) { list.appendChild(groupRow(g)); itemRows(g, list); });
-    if (v.image) {
-      var im = el('div', 'tr fin'); im.setAttribute('data-row', 'grp');
-      im.appendChild(el('span', 'c-who', v.image.text)); im.appendChild(el('span', 'c-price', '참고'));
-      list.appendChild(im);
-    }
-    c.appendChild(list);
-    var chk = el('p', 'res-sum', v.check.text); chk.style.marginTop = '12px';
-    c.appendChild(chk);
+    if (v.image) c.appendChild(el('p', 'res-sum', v.image.text + '은 읽지 않았어요'));
+    c.appendChild(tabsBar(v));
+    var tab = v.tabs.filter(function (t) { return t.id === S.tab; })[0];
+    c.appendChild(groupList(tab.groups));
+    if (v.fold.count) c.appendChild(foldBox(v));
     var reg = v.register;
+    var foot = el('div', 'pop-foot');
     var btn = act(el('button', 'cta', S.busy ? '등록하는 중이에요' : reg.label), 'recon-register');
     btn.type = 'button'; btn.disabled = reg.disabled || S.busy;
     btn.addEventListener('click', register);
-    c.appendChild(btn);
-    c.appendChild(okButton());
+    foot.appendChild(btn);
+    c.appendChild(foot);
   }
 
   // ── 설치 방법: 북마크 끌어다 놓기 ──
@@ -331,15 +400,27 @@
     if (S.pending) { var rec = S.pending; S.pending = null; deliver(rec); }
   }
 
+  function closeSetup() {
+    setPop('setupPop', false);
+    var tg = $('setupToggle'); if (tg) { tg.setAttribute('aria-expanded', 'false'); if (tg.focus) tg.focus(); }
+  }
+
+  function confirmOpen() { return popOpen('modal') || popOpen('cModal'); }
+
   function init(a) {
     api = a;
     $('fetchJandi').href = JANDI_ROOM_URL;
     var tg = $('setupToggle');
-    tg.addEventListener('click', function () {
-      var open = $('setupBox').hidden;
-      $('setupBox').hidden = !open; tg.setAttribute('aria-expanded', open ? 'true' : 'false');
-      if (open) loadBookmark();
+    tg.addEventListener('click', function () { // 설치 방법은 전면 팝업으로 연다
+      setPop('setupPop', true); tg.setAttribute('aria-expanded', 'true');
+      loadBookmark();
     });
+    var sx = $('setupX'); if (sx) sx.addEventListener('click', closeSetup);
+    var rx = $('reconX'); if (rx) rx.addEventListener('click', hideCard);
+    root.addEventListener('keydown', function (e) { // 확인 팝업이 떠 있으면 그쪽 Esc가 먼저다
+      if (e.key !== 'Escape' || confirmOpen()) return;
+      if (popOpen('setupPop')) closeSetup(); else if (popOpen('reconPop')) hideCard();
+    }, true); // 캡처 단계: 확인 팝업의 Esc 처리(document.onkeydown)가 모달을 닫기 전에 본다
     $('bmLink').addEventListener('click', function (e) {
       e.preventDefault(); $('bmNote').textContent = '눌러서 쓰는 게 아니에요. 북마크바로 끌어다 놓아 주세요.';
     });

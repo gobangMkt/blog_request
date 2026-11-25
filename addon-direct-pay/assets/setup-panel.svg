@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 150" width="360" height="150" font-family="Pretendard, 'Malgun Gothic', sans-serif">
+  <rect width="360" height="150" fill="#F2F4F6"/>
+  <rect x="12" y="14" width="120" height="10" rx="5" fill="#E5E8EB"/>
+  <rect x="12" y="34" width="96" height="10" rx="5" fill="#E5E8EB"/>
+  <rect x="12" y="54" width="132" height="10" rx="5" fill="#E5E8EB"/>
+  <rect x="12" y="74" width="84" height="10" rx="5" fill="#E5E8EB"/>
+  <text x="12" y="138" font-size="13" fill="#8B95A1">잔디 방 화면</text>
+  <rect x="150" y="12" width="198" height="126" rx="14" fill="#FFFFFF" stroke="#E5E8EB"/>
+  <text x="164" y="36" font-size="14" font-weight="700" fill="#191F28">NF 결제 가져오기</text>
+  <text x="164" y="58" font-size="13" fill="#4E5968">지난 수집 이후를</text>
+  <text x="164" y="76" font-size="13" fill="#4E5968">읽는 중이에요 (12초)</text>
+  <rect x="164" y="92" width="170" height="32" rx="10" fill="#3182F6"/>
+  <text x="249" y="113" font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="middle">결과 화면으로 보내기</text>
+</svg>

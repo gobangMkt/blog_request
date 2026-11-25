@@ -233,5 +233,30 @@ test('빌리투어 표·추이 항목: 금액은 billy 배열의 amount', () => 
   assert.deepStrictEqual(R.billyTrendItems(undefined), []);
 });
 
+test('탭 = 상품. 한 줄은 한 탭에만, 상품과 무관한 줄은 탭 밖 해당 없음', () => {
+  const t = V.tabs;
+  assert.deepStrictEqual(t.map((x) => x.id + ':' + x.count), ['blog:15', 'billy:8']);
+  assert.deepStrictEqual(t[0].groups.map((x) => x.id), ['newBasic', 'needPhone', 'review', 'known']);
+  assert.deepStrictEqual(t[1].groups.map((x) => x.id), ['billy', 'review']);
+  const reviewRows = t.map((x) => x.groups.find((y) => y.id === 'review').rows.length);
+  assert.strictEqual(reviewRows[0] + reviewRows[1], g(V, 'review').count);
+  assert.strictEqual(V.fold.count, 1);
+  assert.deepStrictEqual(V.fold.groups.map((x) => x.id), ['notTarget']);
+  assert.strictEqual(t[0].count + t[1].count + V.fold.count, V.groups.reduce((a, x) => a + x.count, 0));
+});
+
+test('같은 지점·같은 사유가 반복되면 한 묶음으로 센다', () => {
+  const row = (k, who, reason) => ({ key: k, who: who, reason: reason, warnings: [] });
+  const c = R.clusterRows([row('a', '가나다점(1)', '줄이 달라요'), row('b', '가나다점(1)', '줄이 달라요'), row('c', '가나다점(1)', '형식이 달라요'), row('d', '다른점(2)', '줄이 달라요')]);
+  assert.deepStrictEqual(c.map((x) => x.rows.length), [2, 1, 1]);
+  assert.deepStrictEqual(c[0].rows.map((r) => r.key), ['a', 'b']);
+});
+
+test('지난 수집 이후까지 읽은 범위 요약 글자', () => {
+  const v = build(null, Object.assign({}, COMPLETE, { reachedTop: false }));
+  assert.ok(v.sum.indexOf('지난 수집 이후까지 읽음') > 0, v.sum);
+  assert.strictEqual(v.complete, true);
+});
+
 console.log('\n' + pass + ' passed, ' + failures.length + ' failed');
 if (failures.length) { console.log('FAILED: ' + failures.join(', ')); process.exit(1); }

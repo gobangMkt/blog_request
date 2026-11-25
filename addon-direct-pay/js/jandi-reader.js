@@ -6,7 +6,7 @@
 (function (root) {
   'use strict';
 
-  var READER_VERSION = '1'; // 북마크릿(jandi-bookmarklet-src.js)의 READER_VERSION과 같아야 한다(build-bookmarklet.js가 확인)
+  var READER_VERSION = '2'; // 북마크릿(jandi-bookmarklet-src.js)의 READER_VERSION과 같아야 한다(build-bookmarklet.js가 확인)
   var NUM = /^\d+$/;
   var LOOSE = /결제|상품|\[Web발신\]|블로그|빌리투어/;
   var PAY_KEY = /\((\d+)\)[\s\S]*?결제일시:\s*([\d.]+\s+[\d:]+)/;
@@ -107,16 +107,25 @@
     return harvest(map);
   }
 
+  // 지난 수집의 최신 글(stopAtId)보다 오래된 글을 overlap개 읽었으면 거기서 멈춘다(겹쳐 읽어 한 번 놓쳐도 다음에 잡는다)
+  function olderThan(map, stopAtId) {
+    var n = 0;
+    map.forEach(function (m) { if (m.id && Number(m.id) < stopAtId) { n++; } });
+    return n;
+  }
+
   async function run(opts) {
     opts = opts || {};
     var maxSteps = opts.maxSteps || 80;
     var maxMs = opts.maxMs || 90000;
+    var stopAtId = Number(opts.stopAtId) > 0 ? Number(opts.stopAtId) : 0;
+    var overlap = Number(opts.overlap) > 0 ? Number(opts.overlap) : 30;
     var sc = document.getElementById('msgs_container');
     if (!sc || !document.querySelector('.msg-layout-flex')) { return { ok: false, reason: 'structure' }; }
 
     var map = new Map();
     var started = Date.now();
-    var steps = 0, flat = 0, gaps = 0, reachedTop = false, aborted = '', lateAdds = 0;
+    var steps = 0, flat = 0, gaps = 0, reachedTop = false, aborted = '', lateAdds = 0, stoppedAtRange = false;
 
     await toBottom(sc, map);
 
@@ -140,6 +149,7 @@
       steps++;
       if (sc.scrollTop === 0 && map.size === before) { flat++; } else { flat = 0; }
       if (flat >= 2) { reachedTop = true; break; }
+      if (stopAtId && olderThan(map, stopAtId) >= overlap) { stoppedAtRange = true; break; }
     }
 
     for (var pass = 0; pass < 3; pass++) {
@@ -172,6 +182,8 @@
       steps: steps,
       gaps: gaps,
       reachedTop: reachedTop,
+      stoppedAtRange: stoppedAtRange,
+      rangeFromId: stopAtId || null,
       lateAdds: lateAdds,
       bottomStale: !!jumpBtn(),
       aborted: aborted,

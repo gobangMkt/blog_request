@@ -12,8 +12,8 @@ function test(name, fn) {
 
 const OK_ORIGIN = 'https://neoflat.jandi.com';
 const good = (over) => ({
-  type: 'nf-jandi', readerVersion: '1',
-  result: Object.assign({ ok: true, readerVersion: '1', imageOnly: 25, total: 171, newestId: 5164296884, oldestId: 5125384030,
+  type: 'nf-jandi', readerVersion: '2',
+  result: Object.assign({ ok: true, readerVersion: '2', imageOnly: 25, total: 171, newestId: 5164296884, oldestId: 5125384030,
     reachedTop: true, aborted: '', bottomStale: false, candidates: [{ id: '1', type: 'text', text: '[Web발신]\n[상품 결제완료]' }, { id: '2', type: 'text', text: '두 번째' }] }, over || {})
 });
 
@@ -44,13 +44,13 @@ test('버전 비교: 낮거나 없으면 "북마크가 오래됐어요", 높으�
   const none = good(); delete none.readerVersion;
   assert.strictEqual(B.receive(OK_ORIGIN, none).code, 'old');
   assert.strictEqual(B.receive(OK_ORIGIN, Object.assign(good(), { readerVersion: 'abc' })).code, 'old');
-  assert.strictEqual(B.receive(OK_ORIGIN, Object.assign(good(), { readerVersion: '2' })).code, 'newer');
-  assert.strictEqual(B.receive(OK_ORIGIN, Object.assign(good(), { readerVersion: '2' }), '2').ok, true);
+  assert.strictEqual(B.receive(OK_ORIGIN, Object.assign(good(), { readerVersion: '3' })).code, 'newer');
+  assert.strictEqual(B.receive(OK_ORIGIN, Object.assign(good(), { readerVersion: '3' }), '3').ok, true);
   assert.strictEqual(B.compareVersion('10', '9'), 1);
 });
 
 test('구조 변경(reason structure)이면 안내만 하고 보내지 않는다', () => {
-  const r = B.receive(OK_ORIGIN, { type: 'nf-jandi', readerVersion: '1', result: { ok: false, reason: 'structure' } });
+  const r = B.receive(OK_ORIGIN, { type: 'nf-jandi', readerVersion: '2', result: { ok: false, reason: 'structure' } });
   assert.strictEqual(r.ok, false); assert.strictEqual(r.code, 'structure');
   assert.ok(r.text.indexOf('잔디 화면 구조가 바뀐 것 같아요') === 0);
 });
@@ -58,8 +58,8 @@ test('구조 변경(reason structure)이면 안내만 하고 보내지 않는다
 test('모양이 틀린 결과(후보가 배열 아님, total 없음, result 없음)는 shape 오류', () => {
   assert.strictEqual(B.receive(OK_ORIGIN, good({ candidates: 'x' })).code, 'shape');
   assert.strictEqual(B.receive(OK_ORIGIN, good({ total: undefined })).code, 'shape');
-  assert.strictEqual(B.receive(OK_ORIGIN, { type: 'nf-jandi', readerVersion: '1' }).code, 'shape');
-  assert.strictEqual(B.receive(OK_ORIGIN, { type: 'nf-jandi', readerVersion: '1', result: { ok: false } }).code, 'shape');
+  assert.strictEqual(B.receive(OK_ORIGIN, { type: 'nf-jandi', readerVersion: '2' }).code, 'shape');
+  assert.strictEqual(B.receive(OK_ORIGIN, { type: 'nf-jandi', readerVersion: '2', result: { ok: false } }).code, 'shape');
 });
 
 test('글자가 아닌 후보·빈 글은 걸러내고 너무 긴 글은 자른다', () => {
@@ -93,6 +93,26 @@ test('준비 신호는 잔디 출처로만 보낸다', () => {
   assert.strictEqual(B.announceReady(null), false);
   assert.strictEqual(B.announceReady({}), false);
   assert.strictEqual(B.announceReady({ postMessage() { throw new Error('x'); } }), false);
+});
+
+test('지난 수집 이후까지 읽고 멈춘 읽기(stoppedAtRange)도 complete다. 중단·맨 아래 오래됨이면 false', () => {
+  assert.strictEqual(B.scanOf({ ok: true, reachedTop: false, stoppedAtRange: true, aborted: '' }).complete, true);
+  assert.strictEqual(B.scanOf({ ok: true, reachedTop: false, stoppedAtRange: true, aborted: 'time' }).complete, false);
+  assert.strictEqual(B.scanOf({ ok: true, reachedTop: false, stoppedAtRange: true, aborted: '', bottomStale: true }).complete, false);
+  assert.strictEqual(B.scanOf({ ok: true, reachedTop: false, stoppedAtRange: false, aborted: '' }).complete, false);
+});
+
+test('등록이 끝났을 때만 북마크에 최신 글 번호를 알린다(잔디 출처로만, 끝까지 읽은 읽기만)', () => {
+  const sent = [];
+  const win = { postMessage: (d, o) => sent.push([d, o]) };
+  assert.strictEqual(B.announceCommit(win, { complete: true, newestId: '5164296884' }), true);
+  assert.deepStrictEqual(sent, [[{ type: 'nf-commit', newestId: '5164296884' }, 'https://neoflat.jandi.com']]);
+  assert.strictEqual(B.announceCommit(win, { complete: false, newestId: '5164296884' }), false);
+  assert.strictEqual(B.announceCommit(win, { complete: true, newestId: '' }), false);
+  assert.strictEqual(B.announceCommit(win, { complete: true, newestId: 'abc' }), false);
+  assert.strictEqual(B.announceCommit(null, { complete: true, newestId: '1' }), false);
+  assert.strictEqual(B.announceCommit({ postMessage() { throw new Error('x'); } }, { complete: true, newestId: '1' }), false);
+  assert.strictEqual(sent.length, 1);
 });
 
 console.log('\n' + pass + ' passed, ' + failures.length + ' failed');

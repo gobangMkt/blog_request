@@ -23,13 +23,14 @@ class El {
   querySelector(sel) { const cls = sel.replace('.', ''); return this.all((e) => e.className.split(' ').indexOf(cls) >= 0)[0] || null; }
 }
 const byId = {};
-['recon', 'lastScan', 'billyPane', 'fetchJandi', 'setupToggle', 'setupBox', 'bmLink', 'bmNote'].forEach((id) => { byId[id] = new El('x'); byId[id].id = id; });
-byId.recon.hidden = true; byId.setupBox.hidden = true;
+['recon', 'reconPop', 'setupPop', 'lastScan', 'billyPane', 'fetchJandi', 'setupToggle', 'bmLink', 'bmNote'].forEach((id) => { byId[id] = new El('x'); byId[id].id = id; });
+byId.recon.hidden = true; byId.reconPop.hidden = true; byId.setupPop.hidden = true;
 global.window = global;
 global.document = { getElementById: (id) => byId[id], createElement: (t) => new El(t), createTextNode: (t) => { const e = new El('#text'); e._text = t; return e; } };
 let onMessage = null;
 global.addEventListener = (n, f) => { if (n === 'message') onMessage = f; };
-global.opener = null;
+const posted = [];
+global.opener = { postMessage: (m, o) => posted.push([m, o]) };
 global.JandiRecon = require('../js/jandi-recon.js');
 global.JandiBridge = require('../js/jandi-bridge.js');
 require('../js/jandi-ui.js');
@@ -63,7 +64,7 @@ const api = {
   KIND_SVG: { '일반형': '<svg/>', '고급형': '<svg/>' }
 };
 const msg = (origin, data) => onMessage({ origin, data });
-const GOOD = () => ({ type: 'nf-jandi', readerVersion: '1', result: { ok: true, readerVersion: '1', total: 171, imageOnly: 25, reachedTop: true, aborted: '', bottomStale: false,
+const GOOD = () => ({ type: 'nf-jandi', readerVersion: '2', result: { ok: true, readerVersion: '2', total: 171, imageOnly: 25, reachedTop: true, aborted: '', bottomStale: false,
   newestId: 5164296884, oldestId: 5125384030, candidates: TEXTS.map((t, i) => ({ id: String(i), type: 'text', text: t })) } });
 
 (async () => {
@@ -109,14 +110,44 @@ const GOOD = () => ({ type: 'nf-jandi', readerVersion: '1', result: { ok: true, 
     assert.ok(!reg.disabled);
   });
 
-  await test('확인 필요·고급형 줄에는 펼침 토글(.tgl)이 있고 원문은 textContent로만 들어간다', () => {
+  await test('결과는 전면 팝업으로 뜬다(바깥 틀 열림, 닫기 버튼 동작)', () => {
+    assert.strictEqual(byId.reconPop.hidden, false);
+  });
+
+  await test('탭은 상품(블로그·빌리투어)이고 한 줄은 한 탭에만 들어간다', () => {
+    const tabs = byId.recon.all((e) => e.attrs['data-act'] === 'recon-tab');
+    assert.deepStrictEqual(tabs.map((t) => t.textContent), ['블로그 15', '빌리투어 8']);
+    assert.strictEqual(tabs[0].attrs['aria-selected'], 'true');
+    assert.strictEqual(tabs[1].attrs['aria-selected'], 'false');
+    const t = byId.recon.textContent;
+    assert.ok(t.indexOf('새로 등록할 일반형') >= 0 && t.indexOf('빌리투어 쌓을 것') < 0); // 빌리투어 줄은 다른 탭
+  });
+
+  await test('블로그 탭: 번호 필요 4 + 확인 필요 1 줄에 펼침 토글, 원문은 textContent로만', () => {
     const opens = byId.recon.all((e) => e.attrs['data-act'] === 'recon-open');
-    assert.strictEqual(opens.length, 6); // 번호 필요 4(20897은 발송 기록이 있음) + 확인 필요 2
+    assert.strictEqual(opens.length, 5);
     const raw = opens.find((b) => b.textContent === '원문 보기');
     raw.click();
     const hold = byId.recon.all((e) => e.className === 'hold' && !e.hidden)[0];
     assert.ok(hold && hold.textContent.indexOf('[Web발신]') >= 0 || hold.textContent.indexOf('스티브') >= 0);
     assert.strictEqual(hold.all((e) => e.tag === 'p').some((p) => p._html !== undefined), false);
+  });
+
+  await test('빌리투어 탭으로 바꾸면 빌리투어 줄과 확인 필요 1줄이 보이고 등록 버튼은 그대로다', () => {
+    byId.recon.all((e) => e.attrs['data-act'] === 'recon-tab')[1].click();
+    const t = byId.recon.textContent;
+    assert.ok(t.indexOf('빌리투어 쌓을 것') >= 0 && t.indexOf('새로 등록할 일반형') < 0);
+    assert.strictEqual(byId.recon.all((e) => e.attrs['data-act'] === 'recon-open').length, 1);
+    assert.strictEqual(byId.recon.all((e) => e.attrs['data-act'] === 'recon-register').length, 1);
+    byId.recon.all((e) => e.attrs['data-act'] === 'recon-tab')[0].click(); // 블로그로 되돌린다
+  });
+
+  await test('해당 없음은 탭 밖에 접혀 있고 누르면 펼친다', () => {
+    const fold = byId.recon.all((e) => e.attrs['data-act'] === 'recon-fold')[0];
+    assert.strictEqual(fold.textContent, '해당 없음 1건');
+    assert.strictEqual(fold.attrs['aria-expanded'], 'false');
+    fold.click();
+    assert.strictEqual(fold.attrs['aria-expanded'], 'true');
   });
 
   await test('등록 버튼: 확인 팝업 문구 -> importJandi 호출 내용 -> 결과 카드 + 현황 다시 불러오기', async () => {
@@ -132,6 +163,7 @@ const GOOD = () => ({ type: 'nf-jandi', readerVersion: '1', result: { ok: true, 
     assert.ok(byId.recon.textContent.indexOf('등록 15건') === 0);
     assert.ok(byId.lastScan.textContent.indexOf('마지막 수집 11.24 14:21') === 0);
     assert.ok(reloaded >= 1);
+    assert.deepStrictEqual(posted.filter((m) => m[0].type === 'nf-commit'), [[{ type: 'nf-commit', newestId: '5164296884' }, 'https://neoflat.jandi.com']]); // 등록이 끝나면 북마크에 다음 읽기 기준을 알린다
   });
 
   await test('출처가 잔디가 아닌 메시지는 무시한다(카드·호출 변화 없음)', async () => {
