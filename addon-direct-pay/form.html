@@ -70,10 +70,10 @@
     .notice li::before { content: '·'; position: absolute; left: 3px; color: var(--pri); font-weight: 800; }
     .notice a { color: var(--pri); text-decoration: underline; }
     /* 기한 안내 — design-system.md `.alert` (오류 아님: 빨강 금지, 폼 맨 위 한 장) */
-    .alert { display: flex; gap: 10px; align-items: flex-start; background: #FFF1BF; border: 1.5px solid #F0A020; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
-    .alert svg { flex: 0 0 20px; margin-top: 1px; }
-    .alert-t { font-size: 15px; font-weight: 800; color: #7A5200; line-height: 1.5; word-break: keep-all; }
-    .alert-d { font-size: 15px; color: var(--g700); line-height: 1.6; margin-top: 4px; word-break: keep-all; }
+    .alert { display: flex; gap: 8px; align-items: flex-start; background: #FFF1BF; border: 1.5px solid #F0A020; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+    .alert svg { flex: 0 0 18px; margin-top: 2px; }
+    .alert p { font-size: 14px; color: var(--g700); line-height: 1.55; word-break: keep-all; }
+    .alert strong { color: #7A5200; font-weight: 800; }
 
     /* 지점 미리보기 */
     .place-preview { display: none; margin-top: 12px; border: 1.5px solid var(--bdr); border-radius: 10px; overflow: hidden; }
@@ -192,11 +192,8 @@
 
       <div class="sec">
         <div class="alert" role="note" data-act="deadline-notice">
-          <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="10" fill="#B9791A"/><rect x="9" y="5" width="2" height="6.5" rx="1" fill="#fff"/><circle cx="10" cy="14.2" r="1.2" fill="#fff"/></svg>
-          <div>
-            <div class="alert-t">결제 후 5일 안에 입력해 주세요</div>
-            <div class="alert-d">입력하지 않으시면 저희가 지점 정보를 바탕으로 키워드와 내용을 정해 블로그를 작성해 발행해요.</div>
-          </div>
+          <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="10" fill="#B9791A"/><rect x="9" y="5" width="2" height="6.5" rx="1" fill="#fff"/><circle cx="10" cy="14.2" r="1.2" fill="#fff"/></svg>
+          <p><strong>결제 후 5일 안에 입력해 주세요.</strong> 미입력 시 저희가 대신 작성해 발행해요.</p>
         </div>
         <div class="notice">
           <ul>
