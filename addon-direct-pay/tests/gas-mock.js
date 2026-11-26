@@ -98,6 +98,7 @@ function makeEnv(opts) {
     }
   });
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'gas-code/JandiClassify.gs'), 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'gas-code/TossImport.gs'), 'utf8'), ctx);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'gas-code/Code.gs'), 'utf8'), ctx);
   env.ctx = ctx; env.book = book; env.props = props; env.ss = ss;
   env.sheet = (n) => ss.getSheetByName(n);

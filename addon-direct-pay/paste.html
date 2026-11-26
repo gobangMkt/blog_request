@@ -1465,6 +1465,7 @@
       chip.textContent = wt.due ? '작성 가능 ' + (wt.left === 0 ? 'D-day' : 'D+' + (-wt.left)) : '응답 대기 D-' + wt.left;
       chip.title = '결제일시부터 ' + WAIT_DAYS + '일 지나면 알아서 작성할 수 있어요';
     }
+    if (it.toss) chip.title = '토스 결제 내역으로 확인(' + it.toss + '). 시트 결제완료일은 비어 있어요';
     st.appendChild(chip);
     if (DONE[it.stage]) row.className = 'tr fin';
     if (WRITTEN[it.stage] && fState !== 'sent' && fState !== 'basic_done') row.className += ' wr'; // 작성 완료·알림 보냄은 흐리게(그 상태를 직접 고르면 흐리지 않음)

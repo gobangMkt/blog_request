@@ -560,7 +560,7 @@ function registerPremium(payload) {
 //   sent       = 고급형 완료 알림톡 보냄(완료 내역 H 발송완료)
 //   basic_done = 직-일반 N열 작성완료(현황 탭 체크로 바꾼다); 기존 폼 건은 결제완료일이 있고 시트 행이 주황이면 basic_done(읽기 전용)
 // 배포 확인용 표식: 배포 뒤 틀린 토큰으로 listStatus를 불러 이 값이 응답에 오는지 보면 새 코드가 올라간 것(배포.bat이 확인한다)
-var BUILD = '2026-11-26-legacy-label';
+var BUILD = '2026-11-26-toss-import';
 function listStatus(token) {
   var props = PropertiesService.getScriptProperties();
   var saved = props.getProperty('INBOX_TOKEN');
@@ -623,6 +623,7 @@ function listStatus(token) {
   }
 
   var items = [];
+  var unpaidLegacy = []; // 기존 폼 결제 전 행 → 아래에서 '토스 결제' 탭과 연락처로 대조
   var pendingIds = {}; // 직-대기 행이 있는 발송 기록 id(지점번호_결제일시)
   rows.forEach(function (r, idx) {
     var type = String(r[12] || '').trim();
@@ -631,11 +632,13 @@ function listStatus(token) {
       if (!type) return; // 작성 타입이 없는 행(공지·빈 줄)
       var lp = asDateLoose(r[1]), ld = lp || asDateLoose(r[0]);
       if (!ld) return;
-      items.push({
+      var legacyItem = {
         kind: '기존 폼', label: String(r[2] || '').trim() || '(이름 없음)', paidAt: fmt(ld), ts: ld.getTime(),
         stage: lp ? (isOrangeRow_(bgs[idx]) ? 'basic_done' : 'paid') : 'unpaid', price: priceOf(r[15], 0), form: type, no: placeNo_(r[4]),
         applicant: String(r[2] || '').trim()
-      });
+      };
+      items.push(legacyItem);
+      if (!lp) unpaidLegacy.push({ key: String(unpaidLegacy.length), item: legacyItem, phone: r[3], ts: ld.getTime() });
       return;
     }
     var paidB = asDateLoose(r[1]); // 글자로 저장된 날짜도 읽는다(조용히 누락되지 않게)
@@ -683,6 +686,23 @@ function listStatus(token) {
     }
     items.push(item);
   });
+
+  // 토스 결제 탭(TossImport.gs)과 대조: 시트 결제완료일이 빈 기존 폼 행이라도 토스에 결제가 있으면 결제 완료로 보여 준다.
+  // 시트는 안 바꾼다(읽기 전용). 탭이 없거나 읽다 실패해도 현황은 그대로 낸다.
+  if (unpaidLegacy.length) {
+    try {
+      var tossHit = tossMatchLegacy(unpaidLegacy, loadTossOrders_(ss));
+      unpaidLegacy.forEach(function (l) {
+        var o = tossHit[l.key];
+        if (!o) return;
+        l.item.stage = 'paid';
+        l.item.toss = o.orderedAt;
+        l.item.paidAt = o.orderedAt;
+        l.item.ts = tossMs(o.orderedAt);
+        if (!l.item.price) l.item.price = Number(String(o.amount || '').replace(/[^\d]/g, '')) || 0;
+      });
+    } catch (err) { Logger.log('토스 대조 실패: ' + err); }
+  }
 
   // 고급형 키워드 폼 알림톡 보낸 기록 (스크립트 속성 PF_<지점번호>_<결제일시>, 값 = 발송시각|지점명).
   // 같은 지점번호로 그 결제 뒤에 폼이 들어왔으면 그 폼 행이 이 건이다: 발송 기록 줄은 빼고 지점명만 폼 행에 옮긴다.
