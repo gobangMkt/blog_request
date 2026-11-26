@@ -19,6 +19,9 @@ var PENDING_STATUS = '응답대기';
 var HOLD_STATUS    = '보류'; // 현황 탭에서 응답 대기를 지우면 행은 두고 상태만 보류로 바꾼다
 // 고급형 키워드 폼 안내 알림톡 템플릿(솔라피, 변수 #{지점명}). 스크립트 속성 TEMPLATE_PREMIUM_FORM이 있으면 그 값이 우선한다.
 var TEMPLATE_PREMIUM_FORM = 'KA01TP2611091218516116IoNk3cbXeW';
+// 고급형 접수 완료 알림톡(사장님이 폼을 낸 직후, 변수 #{지점명}·#{키워드}). 카카오 심사 통과 뒤 템플릿 ID를 스크립트 속성
+// TEMPLATE_PREMIUM_RECEIVED에 넣는다. 비어 있으면 발송하지 않는다(폼 제출은 그대로 성공).
+var TEMPLATE_PREMIUM_RECEIVED = '';
 // 작업완료 알림톡(기존 15만원·10만원 GAS의 TEMPLATE_COMPLETE와 같은 템플릿, 변수 #{지점URL}·#{장악키워드}·#{블로그URL})
 var TEMPLATE_COMPLETE = 'KA01TP2605150533203936iNKdKqNSyV';
 
@@ -302,7 +305,8 @@ function fillPending(payload) {
   if (!pend.row) return { success: false, reason: pend.reason === 'no_row' ? 'stale' : pend.reason };
   return submitForm({
     templateType: type, name: pend.name, phone: pend.phone, placeUrl: pend.url,
-    keyword1: kws[0], keyword2: kws[1] || '', keyword3: kws[2] || '', description: description
+    keyword1: kws[0], keyword2: kws[1] || '', keyword3: kws[2] || '', description: description,
+    skipReceipt: true // 담당자가 대신 시작하는 건이라 사장님께 접수 알림톡을 보내지 않는다
   });
 }
 
@@ -344,6 +348,8 @@ function submitForm(formData) {
     // 이때 결제완료일(B)은 알림 원문의 실제 결제일시를 그대로 두고, 신청일시(A)만 제출 시각으로 바꾼다.
     // D-day(결제완료일+7일)는 예전과 같이 제출일 기준(작성 시작일)으로 갱신한다.
     var pendRow = findPendingRow_(sheet, placeNo_(formData.placeUrl));
+    // 접수 알림톡의 #{지점명}: 대기 행 신청자 칸 "지점명(번호)"에서 번호를 뗀다(setValues가 덮어쓰기 전에 읽는다).
+    var receiptBranch = pendRow ? String(sheet.getRange(pendRow, 3).getValue() || '').replace(/\(\d+\)\s*$/, '').trim() : '';
     // 신청일시, 결제완료일(=신청일: 결제는 이미 끝났고 D-day는 작성 시작일 기준), 신청자, 전화번호, 지점URL,
     // 키워드1~3, 강조내용, 보증금, 월세, 도보, 작성타입, 상태
     var vals = [now, now, formData.name, formData.phone, formData.placeUrl,
@@ -375,6 +381,22 @@ function submitForm(formData) {
     }
   } finally {
     lock.releaseLock();
+  }
+
+  // 접수 완료 알림톡: 시트 기록이 끝난 뒤 락 밖에서 보낸다. 실패해도 제출은 성공으로 둔다(로그만).
+  if (!formData.skipReceipt) {
+    try {
+      var tmplId = PropertiesService.getScriptProperties().getProperty('TEMPLATE_PREMIUM_RECEIVED') || TEMPLATE_PREMIUM_RECEIVED;
+      if (tmplId && formData.phone) {
+        var r = sendAlimtalk(formData.phone, tmplId, {
+          '#{지점명}': receiptBranch || String(formData.name || '').trim(),
+          '#{키워드}': String(formData.keyword1 || '').trim()
+        });
+        if (!r.ok) Logger.log('접수 완료 알림톡 실패: ' + r.msg);
+      }
+    } catch (err) {
+      Logger.log('접수 완료 알림톡 오류: ' + err);
+    }
   }
 
   return { success: true };
@@ -920,7 +942,7 @@ function sendAlimtalk(to, templateId, variables) {
 // SOLAPI 스크립트 속성 점검 — 값 노출 없이 존재 여부만 로그 (편집기에서 직접 실행)
 function checkSolapiProps() {
   var props = PropertiesService.getScriptProperties();
-  ['SOLAPI_API_KEY', 'SOLAPI_API_SECRET', 'SOLAPI_PF_ID', 'TEMPLATE_PREMIUM_FORM', 'INBOX_TOKEN'].forEach(function (k) {
+  ['SOLAPI_API_KEY', 'SOLAPI_API_SECRET', 'SOLAPI_PF_ID', 'TEMPLATE_PREMIUM_FORM', 'TEMPLATE_PREMIUM_RECEIVED', 'INBOX_TOKEN'].forEach(function (k) {
     Logger.log(k + ': ' + (props.getProperty(k) ? '있음' : '없음'));
   });
 }
