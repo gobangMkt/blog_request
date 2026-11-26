@@ -19,6 +19,9 @@ var PENDING_STATUS = '응답대기';
 var HOLD_STATUS    = '보류'; // 현황 탭에서 응답 대기를 지우면 행은 두고 상태만 보류로 바꾼다
 // 고급형 키워드 폼 안내 알림톡 템플릿(솔라피, 변수 #{지점명}). 스크립트 속성 TEMPLATE_PREMIUM_FORM이 있으면 그 값이 우선한다.
 var TEMPLATE_PREMIUM_FORM = 'KA01TP2611091218516116IoNk3cbXeW';
+// 같은 안내에 "결제 후 5일 안에 입력하지 않으면 저희가 대신 작성해 발행" 한 줄을 더한 새 템플릿([U사장님] 블로그_신청마무리_2, 11.26 검수 요청).
+// 먼저 이걸로 보내고, 검수 통과 전이거나 실패하면 위 옛 템플릿으로 다시 보낸다. 통과 확인 뒤엔 옛 것을 지워도 된다.
+var TEMPLATE_PREMIUM_FORM_V2 = 'KA01TP2611260458534110etmIEtdv5l';
 // 고급형 접수 완료 알림톡(사장님이 폼을 낸 직후, 변수 #{지점명}·#{키워드}). 카카오 심사 통과 뒤 템플릿 ID를 스크립트 속성
 // TEMPLATE_PREMIUM_RECEIVED에 넣는다. 비어 있으면 발송하지 않는다(폼 제출은 그대로 성공).
 var TEMPLATE_PREMIUM_RECEIVED = '';
@@ -531,7 +534,11 @@ function registerPremium(payload) {
     if (props.getProperty(key)) return { success: true, status: 'already_sent' };
     var tmpl = props.getProperty('TEMPLATE_PREMIUM_FORM') || TEMPLATE_PREMIUM_FORM;
     if (!tmpl) return { success: true, status: 'no_template' };
-    var sent = sendAlimtalk(digits, tmpl, { '#{지점명}': branch });
+    var sent = sendAlimtalk(digits, TEMPLATE_PREMIUM_FORM_V2, { '#{지점명}': branch });
+    if (!sent.ok) {
+      Logger.log('새 안내 템플릿 발송 실패, 옛 템플릿으로 재시도: ' + sent.msg);
+      sent = sendAlimtalk(digits, tmpl, { '#{지점명}': branch });
+    }
     if (!sent.ok) return { success: true, status: 'send_failed', msg: sent.msg };
     // 값 = 발송시각|지점명 (지점명은 현황 탭 표기용. 옛 건은 발송시각만 있다)
     props.setProperty(key, Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm') + '|' + branch);
@@ -553,7 +560,7 @@ function registerPremium(payload) {
 //   sent       = 고급형 완료 알림톡 보냄(완료 내역 H 발송완료)
 //   basic_done = 직-일반 N열 작성완료(현황 탭 체크로 바꾼다)
 // 배포 확인용 표식: 배포 뒤 틀린 토큰으로 listStatus를 불러 이 값이 응답에 오는지 보면 새 코드가 올라간 것(배포.bat이 확인한다)
-var BUILD = '2026-11-25-fill-pending';
+var BUILD = '2026-11-26-form-v2';
 function listStatus(token) {
   var props = PropertiesService.getScriptProperties();
   var saved = props.getProperty('INBOX_TOKEN');
