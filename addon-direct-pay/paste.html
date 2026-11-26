@@ -485,9 +485,6 @@
       <button class="ptab" type="button" role="tab" aria-selected="true" data-act="tab-blog" data-tab="blog">블로그</button>
       <button class="ptab" type="button" role="tab" aria-selected="false" data-act="tab-billy" data-tab="billy">빌리투어</button>
     </div>
-    <div class="card" id="billyPane" hidden>
-      <p class="empty">빌리투어 결제를 불러오는 중이에요.</p>
-    </div>
 
     <div class="cols">
       <div class="col col-stat">
@@ -867,7 +864,8 @@
   var KIND_SVG = {
     '일반형': '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="3.5" y="1.5" width="13" height="17" rx="3" fill="#9AA9BC"/><rect x="6.5" y="6" width="7" height="2" rx="1" fill="#FFFFFF"/><rect x="6.5" y="10" width="7" height="2" rx="1" fill="#FFFFFF"/><rect x="6.5" y="14" width="4" height="2" rx="1" fill="#FFFFFF"/></svg>',
     '고급형': '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M2 15.5 1 5.8 6.2 9.6 10 3.5 13.8 9.6 19 5.8 18 15.5Z" fill="#5A6779"/><rect x="2" y="15.5" width="16" height="3" rx="1.5" fill="#3A4556"/><circle cx="10" cy="11.5" r="1.6" fill="#FFFFFF"/></svg>',
-    '기존 폼': '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="3" y="3" width="14" height="16" rx="3" fill="#CBD3DD"/><rect x="7" y="1" width="6" height="4" rx="2" fill="#8E9BAD"/><path d="M6.4 11.2 7.8 9.8 9.2 11.2 12.6 7.8 14 9.2 9.2 14Z" fill="#6A7788"/></svg>'
+    '기존 폼': '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="3" y="3" width="14" height="16" rx="3" fill="#CBD3DD"/><rect x="7" y="1" width="6" height="4" rx="2" fill="#8E9BAD"/><path d="M6.4 11.2 7.8 9.8 9.2 11.2 12.6 7.8 14 9.2 9.2 14Z" fill="#6A7788"/></svg>',
+    '빌리투어': '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="1.5" y="5" width="12" height="10" rx="3" fill="#7C8CA1"/><path d="M14.5 8.6 18.5 6.2V13.8L14.5 11.4Z" fill="#7C8CA1"/><path d="M6 8.2 9.6 10 6 11.8Z" fill="#FFFFFF"/></svg>'
   };
   var ST_TEXT = {
     notified: '응답 대기',
@@ -893,7 +891,7 @@
   var WRITTEN = { sent: true, basic_done: true }; // 체크 표시: 일반형 작성 완료, 고급형 완료 알림 보냄
   var CHECK_SVG = '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 5.5 10.5 11.5 3.5"/></svg>';
   var lastData = null;
-  var sortKey = 'paid', sortDir = 'desc', fState = 'all', fKind = 'all', fQuery = '', hideDone = true;
+  var sortKey = 'paid', sortDir = 'desc', fState = 'all', fKind = 'all', fQuery = '', hideDone = true, pTab = 'blog';
   var PAGE = 10, page = 1;
   var RANK = { writing: 0, sendwait: 1, notified: 2, sent: 3, basic_done: 3, paid: 4, unpaid: 4 }; // 할 일이 먼저
   var reqSeq = 0; // 겹친 요청 중 마지막 응답만 화면에 반영한다
@@ -1006,13 +1004,17 @@
   });
   $('hideDone').addEventListener('click', function () { page = 1; hideDone = !hideDone; this.setAttribute('aria-checked', hideDone ? 'true' : 'false'); if (lastData) renderStatus(lastData); else syncReset(); });
 
-  // 상품 탭: 블로그는 지금 화면(등록 + 시트 DB), 빌리투어는 연결 전 안내만
+  // 상품 탭: 같은 시트 DB 표에서 블로그(일반형·고급형·기존 폼)와 빌리투어(부가상품 결제 탭)를 나눠 보여 준다
   Array.prototype.forEach.call(document.querySelectorAll('.ptab'), function (b) {
     b.addEventListener('click', function () {
-      var billy = b.getAttribute('data-tab') === 'billy';
+      pTab = b.getAttribute('data-tab') === 'billy' ? 'billy' : 'blog';
       Array.prototype.forEach.call(document.querySelectorAll('.ptab'), function (x) { x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
-      $('billyPane').hidden = !billy;
-      document.querySelector('.cols').hidden = billy;
+      $('fKind').hidden = pTab === 'billy'; // 빌리투어 탭은 유형이 하나라 유형 조건을 숨긴다
+      if (pTab === 'billy' && fKind !== 'all') { fKind = 'all'; ddKind.setValue('all'); }
+      page = 1;
+      // 결제 추이 구분도 고른 상품으로 맞춘다(그 뒤 추이 드롭다운에서 따로 바꿀 수 있다)
+      var tk = $('trKind'); if (tk.value !== pTab) { tk.value = pTab; tk.dispatchEvent(new Event('change')); }
+      if (lastData) renderStatus(lastData);
     });
   });
 
@@ -1035,6 +1037,16 @@
   function cnt(v) { return (Math.round(v * 10) / 10).toLocaleString('ko-KR') + '건'; }
   function man(v) { return v >= 10000 ? (Math.round(v / 1000) / 10).toLocaleString('ko-KR') + '만' : String(Math.round(v)); }
   function gap(v) { return v < 1 ? '1일 미만' : (Math.round(v * 10) / 10) + '일'; }
+  // 부가상품 결제 탭 행 -> 시트 DB 표 항목. 상태 F열이 완료면 끝난 건, 그 밖(진행전 등)은 할 일
+  function billyItems(billy) {
+    return (billy || []).map(function (b) {
+      var p = String(b.paidAt || '').match(/^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}):(\d{2}))?/);
+      return { billy: true, src: b, kind: '빌리투어', product: b.product, row: b.row, no: b.branchNo || '',
+        label: (b.branch || '지점 미확인') + (b.branchNo ? '(' + b.branchNo + ')' : ''),
+        paidAt: p ? p[1] + '-' + p[2] + '-' + p[3] + ' ' + (p[4] || '00') + ':' + (p[5] || '00') : String(b.paidAt || ''),
+        price: Number(b.amount) || 0, stage: /완료/.test(String(b.status || '')) ? 'basic_done' : 'writing' };
+    });
+  }
   function priceOf(it) { return it.price > 0 ? it.price : (PRICE[it.kind] || 0); }
 
   function deltaShort(cur, prev, comparable) { // 직전 기록이 없거나 0이면 비운다(문장으로 풀지 않음)
@@ -1392,19 +1404,21 @@
 
   function renderStatus(d) {
     lastData = d; showSk(false);
-    var items = d.items || [];
-    trItems = items.concat(JandiRecon.billyTrendItems(d.billy)); renderTrend(); // 추이 구분 빌리투어용
+    trItems = (d.items || []).concat(JandiRecon.billyTrendItems(d.billy)); renderTrend(); // 추이 구분 빌리투어용
+    // 표는 탭마다: 블로그 = 신청 내역 행, 빌리투어 = 부가상품 결제 탭 행(같은 표 문법)
+    var items = pTab === 'billy' ? billyItems(d.billy) : (d.items || []);
     JandiUI.onStatus(d); // 마지막 수집, 빌리투어 표, 기다리던 잔디 결과
     var w = count(items, 'writing'), sw = count(items, 'sendwait');
     $('statTitle').textContent = '시트 DB';
     var hid = items.filter(function (it) { return WRITTEN[it.stage]; }).length;
     var due = items.filter(isDue).length;
-    $('statSum').textContent = '할 일 ' + (w + sw + due) + '건 · 작성 전 ' + w + ' · 완료 알림 전 ' + sw + (due ? ' · 작성 가능 ' + due : '') + (hideDone && hid ? ' · 작성 완료 ' + hid + '건 숨김' : '');
+    if (pTab === 'billy') $('statSum').textContent = '할 일 ' + w + '건 · 진행 전 ' + w + (hideDone && hid ? ' · 완료 ' + hid + '건 숨김' : '');
+    else $('statSum').textContent = '할 일 ' + (w + sw + due) + '건 · 작성 전 ' + w + ' · 완료 알림 전 ' + sw + (due ? ' · 작성 가능 ' + due : '') + (hideDone && hid ? ' · 작성 완료 ' + hid + '건 숨김' : '');
     syncReset();
     var box = $('statList'); box.innerHTML = '';
     if (!items.length) {
       $('pager').hidden = true;
-      var e = document.createElement('p'); e.className = 'empty'; e.textContent = '아직 등록된 건이 없어요.'; box.appendChild(e); return;
+      var e = document.createElement('p'); e.className = 'empty'; e.textContent = pTab === 'billy' ? '아직 쌓인 빌리투어 결제가 없어요.' : '아직 등록된 건이 없어요.'; box.appendChild(e); return;
     }
     var th = document.createElement('div'); th.className = 'tr th';
     COLS.forEach(function (t) {
@@ -1459,6 +1473,7 @@
     var pv = priceOf(it); price.textContent = pv > 0 ? won(pv) : '-';
     var st = document.createElement('span'); st.className = 'c-st';
     var chip = document.createElement('span'); chip.className = 'chip ' + it.stage; chip.textContent = ST_TEXT[it.stage] || it.stage;
+    if (it.billy) { chip.textContent = it.stage === 'basic_done' ? '완료' : '진행 전'; kind.title = it.product || it.kind; }
     var wt = waitOf(it);
     if (wt) { // 응답 대기: 5일까지 D-day, 지나면 작성 가능(주황 = 내가 할 일)
       chip.className = 'chip ' + (wt.due ? 'sendwait' : 'notified');
@@ -1484,8 +1499,10 @@
     btn.innerHTML = '<span class="box">' + CHECK_SVG + '</span>';
     var basic = it.kind === '일반형' && it.row;
     var premium = it.kind === '고급형' && it.doneRow && (it.stage === 'writing' || it.stage === 'sendwait');
+    if (it.billy) basic = !!it.row;
     btn.disabled = !(basic || premium);
-    btn.title = basic ? (it.stage === 'basic_done' ? '작성 전으로 되돌리기' : '작성 완료로 표시')
+    btn.title = it.billy ? (it.row ? (it.stage === 'basic_done' ? '진행 전으로 되돌리기' : '완료로 표시') : '시트 행을 찾지 못했어요')
+      : basic ? (it.stage === 'basic_done' ? '작성 전으로 되돌리기' : '작성 완료로 표시')
       : premium ? '작성 완료 알림 보내기'
       : it.stage === 'notified' ? '사장님 폼 제출을 기다리는 중이에요'
       : it.kind === '기존 폼' ? '기존 폼 건은 시트에서 처리해요'
@@ -1498,10 +1515,12 @@
       var done = it.stage !== 'basic_done';
       var base = lastData;
       btn.disabled = true; btn.className = 'ck busy';
-      post({ action: 'markBasic', row: it.row, label: it.label, paidAt: it.paidAt, done: done })
+      post(it.billy ? { action: 'markBilly', row: it.row, paidAt: it.paidAt, branchNo: it.no, done: done }
+        : { action: 'markBasic', row: it.row, label: it.label, paidAt: it.paidAt, done: done })
         .then(function (d) {
           if (d.success) {
             it.stage = d.stage;
+            if (it.billy) it.src.status = d.status || (done ? '완료' : '진행전'); // 표는 원본에서 다시 만들어지므로 원본도 바꾼다
             if (lastData === base) renderStatus(lastData); else loadStatus();
             return;
           }

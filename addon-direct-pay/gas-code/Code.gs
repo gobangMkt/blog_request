@@ -121,6 +121,8 @@ function doPost(e) {
       result = listStatus(payload.token);
     } else if (action === 'markBasic') {
       result = markBasic(payload);
+    } else if (action === 'markBilly') {
+      result = markBilly(payload);
     } else if (action === 'completePremium') {
       result = completePremium(payload);
     } else if (action === 'hideNotified') {
@@ -560,7 +562,7 @@ function registerPremium(payload) {
 //   sent       = 고급형 완료 알림톡 보냄(완료 내역 H 발송완료)
 //   basic_done = 직-일반 N열 작성완료(현황 탭 체크로 바꾼다); 기존 폼 건은 결제완료일이 있고 시트 행이 주황이면 basic_done(읽기 전용)
 // 배포 확인용 표식: 배포 뒤 틀린 토큰으로 listStatus를 불러 이 값이 응답에 오는지 보면 새 코드가 올라간 것(배포.bat이 확인한다)
-var BUILD = '2026-11-26-toss-import';
+var BUILD = '2026-11-26-billy-table';
 function listStatus(token) {
   var props = PropertiesService.getScriptProperties();
   var saved = props.getProperty('INBOX_TOKEN');
@@ -807,6 +809,31 @@ function markBasic(payload) {
     sheet.getRange(row, 14).setValue(done ? '작성완료' : '신청완료');
     sheet.getRange(row, 1, 1, sheet.getLastColumn()).setBackground(done ? ROW_BG_DONE : ROW_BG_BASIC);
     return { success: true, stage: done ? 'basic_done' : 'writing' };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// 시트 DB 빌리투어 체크: 부가상품 결제 탭 F열(상태)을 완료 <-> 진행전으로 바꾼다(되돌릴 수 있어 팝업 없음).
+// 행 번호만 믿지 않고 결제일시·지점번호가 화면에서 본 값과 같은지 다시 대조한다(그 사이 행이 밀렸으면 stale).
+function markBilly(payload) {
+  var saved = PropertiesService.getScriptProperties().getProperty('INBOX_TOKEN');
+  if (!saved || String(payload.token || '') !== saved) return { success: false, reason: 'unauthorized' };
+  var row = parseInt(payload.row, 10);
+  if (!(row >= 2)) return { success: false, reason: 'bad_request' };
+  var done = payload.done === true;
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(JANDI_BILLY_TAB);
+    if (!sheet || row > sheet.getLastRow()) return { success: false, reason: 'stale' };
+    var v = sheet.getRange(row, 1, 1, 6).getValues()[0];
+    if (jandiStamp_(v[0]) !== String(payload.paidAt || '')
+        || String(v[2] || '').replace(/\D/g, '') !== String(payload.branchNo || '')) {
+      return { success: false, reason: 'stale' };
+    }
+    sheet.getRange(row, 6).setValue(done ? '완료' : '진행전');
+    return { success: true, stage: done ? 'basic_done' : 'writing', status: done ? '완료' : '진행전' };
   } finally {
     lock.releaseLock();
   }
@@ -1365,10 +1392,11 @@ function loadBillyList_(ss) {
   if (!sheet || sheet.getLastRow() < 2) return [];
   var first = Math.max(2, sheet.getLastRow() - 1999);
   var out = [];
-  sheet.getRange(first, 1, sheet.getLastRow() - first + 1, 6).getValues().forEach(function (r) {
+  sheet.getRange(first, 1, sheet.getLastRow() - first + 1, 6).getValues().forEach(function (r, i) {
     var paidAt = jandiStamp_(r[0]);
     if (!paidAt) return;
     out.push({
+      row: first + i,
       paidAt: paidAt, branch: String(r[1] || '').trim(), branchNo: String(r[2] || '').replace(/\D/g, ''),
       product: String(r[3] || '').trim(), amount: Number(String(r[4] == null ? '' : r[4]).replace(/[^\d.]/g, '')) || 0,
       status: String(r[5] || '').trim()

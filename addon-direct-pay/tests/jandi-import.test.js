@@ -295,9 +295,9 @@ test('listStatus: 기존 items·truncated·build 필드는 그대로, billy 배�
     paidAt: '2026-11-09 12:00', stage: 'basic_done', price: 70000, row: 2 }]);
   assert.deepStrictEqual([r.success, r.truncated], [true, false]);
   assert.deepStrictEqual(r.billy, [
-    { paidAt: '2026-11-13 11:52', branch: '서울스테이', branchNo: '20933', product: '빌리투어 (투어영상)',
+    { row: 3, paidAt: '2026-11-13 11:52', branch: '서울스테이', branchNo: '20933', product: '빌리투어 (투어영상)',
       amount: 400000, status: '진행전' },
-    { paidAt: '2026-11-03 15:35', branch: '스테이플러스', branchNo: '20906', product: '빌리투어 (투어영상)',
+    { row: 2, paidAt: '2026-11-03 15:35', branch: '스테이플러스', branchNo: '20906', product: '빌리투어 (투어영상)',
       amount: 400000, status: '진행전' }]);
   assert.deepStrictEqual(r.lastScan, { at: '2026-11-24T05:00:00.000Z', complete: true });
 });
