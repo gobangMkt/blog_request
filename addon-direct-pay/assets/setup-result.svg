@@ -12,5 +12,5 @@
   <line x1="26" y1="108" x2="334" y2="108" stroke="#E5E8EB"/>
   <text x="26" y="127" font-size="13" font-weight="700" fill="#191F28">이미 시트에 있음 5건</text>
   <rect x="26" y="142" width="308" height="26" rx="10" fill="#3182F6"/>
-  <text x="180" y="160"font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="middle">시트에 등록하기</text>
+  <text x="180" y="160" font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="middle">시트에 등록하기</text>
 </svg>
