@@ -58,6 +58,9 @@
     .guide ol { padding-left: 20px; font-size: 14px; line-height: 1.7; color: var(--g600); display: flex; flex-direction: column; gap: 6px; }
     .guide li b { color: var(--g900); font-weight: 700; }
     .sel.on { border-color: var(--pri); }
+    .srch { flex: none; width: 168px; height: 40px; border: 1.5px solid var(--bdr); border-radius: 10px; background: var(--sur); color: var(--g900); font-family: var(--f); font-size: 14px; font-weight: 700; padding: 0 10px; outline: none; }
+    .srch::placeholder { color: var(--g500); font-weight: 400; }
+    .srch:focus, .srch.on { border-color: var(--pri); }
     /* 아이콘이 보이는 드롭다운(js/dropdown.js). 모양은 .sel과 같고 항목 앞에 그림을 둔다. 트리거는 고정 너비 + 말줄임 */
     .dd { position: relative; }
     .dd-btn { display: inline-flex; align-items: center; gap: 8px; width: 176px; text-align: left; }
@@ -182,7 +185,8 @@
     .tr.fin .c-who { color: var(--g600); font-weight: 600; }
     /* 상태 칩: 할 일(노랑·주황)이 먼저 눈에 띄고 끝난 건은 차분하다. 색만이 아니라 글자로도 구분한다 */
     .chip { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; line-height: 1.4; }
-    .chip.notified, .chip.unpaid, .chip.paid { background: var(--bg); color: var(--g600); }
+    .chip.notified, .chip.unpaid { background: var(--bg); color: var(--g600); }
+    .chip.paid { background: #EAF2FE; color: var(--pri-h); }
     .chip.writing { background: #FFF1BF; color: #7A5200; }
     .chip.sendwait { background: #FFE3CC; color: #9A4300; }
     .chip.sent, .chip.basic_done { background: var(--ok-bg); color: var(--ok-ink); }
@@ -399,6 +403,7 @@
   <div class="top">
     <h1>블로그 부가상품</h1>
     <p class="res-sum" id="lastScan"></p>
+    <span class="quick"><a id="uceo" href="https://u-ceo.kr" target="_blank" rel="noopener" title="U사장님 열기">U사장님<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12"/></svg></a><a id="fetchJandi" href="https://neoflat.jandi.com/" target="_blank" rel="noopener" data-act="fetch-jandi" title="잔디 방 열기">잔디<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12"/></svg></a><a href="https://docs.google.com/spreadsheets/d/1lgAsrtoeqv1-g3Nh3D21zTyuGLdAZuP5jSXxftlIxh0/edit" target="_blank" rel="noopener" title="신청 내역 시트 열기">시트<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12"/></svg></a></span>
     <button class="voc-open" id="vocOpen" type="button">불편 신고</button>
   </div>
 
@@ -470,7 +475,6 @@
             <div>
               <div class="res-title res-title-row stat-title">
                 <span id="statTitle">시트 DB</span>
-                <span class="quick"><a href="https://docs.google.com/spreadsheets/d/1lgAsrtoeqv1-g3Nh3D21zTyuGLdAZuP5jSXxftlIxh0/edit" target="_blank" rel="noopener" title="신청 내역 시트 열기">시트<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12"/></svg></a></span>
                 <button class="refresh" id="refresh" type="button" aria-label="새로고침" title="새로고침">
                   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 10a6.5 6.5 0 1 1-1.9-4.6"/><path d="M16.5 3.5v3.6h-3.6"/></svg>
                 </button>
@@ -483,6 +487,7 @@
                   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M7.5 7.5l5 5M12.5 7.5l-5 5"/></svg>
                 </button>
                 <button class="hidechk" id="hideDone" type="button" role="checkbox" aria-checked="true" data-act="hide-done"><span class="box"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 5.5 10.5 11.5 3.5"/></svg></span>완료건 숨김</button>
+                <input class="srch" id="fSearch" type="search" placeholder="지점·신청자 검색" aria-label="지점 또는 신청자 검색" autocomplete="off" data-act="search">
                 <div id="fKind"></div>
                 <div id="fState"></div>
               </div>
@@ -513,9 +518,7 @@
                 </span>
               </label>
             </div>
-            <div class="tools"><span class="quick"><a id="uceo" href="https://u-ceo.kr" target="_blank" rel="noopener" title="U사장님 열기">U사장님<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12"/></svg></a></span>
-            <span class="quick"><a id="fetchJandi" href="https://neoflat.jandi.com/" target="_blank" rel="noopener" data-act="fetch-jandi" title="잔디 방 열기">잔디<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12"/></svg></a></span>
-            <button class="tgl" id="setupToggle" type="button" aria-haspopup="dialog" aria-expanded="false" data-act="setup-toggle">설치 방법</button>
+            <div class="tools"><button class="tgl" id="setupToggle" type="button" aria-haspopup="dialog" aria-expanded="false" data-act="setup-toggle">설치 방법</button>
             <button class="tgl" id="pasteToggle" type="button" aria-expanded="false" aria-controls="pasteBox" data-act="paste-toggle">결제 알림 직접 붙여넣기</button>
             </div>
           </div>
@@ -663,7 +666,7 @@
 
   // U사장님 지점 검색 화면 주소. 비워 두면 링크를 보여 주지 않는다.
   var USABOSS_URL = 'https://u-ceo.kr';
-  if (USABOSS_URL) $('uceo').href = USABOSS_URL; else $('uceo').parentNode.hidden = true;
+  if (USABOSS_URL) $('uceo').href = USABOSS_URL; else $('uceo').style.display = 'none';
 
   function post(body) {
     body.token = TOKEN;
@@ -869,7 +872,7 @@
   var WRITTEN = { sent: true, basic_done: true }; // 체크 표시: 일반형 작성 완료, 고급형 완료 알림 보냄
   var CHECK_SVG = '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 5.5 10.5 11.5 3.5"/></svg>';
   var lastData = null;
-  var sortKey = 'paid', sortDir = 'desc', fState = 'all', fKind = 'all', hideDone = true;
+  var sortKey = 'paid', sortDir = 'desc', fState = 'all', fKind = 'all', fQuery = '', hideDone = true;
   var PAGE = 10, page = 1;
   var RANK = { writing: 0, sendwait: 1, notified: 2, sent: 3, basic_done: 3, paid: 4, unpaid: 4 }; // 할 일이 먼저
   var reqSeq = 0; // 겹친 요청 중 마지막 응답만 화면에 반영한다
@@ -908,10 +911,12 @@
     return rankOf(a) - rankOf(b);
   }
   function rankOf(it) { return isDue(it) ? 1 : RANK[it.stage] === undefined ? 9 : RANK[it.stage]; } // 5일 지난 응답 대기는 할 일
+  function normQ(v) { return String(v || '').replace(/\s+/g, '').toLowerCase(); }
   function passes(it) {
     if (fKind !== 'all' && it.kind !== fKind) return false;
     // 완료건 숨김(기본 켬): 작성 완료·완료 알림 보낸 건을 가린다. 그 상태를 직접 고르면 보여 준다
-    if (hideDone && WRITTEN[it.stage] && fState !== 'sent' && fState !== 'basic_done') return false;
+    if (fQuery && normQ(String(it.label) + (it.no || '')).indexOf(fQuery) < 0) return false;
+    if (hideDone && !fQuery && WRITTEN[it.stage] && fState !== 'sent' && fState !== 'basic_done') return false; // 검색 중엔 완료 건도 찾는다
     if (fState === 'all') return true;
     if (fState === 'todo') return it.stage === 'writing' || it.stage === 'sendwait' || isDue(it);
     return it.stage === fState;
@@ -935,7 +940,7 @@
     page = 1;
     if (lastData) renderStatus(lastData);
   }
-  function isDefault() { return sortKey === 'paid' && sortDir === 'desc' && fState === 'all' && fKind === 'all' && hideDone; }
+  function isDefault() { return sortKey === 'paid' && sortDir === 'desc' && fState === 'all' && fKind === 'all' && !fQuery && hideDone; }
   function syncReset() { var off = isDefault(); $('reset').className = off ? 'reset off' : 'reset'; $('reset').disabled = off; }
   var ddState = Dropdown.create($('fState'), { axis: '상태', label: '상태 조건', value: 'all', onChange: function (v) {
     page = 1; fState = v; if (lastData) renderStatus(lastData); else syncReset();
@@ -950,8 +955,13 @@
     { v: 'all', t: '전체' }, { v: '일반형', t: '일반형', icon: KIND_SVG['일반형'] },
     { v: '고급형', t: '고급형', icon: KIND_SVG['고급형'] }, { v: '기존 폼', t: '기존 폼', icon: KIND_SVG['기존 폼'] }
   ] });
+  $('fSearch').addEventListener('input', function () {
+    fQuery = normQ(this.value); this.classList.toggle('on', !!fQuery); page = 1;
+    if (lastData) renderStatus(lastData); else syncReset();
+  });
   $('reset').addEventListener('click', function () {
-    sortKey = 'paid'; sortDir = 'desc'; fState = 'all'; fKind = 'all'; hideDone = true; page = 1;
+    sortKey = 'paid'; sortDir = 'desc'; fState = 'all'; fKind = 'all'; fQuery = ''; hideDone = true; page = 1;
+    $('fSearch').value = ''; $('fSearch').classList.remove('on');
     $('hideDone').setAttribute('aria-checked', 'true');
     ddState.setValue('all'); ddKind.setValue('all');
     if (lastData) renderStatus(lastData); else syncReset();

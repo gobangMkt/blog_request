@@ -105,7 +105,7 @@
   function inScope(it, scope) {
     if (it.kind === '빌리투어') return scope !== 'blog';
     if (scope === 'billy') return false;
-    if (it.kind === '기존 폼' && it.stage !== 'paid') return false;
+    if (it.kind === '기존 폼' && it.stage !== 'paid' && it.stage !== 'basic_done') return false;
     return true;
   }
 

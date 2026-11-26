@@ -79,6 +79,7 @@ assert.strictEqual(T.inScope(itm('일반형', 'writing'), 'blog'), true);
 assert.strictEqual(T.inScope(itm('고급형', 'notified'), 'blog'), true);
 assert.strictEqual(T.inScope(itm('기존 폼', 'paid'), 'blog'), true);
 assert.strictEqual(T.inScope(itm('기존 폼', 'unpaid'), 'blog'), false);
+assert.strictEqual(T.inScope(itm('기존 폼', 'basic_done'), 'blog'), true);
 assert.strictEqual(T.inScope(itm('빌리투어', 'paid'), 'blog'), false);
 assert.strictEqual(T.inScope(itm('빌리투어', 'paid'), 'billy'), true);
 assert.strictEqual(T.inScope(itm('일반형', 'writing'), 'billy'), false);

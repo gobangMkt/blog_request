@@ -316,6 +316,21 @@ test('BUILD 값과 배포 bat의 findstr 값이 같다', () => {
   assert.notStrictEqual(env.ctx.BUILD, '2026-11-23-pending2');
 });
 
+// ── 기존 폼 건: 주황 행은 작성 완료, 이름은 지점명(신청자) ──
+test('listStatus: 기존 폼 건은 시트 행이 주황이면 작성 완료, 아니면 결제 완료·결제 전이고 번호는 표기에 없다', () => {
+  const env = makeEnv({ sheets: { '신청 내역': [APPLY_HEADER,
+    appRow('A', kstDate(2026, 11, 4, 12, 0), '김원장', 'https://gobang.kr/place/4311', '', 165000),
+    appRow('A', kstDate(2026, 11, 5, 12, 0), '이원장', '', '', 165000),
+    (() => { const r = appRow('A', '', '박원장', '', '', 165000); r[0] = kstDate(2026, 11, 6, 12, 0); return r; })()] },
+  backgrounds: { '신청 내역': { 2: '#ff9900' } }, props: { 'BN_4311': '그루레지던스(성남점)' } });
+  const r = env.plain(env.ctx.listStatus('tok'));
+  const by = (n) => r.items.filter((i) => i.label.indexOf(n) >= 0)[0];
+  assert.strictEqual(by('김원장').stage, 'basic_done');
+  assert.strictEqual(by('김원장').label, '그루레지던스(성남점)(김원장)');
+  assert.strictEqual(by('이원장').stage, 'paid');
+  assert.strictEqual(by('박원장').stage, 'unpaid');
+});
+
 // ── doPost 연결·붙여넣기 등록 불변 ──
 test('doPost: importJandi·previewJandi·listStatus 분기가 이어진다(기존 checkToken 유지)', () => {
   const env = fresh();

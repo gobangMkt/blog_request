@@ -558,9 +558,9 @@ function registerPremium(payload) {
 //   writing    = 작성 전(직A/직B는 완료 내역 완료일 없음, 직-일반은 N열 신청완료)
 //   sendwait   = 고급형 작성 완료, 사장님 완료 알림톡 전(완료 내역 H 발송대기)
 //   sent       = 고급형 완료 알림톡 보냄(완료 내역 H 발송완료)
-//   basic_done = 직-일반 N열 작성완료(현황 탭 체크로 바꾼다)
+//   basic_done = 직-일반 N열 작성완료(현황 탭 체크로 바꾼다); 기존 폼 건은 결제완료일이 있고 시트 행이 주황이면 basic_done(읽기 전용)
 // 배포 확인용 표식: 배포 뒤 틀린 토큰으로 listStatus를 불러 이 값이 응답에 오는지 보면 새 코드가 올라간 것(배포.bat이 확인한다)
-var BUILD = '2026-11-26-form-v2';
+var BUILD = '2026-11-26-legacy-label';
 function listStatus(token) {
   var props = PropertiesService.getScriptProperties();
   var saved = props.getProperty('INBOX_TOKEN');
@@ -588,6 +588,8 @@ function listStatus(token) {
   var lastRow = sheet.getLastRow();
   var firstRow = Math.max(2, lastRow - 1999); // 시트 전체(기존 폼 건 포함)를 읽는다. 2,000행 상한
   var rows = lastRow >= 2 ? sheet.getRange(firstRow, 1, lastRow - firstRow + 1, 16).getValues() : [];
+  // 기존 폼 건의 작성 완료는 시트 행 색(주황)으로만 남는다. A~C열 배경 중 하나가 주황이면 작성 완료로 읽는다
+  var bgs = lastRow >= 2 ? sheet.getRange(firstRow, 1, lastRow - firstRow + 1, 3).getBackgrounds() : [];
   // 결제 추이 집계용 단가(P열, 부가세 포함). 비어 있으면 현재 단가 상수를 쓴다
   function priceOf(v, dflt) { var n = Number(String(v == null ? '' : v).replace(/[^\d.]/g, '')); return n > 0 ? n : dflt; }
 
@@ -605,6 +607,9 @@ function listStatus(token) {
         kw: String(r[4] || '').trim(), blog: String(r[5] || '').trim(), tail: String(r[2] || '').replace(/\D/g, '').slice(-4)
       });
     });
+  }
+  function isOrangeRow_(cells) {
+    return (cells || []).some(function (c) { return String(c).toLowerCase() === ROW_BG_DONE; });
   }
   function premiumStage(url, paid) {
     var list = done[String(url || '').trim().toLowerCase()];
@@ -628,7 +633,8 @@ function listStatus(token) {
       if (!ld) return;
       items.push({
         kind: '기존 폼', label: String(r[2] || '').trim() || '(이름 없음)', paidAt: fmt(ld), ts: ld.getTime(),
-        stage: lp ? 'paid' : 'unpaid', price: priceOf(r[15], 0), form: type, no: placeNo_(r[4])
+        stage: lp ? (isOrangeRow_(bgs[idx]) ? 'basic_done' : 'paid') : 'unpaid', price: priceOf(r[15], 0), form: type, no: placeNo_(r[4]),
+        applicant: String(r[2] || '').trim()
       });
       return;
     }
@@ -712,7 +718,7 @@ function listStatus(token) {
     });
   });
 
-  // 기존 폼 건: 신청자(원장님 이름) 대신 지점명으로 보여 준다. 지점 URL(E열)의 지점번호로 이름을 찾는다.
+  // 기존 폼 건: `지점명(신청자)`로 보여 준다(11.26 토미: 지점 URL의 번호는 U사장님 번호가 아니라 표기에서 뺀다). 지점 URL(E열)의 지점번호로 이름을 찾는다.
   // 이미 아는 이름(발송 기록·직-대기 행) → 저장해 둔 이름(BN_) → 고방 지점 페이지 순. 한 번에 최대 30곳만 읽고
   // 나머지는 다음 새로고침에서 채운다. 이름을 못 찾은 건은 원래 신청자 이름 그대로 둔다.
   var nameByNo = {};
@@ -743,7 +749,7 @@ function listStatus(token) {
     } catch (e) {}
   }
   items.forEach(function (it) {
-    if (it.kind === '기존 폼' && it.no && nameByNo[it.no]) it.label = nameByNo[it.no] + '(' + it.no + ')';
+    if (it.kind === '기존 폼' && it.no && nameByNo[it.no]) it.label = nameByNo[it.no] + (it.applicant ? '(' + it.applicant + ')' : '');
   });
 
   items.sort(function (a, b) { return b.ts - a.ts; });

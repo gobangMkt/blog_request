@@ -52,6 +52,7 @@ function makeEnv(opts) {
             const v = (sh.rows[r - 1 + i] || [])[c - 1 + j];
             return v === undefined ? '' : v;
           })),
+          getBackgrounds: () => Array.from({ length: nn }, (_, i) => Array.from({ length: ww }, () => ((o.backgrounds || {})[name] || {})[r + i] || '#ffffff')),
           getValue: () => { const v = (sh.rows[r - 1] || [])[c - 1]; return v === undefined ? '' : v; },
           setValue: (v) => {
             write('setValue', name);
