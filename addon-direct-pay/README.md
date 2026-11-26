@@ -118,7 +118,7 @@
 | GAS 웹앱 | 배포 ID는 `form.html`의 `GAS_URL` 참고 |
 | GAS 배포 한 번에 | `GAS 배포 (딸깍).bat` 더블클릭: 구글 로그인 확인(만료 시 브라우저에서 승인 한 번) → `clasp push` → 같은 배포 ID로 `clasp deploy`(주소 유지) → 틀린 토큰으로 `listStatus`를 불러 응답의 `build` 표식(`Code.gs`의 `BUILD`)으로 새 코드가 올라갔는지 확인 → 페이지 열기. 코드를 고칠 때마다 `BUILD` 값과 이 파일의 `findstr` 값을 같이 바꾼다 |
 | 시트 | 기존 15만원·10만원 폼과 같은 시트(`Code.gs` 상단 `SPREADSHEET_ID`). 잔디 가져오기를 처음 등록할 때 맨 뒤에 `부가상품 결제`·`잔디 수집 로그` 탭이 자동으로 생긴다 |
-| 스크립트 속성 | `INBOX_TOKEN`(붙여넣기 접근 코드), `SOLAPI_API_KEY`·`SOLAPI_API_SECRET`·`SOLAPI_PF_ID`·`TEMPLATE_PREMIUM_FORM`(고급형 알림톡), `JANDI_LAST_SCAN`(마지막으로 끝까지 읽은 시각·글 id, 코드가 쓴다). 값은 문서에 적지 않는다 |
+| 스크립트 속성 | `INBOX_TOKEN`(붙여넣기 접근 코드), `SOLAPI_API_KEY`·`SOLAPI_API_SECRET`·`SOLAPI_PF_ID`·`TEMPLATE_PREMIUM_FORM`(고급형 키워드 폼 알림톡), `TEMPLATE_PREMIUM_RECEIVED`(고급형 접수 완료 알림톡, 비어 있으면 미발송), `JANDI_LAST_SCAN`(마지막으로 끝까지 읽은 시각·글 id, 코드가 쓴다). 값은 문서에 적지 않는다 |
 | 북마크 | 만들기 `node scripts\build-bookmarklet.js` → `js/jandi-bookmarklet.txt`, 설치는 `paste.html`의 `설치 방법`. 현재 `READER_VERSION` 2 |
 | 현재 GAS `BUILD` | `2026-11-25-fill-pending`(11.25 코드 수정까지 끝났고 배포는 토미가 `GAS 배포 (딸깍).bat`으로. 11.24 기록의 배포 여부가 문서마다 달라 배포본 `build` 값으로 확인 필요) |
 
