@@ -2,7 +2,7 @@
 
 ## 프로젝트 개요
 
-고방 블로그 마케팅 서비스의 신청 폼 + 랜딩페이지.  
+고방 블로그 마케팅 서비스의 신청 폼.  
 이벤트 기간 중 고시원/원룸 지점주가 블로그 글 작성을 신청하는 앱.
 
 ---
@@ -10,16 +10,11 @@
 ## ⚠️ 폼 분화 (2026-06-30)
 
 루트 `index.html`은 `15만원-여름특가/`로 리다이렉트. 상품별 독립 폴더 + **독립 GAS 프로젝트**:
-- `10만원-CRM판매/` — 원장 전용 10만원(정가15만·5만원할인). **서명 링크 발급제**. scriptId `1NHD3a…`, exec `AKfycbz20Sjj…`(@6)
+- ~~`10만원-CRM판매/`·`r10/`~~ — 11.26 삭제(마지막 접수 07.07). 코드는 git 이력에 있다. 아래 10만원 관련 절은 되살릴 때만 참고
 - `15만원-여름특가/` — 여름특가 15만원. 아래 GAS API의 GAS_URL(`AKfycbygEz…`)은 이 계열 기준
 - `addon-direct-pay/`(부가상품 직접결제) — 고방U사장님 부가상품(블로그 고급형 150,000원)을 **결제한 뒤** 제출하는 원장 전용 폼(2026-11-09). 작성 타입 `직A`/`직B`, 결제요청 알림톡 없음·결제완료일 자동, 링크 발급 없는 공개 폼. 같은 시트에 쌓고 독립 GAS. 일반형은 폼 없이 `직-일반`(70,000) 수동 등록. 상세 `addon-direct-pay/README.md`
 
 **UI는 `docs/design-system.md` 규율로 만든다**(색 역할·글자 단계·간격·부품·상태·폰 폭). 새 부품·색은 화면에 그리기 전에 그 문서에 먼저 올린다.
-
-### 10만원 폼 — 서명 링크 절대 규칙
-- 마감 = `from`(YYYYMMDD)+5일. 서버 비밀키 HMAC `sig`로 서명. `verifyLink`가 `checkAccess`·`submitForm`에서 서명·기간 재검증 → **클라(form.html) 검증만 믿지 말 것. 마감 우회 방지의 핵심은 서버 게이트.**
-- 발급 = `genLink`(운영자 토큰 `INBOX_TOKEN` 필요) + `?gen` 발급 페이지. `LINK_SECRET`은 스크립트 속성 자동 생성 — **코드 하드코딩 금지(공개 repo).**
-- `FORM_BASE_URL`은 반드시 `…/blog_request/10만원-CRM판매/` (루트로 두면 15만원으로 튕김). 한글 경로 `encodeURI`.
 
 ---
 
@@ -28,9 +23,8 @@
 | 대상 | URL | 방법 |
 |------|-----|------|
 | 신청 폼 | https://gobangmkt.github.io/blog_request/ | GitHub Pages (main 브랜치 push 시 자동) |
-| 랜딩페이지 | https://landing-two-tau-94.vercel.app | Vercel (`landing/` 폴더 기준) |
 
-- **랜딩 재배포**: `cd landing && npx vercel --prod`
+- 옛 랜딩(`15만원-여름특가/landing/`, landing-two-tau-94.vercel.app)은 11.26 삭제. 상품 소개는 `blog-gobangposting-detail.vercel.app`(이 repo 밖)이 맡는다.
 - **신청 폼 배포**: `git push origin main` 하면 자동 반영 (수 분 소요)
 - **고치면 바로 푸시한다**(토미 11.25). 묻지 않고, 고친 파일만 경로를 지정해 커밋하고 `main`에 푸시한다. 푸시가 곧 배포라 푸시 뒤 화면 확인은 수 분 뒤에 한다.
 
@@ -40,12 +34,6 @@
 
 ```
 index.html          신청 폼 (메인 페이지)
-landing/
-  index.html        랜딩페이지 (React CDN + Babel Standalone, 빌드 불필요)
-  shared.jsx        공용 컴포넌트
-  variant-a.jsx     현재 사용 중인 랜딩 variant
-  colors_and_type.css  디자인 토큰
-  vercel.json       Vercel 정적 배포 설정
 gas-code/Code.gs    Google Apps Script 서버 코드
 ```
 
@@ -54,7 +42,6 @@ gas-code/Code.gs    Google Apps Script 서버 코드
 ## 기술 스택
 
 - **신청 폼**: 순수 HTML + Vanilla JS (프레임워크 없음)
-- **랜딩**: React 18 (CDN) + Babel Standalone (브라우저 컴파일, 빌드 없음)
 - **백엔드**: Google Apps Script (GAS)
 - **폰트**: Pretendard (Google Fonts CDN)
 
@@ -201,11 +188,6 @@ var GAS_URL = 'https://script.google.com/macros/s/AKfycbygEzqWKlYa1EgStmNY1wxvIL
 ## 로컬 개발
 
 ```bash
-# 랜딩페이지
-cd landing
-node server.js      # 또는 "시작 5500.bat" 더블클릭
-# → http://localhost:5500
-
 # 신청 폼 (index.html)
 # 브라우저에서 직접 파일 열기 또는 Live Server 사용
 ```
