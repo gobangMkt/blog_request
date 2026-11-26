@@ -169,6 +169,19 @@
       cursor: pointer; color: var(--g600); display: inline-flex; align-items: center; justify-content: center;
     }
     .refresh svg { width: 20px; height: 20px; }
+    /* 불러오는 동안 자리만 먼저 잡는 스켈레톤(회색 막대가 천천히 반짝). 데이터가 오면 통째로 바뀐다 */
+    .sk { background: linear-gradient(90deg, var(--bg) 25%, #E7EAEE 40%, var(--bg) 60%); background-size: 300% 100%; animation: skm 1.4s ease-in-out infinite; border-radius: 10px; }
+    @keyframes skm { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+    @media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
+    .sk-row { display: grid; grid-template-columns: 96px 104px minmax(0, 1fr) 92px 124px 56px; gap: 12px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--bdr); }
+    .sk-row .sk { height: 18px; }
+    @media (max-width: 640px) { .sk-row { grid-template-columns: 44px minmax(0, 1fr) 88px; } .sk-row .sk:nth-child(n+4) { display: none; } }
+    .sk-trend { margin-top: 12px; }
+    .sk-trend .kcards .sk { height: 84px; border-radius: 14px; }
+    .sk-trend .sk-chart { height: 100%; min-height: 190px; border-radius: 14px; }
+    #trendCard.folded .tools, #trendCard.folded .trend-body, #trendCard.folded .sk-trend { display: none; }
+    #trFold svg { transition: transform .15s; }
+    #trendCard.folded #trFold svg { transform: rotate(180deg); }
     .refresh:disabled { color: var(--g300); cursor: not-allowed; }
     .tr {
       display: grid; grid-template-columns: 96px 104px minmax(0, 1fr) 92px 124px 56px; gap: 12px; align-items: center;
@@ -224,6 +237,7 @@
 
     /* 결제 추이: 화면 맨 위 가로 띠. 왼쪽 숫자 카드 3장 + 유형 도넛 카드(2x2), 오른쪽 매출 막대 + 건수 꺾은선 콤보 한 장. 색은 파랑 농도와 검정 선뿐, 증감에 초록·빨강을 쓰지 않는다 */
     .res-title-row { display: flex; align-items: center; gap: 4px; }
+    .trend-body[hidden] { display: none; }
     .trend-body { display: grid; grid-template-columns: minmax(0, 480px) minmax(0, 1fr); gap: 16px 24px; align-items: stretch; margin-top: 12px; }
     .kcards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .kc { background: var(--bg); border-radius: 14px; padding: 14px 16px; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
@@ -453,6 +467,13 @@
                 <div class="rng-pop" id="trRngPop" role="dialog" aria-label="기간 선택" hidden></div>
               </div>
         </div>
+        <button class="refresh" id="trFold" type="button" aria-expanded="true" aria-controls="trBody" aria-label="결제 추이 접기" title="접기" data-act="trend-fold">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5-5 5 5"/></svg>
+        </button>
+      </div>
+      <div class="trend-body sk-trend" id="trSk" hidden aria-hidden="true">
+        <div class="kcards"><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>
+        <div class="sk sk-chart"></div>
       </div>
       <div class="trend-body" id="trBody" hidden>
         <div class="kcards" id="trCards"></div>
@@ -883,7 +904,7 @@
     var my = ++reqSeq;
     statErr.hidden = true;
     refresh.disabled = true; $('statSum').textContent = '불러오는 중이에요';
-    if (!lastData) $('trSum').textContent = '불러오는 중이에요';
+    if (!lastData) { $('trSum').textContent = '불러오는 중이에요'; showSk(true); }
     post({ action: 'listStatus' })
       .then(function (d) {
         if (my !== reqSeq) return;
@@ -896,7 +917,17 @@
       .catch(function () { if (my !== reqSeq) return; refresh.disabled = false; showStatErr('연결에 실패했어요. 잠시 뒤 다시 시도해 주세요.'); });
   }
 
-  function showStatErr(msg) { $('statSum').textContent = ''; statErr.textContent = msg; statErr.hidden = false; }
+  function showStatErr(msg) { showSk(false); $('statSum').textContent = ''; statErr.textContent = msg; statErr.hidden = false; }
+  // 처음 불러오는 동안만 결제 추이·시트 DB 자리를 회색 막대로 먼저 보여 준다
+  function showSk(on) {
+    $('trSk').hidden = !on;
+    var box = $('statList');
+    if (on) {
+      var h = '';
+      for (var i = 0; i < 8; i++) h += '<div class="sk-row" aria-hidden="true"><span class="sk"></span><span class="sk"></span><span class="sk"></span><span class="sk"></span><span class="sk"></span><span class="sk"></span></div>';
+      box.innerHTML = h;
+    } else if (box.querySelector('.sk-row')) box.innerHTML = '';
+  }
 
   function count(items, st) { return items.filter(function (it) { return it.stage === st; }).length; }
 
@@ -1014,6 +1045,21 @@
   $('trKind').addEventListener('change', function () { trKind = this.value; this.className = 'sel' + (trKind === 'blog' ? '' : ' on'); renderTrend(); });
   $('trUnit').addEventListener('change', function () { trUnit = this.value; if (!trRng.touched) trRng.key = UNIT_KEY[trUnit]; renderTrend(); });
   var rz = 0;
+  (function () {
+    var card = $('trendCard'), btn = $('trFold');
+    function apply(folded, redraw) {
+      card.classList.toggle('folded', folded);
+      btn.setAttribute('aria-expanded', folded ? 'false' : 'true');
+      var t = folded ? '펼치기' : '접기'; btn.title = t; btn.setAttribute('aria-label', '결제 추이 ' + t);
+      if (!folded && redraw && lastData) renderTrend(); // 숨겨 둔 동안 폭을 못 재서 다시 그린다
+    }
+    var saved = false; try { saved = localStorage.getItem('bp_trend_folded') === '1'; } catch (e) {}
+    apply(saved, false);
+    btn.addEventListener('click', function () {
+      var f = !card.classList.contains('folded'); apply(f, true);
+      try { localStorage.setItem('bp_trend_folded', f ? '1' : '0'); } catch (e) {}
+    });
+  })();
   window.addEventListener('resize', function () { cancelAnimationFrame(rz); rz = requestAnimationFrame(function () { if (!$('app').hidden) renderTrend(); }); });
 
   function el(tag, cls, text) {
@@ -1345,7 +1391,7 @@
   }
 
   function renderStatus(d) {
-    lastData = d;
+    lastData = d; showSk(false);
     var items = d.items || [];
     trItems = items.concat(JandiRecon.billyTrendItems(d.billy)); renderTrend(); // 추이 구분 빌리투어용
     JandiUI.onStatus(d); // 마지막 수집, 빌리투어 표, 기다리던 잔디 결과
