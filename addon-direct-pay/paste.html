@@ -1395,11 +1395,11 @@
     cards.appendChild(donutCard(TC.byKind(rows, eff, to), tot));
 
     // 콤보 차트 한 장 + 해당할 때만 안내 한 줄
+    body.hidden = false; // 숨긴 채로 재면 폭이 0이라 480으로 고정돼 오른쪽이 빈다
     var ch = $('trCharts'); ch.innerHTML = '';
     var cw = ch.clientWidth || 480;
     ch.appendChild(comboChart(cells, cw, trUnit === 'month' ? 64 : 48, cells.some(function (c) { return c.cur; }) ? '연한 막대 진행 중' : ''));
     if (tot.zero) ch.appendChild(el('p', 'bars-note', '단가가 비어 있는 ' + tot.zero + '건은 매출에서 빠졌어요'));
-    body.hidden = false;
   }
 
   function renderStatus(d) {
