@@ -180,6 +180,7 @@
     .sk-trend .kcards .sk { height: 84px; border-radius: 14px; }
     .sk-trend .sk-chart { height: 100%; min-height: 190px; border-radius: 14px; }
     #trendCard.folded .tools, #trendCard.folded .trend-body, #trendCard.folded .sk-trend { display: none; }
+    #trFold { margin-right: -17px; } /* 44px 누름 칸 안 꺾쇠(20px 중 5~15)의 오른쪽 끝을 범례 줄·축 글자 끝과 맞춘다 */
     #trFold svg { transition: transform .15s; }
     #trendCard.folded #trFold svg { transform: rotate(180deg); }
     .refresh:disabled { color: var(--g300); cursor: not-allowed; }
@@ -1118,7 +1119,7 @@
       var y = PT + PH - f * PH;
       svg.appendChild(sv('line', { x1: PL, x2: W - PR, y1: y, y2: y }, 'pl-grid'));
       var l = sv('text', { x: PL - 8, y: y + 4, 'text-anchor': 'end' }, 'pl-t'); l.textContent = f === 0 ? '0' : man(rmax * f); svg.appendChild(l);
-      var r = sv('text', { x: W - PR + 8, y: y + 4 }, 'pl-t'); r.textContent = f === 0 ? '0' : Math.round(nmax * f) + '건'; svg.appendChild(r);
+      var r = sv('text', { x: W, y: y + 4, 'text-anchor': 'end' }, 'pl-t'); // 오른쪽 축 글자 끝을 카드 안쪽 끝에 맞춤 r.textContent = f === 0 ? '0' : Math.round(nmax * f) + '건'; svg.appendChild(r);
     });
     var bw = Math.min(28, Math.max(4, cw - 2));
     if (!trHide.rev) cells.forEach(function (c, i) {
